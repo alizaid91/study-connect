@@ -65,62 +65,56 @@ const Navbar = () => {
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link
                 to="/"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/')
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/')
                     ? 'border-primary-500 text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Home
               </Link>
               <Link
                 to="/pyqs"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/pyqs')
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/pyqs')
                     ? 'border-primary-500 text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 PYQs
               </Link>
               <Link
                 to="/resources"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/resources')
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/resources')
                     ? 'border-primary-500 text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Resources
               </Link>
               <Link
                 to="/tasks"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/tasks')
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/tasks')
                     ? 'border-primary-500 text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Tasks
               </Link>
               <Link
                 to="/dashboard"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/dashboard')
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard')
                     ? 'border-primary-500 text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Dashboard
               </Link>
               {isAdmin && (
                 <Link
                   to="/admin/dashboard"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive('/admin/dashboard')
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/admin/dashboard')
                       ? 'border-primary-500 text-gray-900'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   Admin Dashboard
                 </Link>
@@ -128,11 +122,10 @@ const Navbar = () => {
               {user && (
                 <Link
                   to="/profile"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive('/profile')
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/profile')
                       ? 'border-primary-500 text-gray-900'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   Profile
                 </Link>
@@ -203,72 +196,66 @@ const Navbar = () => {
       >
         <div className="relative">
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setIsMenuOpen(false)}
           />
-          
+
           {/* Menu content */}
           <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50">
             <div className="pt-2 pb-3 space-y-1">
               <Link
                 to="/"
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  isActive('/')
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/')
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
                     : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Home
               </Link>
               <Link
                 to="/pyqs"
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  isActive('/pyqs')
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
                     : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 PYQs
               </Link>
               <Link
                 to="/resources"
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  isActive('/resources')
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/resources')
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
                     : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Resources
               </Link>
               <Link
                 to="/tasks"
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  isActive('/tasks')
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/tasks')
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
                     : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Tasks
               </Link>
               <Link
                 to="/dashboard"
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  isActive('/dashboard')
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
                     : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Dashboard
               </Link>
               {isAdmin && (
                 <Link
                   to="/admin/dashboard"
-                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                    isActive('/admin/dashboard')
+                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/admin/dashboard')
                       ? 'bg-primary-50 border-primary-500 text-primary-700'
                       : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   Admin Dashboard
                 </Link>
@@ -276,7 +263,10 @@ const Navbar = () => {
               {user && (
                 <Link
                   to="/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile')
+                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Profile
