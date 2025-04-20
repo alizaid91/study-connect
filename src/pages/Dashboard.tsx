@@ -14,7 +14,7 @@ const Dashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex space-x-4">
-          <Link to="/tasks/new" className="btn btn-primary">
+          <Link to="/tasks" className="btn btn-primary">
             Add Task
           </Link>
         </div>

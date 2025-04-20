@@ -12,11 +12,6 @@ const Home = () => {
       path: '/pyqs'
     },
     {
-      title: 'AI Assistant',
-      description: 'Get instant explanations and summaries of complex topics with our AI-powered chatbot.',
-      path: '/ai-assistant'
-    },
-    {
       title: 'Study Resources',
       description: 'Explore our library of open-source notes, e-books, and educational materials.',
       path: '/resources'
@@ -38,7 +33,7 @@ const Home = () => {
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
           {user 
             ? 'Continue your academic journey with our comprehensive platform.'
-            : 'Streamline your studies with our comprehensive platform featuring past papers, AI-powered assistance, and smart task management.'}
+            : 'Streamline your studies with our comprehensive platform featuring past papers and smart task management.'}
         </p>
         {!user && (
           <Link to="/auth" className="btn btn-primary text-lg">
@@ -48,7 +43,7 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {features.map((feature, index) => (
           <Link 
             key={index} 

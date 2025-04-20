@@ -6,7 +6,6 @@ import Home from './pages/Home.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import Tasks from './pages/Tasks.tsx';
 import Resources from './pages/Resources.tsx';
-import AIAssistant from './pages/AIAssistant.tsx';
 import Auth from './pages/Auth.tsx';
 import PYQs from './pages/PYQs.tsx';
 import AdminLogin from './pages/AdminLogin.tsx';
@@ -54,14 +53,6 @@ function App() {
                 element={
                   <PrivateRoute>
                     <Resources />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/ai-assistant"
-                element={
-                  <PrivateRoute>
-                    <AIAssistant />
                   </PrivateRoute>
                 }
               />

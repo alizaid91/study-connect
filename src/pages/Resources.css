@@ -1,0 +1,9 @@
+.card-title,
+.card-subtitle,
+.card-text {
+  text-decoration: none !important;
+}
+
+.form-label {
+  text-decoration: none !important;
+} 
