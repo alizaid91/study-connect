@@ -6,6 +6,58 @@ import { RootState } from '../store';
 import { Resource } from '../types/content';
 import { Link } from 'react-router-dom';
 
+const FE_SUBJECTS = [
+  { name: 'Engineering Mathematics I', code: 'EM1' },
+  { name: 'Engineering Physics', code: 'EP' },
+  { name: 'Engineering Chemistry', code: 'EC' },
+  { name: 'Basic Electrical Engineering', code: 'BEE' },
+  { name: 'Basic Electronics Engineering', code: 'BEC' },
+  { name: 'Engineering Mechanics', code: 'EM' },
+  { name: 'Engineering Drawing', code: 'ED' },
+  { name: 'Communication Skills', code: 'CS' },
+  { name: 'Environmental Studies', code: 'ES' },
+  { name: 'Workshop Practice', code: 'WP' }
+];
+
+const IT_SUBJECTS = {
+  SE: [
+    { name: 'Data Structures and Algorithms', code: 'DSA' },
+    { name: 'Database Management Systems', code: 'DBMS' },
+    { name: 'Computer Networks', code: 'CN' },
+    { name: 'Operating Systems', code: 'OS' },
+    { name: 'Object Oriented Programming', code: 'OOP' },
+    { name: 'Discrete Mathematics', code: 'DM' },
+    { name: 'Engineering Mathematics III', code: 'EM3' },
+    { name: 'Digital Electronics', code: 'DE' },
+    { name: 'Computer Organization', code: 'CO' },
+    { name: 'Software Engineering', code: 'SE' }
+  ],
+  TE: [
+    { name: 'Advanced Database Management Systems', code: 'ADBMS' },
+    { name: 'Web Technologies', code: 'WT' },
+    { name: 'Artificial Intelligence', code: 'AI' },
+    { name: 'Machine Learning', code: 'ML' },
+    { name: 'Cloud Computing', code: 'CC' },
+    { name: 'Information Security', code: 'IS' },
+    { name: 'Mobile Computing', code: 'MC' },
+    { name: 'Data Analytics', code: 'DA' },
+    { name: 'Software Testing', code: 'ST' },
+    { name: 'Project Management', code: 'PM' }
+  ],
+  BE: [
+    { name: 'Big Data Analytics', code: 'BDA' },
+    { name: 'Internet of Things', code: 'IoT' },
+    { name: 'Blockchain Technology', code: 'BT' },
+    { name: 'Cyber Security', code: 'CS' },
+    { name: 'Natural Language Processing', code: 'NLP' },
+    { name: 'Computer Vision', code: 'CV' },
+    { name: 'Advanced Web Development', code: 'AWD' },
+    { name: 'Advanced Cloud Computing', code: 'ACC' },
+    { name: 'Advanced Machine Learning', code: 'AML' },
+    { name: 'Advanced Artificial Intelligence', code: 'AAI' }
+  ]
+};
+
 const Resources: React.FC = () => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +67,8 @@ const Resources: React.FC = () => {
     branch: '',
     year: '',
     pattern: '',
-    type: ''
+    type: '',
+    subjectName: ''
   });
 
   const isAdmin = useSelector((state: RootState) => state.admin.isAdmin);
@@ -62,12 +115,21 @@ const Resources: React.FC = () => {
       filtered = filtered.filter(resource => resource.type === filters.type);
     }
 
+    if (filters.subjectName) {
+      filtered = filtered.filter(resource => resource.subjectName === filters.subjectName);
+    }
+
     setFilteredResources(filtered);
   }, [filters, resources]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    setFilters(prev => ({ 
+      ...prev, 
+      [name]: value,
+      // Reset subject when branch or year changes
+      ...(name === 'branch' || name === 'year' ? { subjectName: '' } : {})
+    }));
   };
 
   const clearFilters = () => {
@@ -75,8 +137,19 @@ const Resources: React.FC = () => {
       branch: '',
       year: '',
       pattern: '',
-      type: ''
+      type: '',
+      subjectName: ''
     });
+  };
+
+  const getAvailableSubjects = () => {
+    if (filters.branch === 'FE') {
+      return FE_SUBJECTS;
+    }
+    if (filters.branch === 'IT' && filters.year && filters.year !== 'FE') {
+      return IT_SUBJECTS[filters.year as 'SE' | 'TE' | 'BE'];
+    }
+    return [];
   };
 
   if (loading) {
@@ -129,22 +202,21 @@ const Resources: React.FC = () => {
               </select>
             </div>
 
-            {filters.branch && filters.branch !== 'FE' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                <select
-                  name="year"
-                  value={filters.year}
-                  onChange={handleFilterChange}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">All Years</option>
-                  <option value="SE">Second Year</option>
-                  <option value="TE">Third Year</option>
-                  <option value="BE">Final Year</option>
-                </select>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <select
+                name="year"
+                value={filters.year}
+                onChange={handleFilterChange}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                disabled={filters.branch === 'FE'}
+              >
+                <option value="">All Years</option>
+                <option value="SE">Second Year</option>
+                <option value="TE">Third Year</option>
+                <option value="BE">Final Year</option>
+              </select>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Pattern</label>
@@ -173,6 +245,24 @@ const Resources: React.FC = () => {
                 <option value="notes">Notes</option>
                 <option value="video">Video</option>
                 <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+              <select
+                name="subjectName"
+                value={filters.subjectName}
+                onChange={handleFilterChange}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                disabled={!filters.branch || (filters.branch !== 'FE' && !filters.year)}
+              >
+                <option value="">All Subjects</option>
+                {getAvailableSubjects().map((subject) => (
+                  <option key={subject.code} value={subject.name}>
+                    {subject.name} ({subject.code})
+                  </option>
+                ))}
               </select>
             </div>
           </div>

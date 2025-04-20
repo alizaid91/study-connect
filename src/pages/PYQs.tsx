@@ -65,6 +65,14 @@ const PYQs = () => {
     return branchMatch && yearMatch && patternMatch && subjectMatch && typeMatch;
   });
 
+  const clearFilters = () => {
+    setSelectedBranch('all');
+    setSelectedYear('all');
+    setSelectedPattern('all');
+    setSelectedSubject('all');
+    setSelectedType('all');
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -86,83 +94,95 @@ const PYQs = () => {
       <h1 className="text-3xl font-bold text-center mb-8">Previous Year Question Papers</h1>
       
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
-          <select
-            value={selectedBranch}
-            onChange={(e) => {
-              setSelectedBranch(e.target.value);
-              setSelectedYear('all');
-              setSelectedSubject('all');
-            }}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          >
-            <option value="all">All Branches</option>
-            {branches.map(branch => (
-              <option key={branch} value={branch}>{branch}</option>
-            ))}
-          </select>
-        </div>
-
-        {selectedBranch !== 'all' && selectedBranch !== 'FE' && (
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
             <select
-              value={selectedYear}
+              value={selectedBranch}
               onChange={(e) => {
-                setSelectedYear(e.target.value);
+                setSelectedBranch(e.target.value);
+                setSelectedYear('all');
                 setSelectedSubject('all');
               }}
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
             >
-              <option value="all">All Years</option>
-              {years.map(year => (
-                <option key={year} value={year}>{year}</option>
+              <option value="all">All Branches</option>
+              {branches.map(branch => (
+                <option key={branch} value={branch}>{branch}</option>
               ))}
             </select>
           </div>
-        )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Pattern</label>
-          <select
-            value={selectedPattern}
-            onChange={(e) => setSelectedPattern(e.target.value)}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          >
-            <option value="all">All Patterns</option>
-            {patterns.map(pattern => (
-              <option key={pattern} value={pattern}>{pattern} Pattern</option>
-            ))}
-          </select>
+          {selectedBranch !== 'all' && selectedBranch !== 'FE' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setSelectedSubject('all');
+                }}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="all">All Years</option>
+                {years.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Pattern</label>
+            <select
+              value={selectedPattern}
+              onChange={(e) => setSelectedPattern(e.target.value)}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            >
+              <option value="all">All Patterns</option>
+              {patterns.map(pattern => (
+                <option key={pattern} value={pattern}>{pattern} Pattern</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            >
+              <option value="all">All Subjects</option>
+              {subjects.map(subject => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Paper Type</label>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value as 'all' | 'Insem' | 'Endsem')}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            >
+              <option value="all">All Types</option>
+              <option value="Insem">Insem</option>
+              <option value="Endsem">Endsem</option>
+            </select>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-          <select
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded"
           >
-            <option value="all">All Subjects</option>
-            {subjects.map(subject => (
-              <option key={subject} value={subject}>{subject}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Paper Type</label>
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value as 'all' | 'Insem' | 'Endsem')}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          >
-            <option value="all">All Types</option>
-            <option value="Insem">Insem</option>
-            <option value="Endsem">Endsem</option>
-          </select>
+            Clear Filters
+          </button>
         </div>
       </div>
 

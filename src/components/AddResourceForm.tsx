@@ -58,7 +58,11 @@ const IT_SUBJECTS = {
   ]
 };
 
-const AddResourceForm = () => {
+interface AddResourceFormProps {
+  onSuccess?: () => void;
+}
+
+const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAdmin } = useSelector((state: RootState) => state.admin);
@@ -153,18 +157,7 @@ const AddResourceForm = () => {
       };
 
       await addDoc(collection(db, 'resources'), resourceData);
-
-      setFormData({
-        title: '',
-        description: '',
-        type: 'book',
-        subjectCode: '',
-        subjectName: '',
-        branch: 'FE',
-        year: 'FE',
-        pattern: '2019',
-        driveLink: '',
-      });
+      onSuccess?.();
     } catch (err) {
       setError('Error adding resource. Please try again.');
       console.error('Error:', err);

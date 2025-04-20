@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -9,11 +9,31 @@ import { signOut } from 'firebase/auth';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAdmin } = useSelector((state: RootState) => state.admin);
   const { user } = useSelector((state: RootState) => state.auth);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Close menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location]);
 
   const handleAdminLogout = () => {
     dispatch(logoutAdmin());
@@ -165,89 +185,103 @@ const Navbar = () => {
       </div>
 
       {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden`}>
-        <div className="pt-2 pb-3 space-y-1">
-          <Link
-            to="/"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/')
-                ? 'bg-primary-50 border-primary-500 text-primary-700'
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Home
-          </Link>
-          <Link
-            to="/pyqs"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/pyqs')
-                ? 'bg-primary-50 border-primary-500 text-primary-700'
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            PYQs
-          </Link>
-          <Link
-            to="/resources"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/resources')
-                ? 'bg-primary-50 border-primary-500 text-primary-700'
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Resources
-          </Link>
-          <Link
-            to="/tasks"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/tasks')
-                ? 'bg-primary-50 border-primary-500 text-primary-700'
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Tasks
-          </Link>
-          <Link
-            to="/dashboard"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/dashboard')
-                ? 'bg-primary-50 border-primary-500 text-primary-700'
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Dashboard
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/admin/dashboard"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/admin/dashboard')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              Admin Dashboard
-            </Link>
-          )}
-        </div>
-        <div className="pt-4 pb-3 border-t border-gray-200">
-          <div className="px-4 space-y-2">
-            {user && (
-              <button
-                onClick={handleUserLogout}
-                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+      <div
+        ref={menuRef}
+        className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden`}
+      >
+        <div className="relative">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          
+          {/* Menu content */}
+          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50">
+            <div className="pt-2 pb-3 space-y-1">
+              <Link
+                to="/"
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                  isActive('/')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                }`}
               >
-                User Logout
-              </button>
-            )}
-            {isAdmin && (
-              <button
-                onClick={handleAdminLogout}
-                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                Home
+              </Link>
+              <Link
+                to="/pyqs"
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                  isActive('/pyqs')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                }`}
               >
-                Admin Logout
-              </button>
-            )}
+                PYQs
+              </Link>
+              <Link
+                to="/resources"
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                  isActive('/resources')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Resources
+              </Link>
+              <Link
+                to="/tasks"
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                  isActive('/tasks')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Tasks
+              </Link>
+              <Link
+                to="/dashboard"
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                  isActive('/dashboard')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Dashboard
+              </Link>
+              {isAdmin && (
+                <Link
+                  to="/admin/dashboard"
+                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                    isActive('/admin/dashboard')
+                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                >
+                  Admin Dashboard
+                </Link>
+              )}
+              <div className="pt-4 pb-3 border-t border-gray-200">
+                <div className="px-4 space-y-2">
+                  {user && (
+                    <button
+                      onClick={handleUserLogout}
+                      className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                    >
+                      User Logout
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={handleAdminLogout}
+                      className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                    >
+                      Admin Logout
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

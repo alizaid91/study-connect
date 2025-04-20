@@ -58,7 +58,11 @@ const IT_SUBJECTS = {
   ]
 };
 
-const AddPaperForm = () => {
+interface AddPaperFormProps {
+  onSuccess?: () => void;
+}
+
+const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAdmin } = useSelector((state: RootState) => state.admin);
@@ -104,7 +108,7 @@ const AddPaperForm = () => {
   };
 
   const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedSubject = (formData.branch === 'IT' ? IT_SUBJECTS[formData.year] : FE_SUBJECTS)
+    const selectedSubject = (formData.branch === 'IT' && formData.year !== 'FE' ? IT_SUBJECTS[formData.year] : FE_SUBJECTS)
       .find(subject => subject.name === e.target.value);
     if (selectedSubject) {
       setFormData({
@@ -152,18 +156,7 @@ const AddPaperForm = () => {
       };
 
       await addDoc(collection(db, 'papers'), paperData);
-
-      // Reset form
-      setFormData({
-        subjectId: '',
-        subjectName: '',
-        branch: 'FE',
-        year: 'FE',
-        pattern: '2019',
-        paperType: 'Insem',
-        paperName: '',
-        driveLink: '',
-      });
+      onSuccess?.();
     } catch (err) {
       setError('Error adding paper. Please try again.');
       console.error('Error:', err);
@@ -234,7 +227,7 @@ const AddPaperForm = () => {
           required
         >
           <option value="">Select a subject</option>
-          {(formData.branch === 'IT' ? IT_SUBJECTS[formData.year] : FE_SUBJECTS).map((subject) => (
+          {(formData.branch === 'IT' && formData.year !== 'FE' ? IT_SUBJECTS[formData.year] : FE_SUBJECTS).map((subject) => (
             <option key={subject.code} value={subject.name}>
               {subject.name}
             </option>
