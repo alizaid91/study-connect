@@ -12,6 +12,7 @@ import AdminLogin from './pages/AdminLogin.tsx';
 import AdminDashboard from './pages/AdminDashboard.tsx';
 import PrivateRoute from './components/PrivateRoute.tsx';
 import AdminRoute from './components/AdminRoute.tsx';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -61,6 +62,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <PYQs />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <Profile />
                   </PrivateRoute>
                 }
               />
