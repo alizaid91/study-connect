@@ -21,40 +21,39 @@ const FE_SUBJECTS = [
 
 const IT_SUBJECTS = {
   SE: [
-    { name: 'Data Structures and Algorithms', code: 'DSA' },
-    { name: 'Database Management Systems', code: 'DBMS' },
-    { name: 'Computer Networks', code: 'CN' },
-    { name: 'Operating Systems', code: 'OS' },
-    { name: 'Object Oriented Programming', code: 'OOP' },
     { name: 'Discrete Mathematics', code: 'DM' },
-    { name: 'Engineering Mathematics III', code: 'EM3' },
-    { name: 'Digital Electronics', code: 'DE' },
-    { name: 'Computer Organization', code: 'CO' },
+    { name: 'Logic Design & Computer Organization', code: 'LDCO' },
+    { name: 'Data Structures & Algorithms', code: 'DSA' },
+    { name: 'Objects Oriented Programming', code: 'OOP' },
+    { name: 'Basics of Computer Network', code: 'BCN' },
+    { name: 'Engineering Mathematics-III', code: 'EM3' },
+    { name: 'Processor Architecture', code: 'PA' },
+    { name: 'Database Management System', code: 'DBMS' },
+    { name: 'Computer Graphics', code: 'CG' },
     { name: 'Software Engineering', code: 'SE' }
   ],
   TE: [
-    { name: 'Advanced Database Management Systems', code: 'ADBMS' },
-    { name: 'Web Technologies', code: 'WT' },
-    { name: 'Artificial Intelligence', code: 'AI' },
+    { name: 'Theory of Computation', code: 'TOC' },
+    { name: 'Operating Systems', code: 'OS' },
     { name: 'Machine Learning', code: 'ML' },
-    { name: 'Cloud Computing', code: 'CC' },
-    { name: 'Information Security', code: 'IS' },
-    { name: 'Mobile Computing', code: 'MC' },
-    { name: 'Data Analytics', code: 'DA' },
-    { name: 'Software Testing', code: 'ST' },
-    { name: 'Project Management', code: 'PM' }
+    { name: 'Human Computer Interaction', code: 'HCI' },
+    { name: 'Elective-I', code: 'E1' },
+    { name: 'Computer Networks & Security', code: 'CNS' },
+    { name: 'Data Science and Big Data Analytics', code: 'DSBDA' },
+    { name: 'Web Application Development', code: 'WAD' },
+    { name: 'Elective-II', code: 'E2' },
+    { name: 'Internship', code: 'INT' }
   ],
   BE: [
-    { name: 'Big Data Analytics', code: 'BDA' },
-    { name: 'Internet of Things', code: 'IoT' },
-    { name: 'Blockchain Technology', code: 'BT' },
-    { name: 'Cyber Security', code: 'CS' },
-    { name: 'Natural Language Processing', code: 'NLP' },
-    { name: 'Computer Vision', code: 'CV' },
-    { name: 'Advanced Web Development', code: 'AWD' },
-    { name: 'Advanced Cloud Computing', code: 'ACC' },
-    { name: 'Advanced Machine Learning', code: 'AML' },
-    { name: 'Advanced Artificial Intelligence', code: 'AAI' }
+    { name: 'Information Storage and Retrieval', code: 'ISR' },
+    { name: 'Software Project Management', code: 'SPM' },
+    { name: 'Deep Learning', code: 'DL' },
+    { name: 'Elective III', code: 'E3' },
+    { name: 'Elective IV', code: 'E4' },
+    { name: 'Distributed Systems', code: 'DS' },
+    { name: 'Elective V', code: 'E5' },
+    { name: 'Elective VI', code: 'E6' },
+    { name: 'Startup and Entrepreneurship', code: 'SE' }
   ]
 };
 
