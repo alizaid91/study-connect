@@ -16,7 +16,7 @@ export interface Resource {
   id: string;
   title: string;
   description: string;
-  type: 'book' | 'notes' | 'video' | 'other';
+  type: 'Book' | 'Notes' | 'Video' | 'Other';
   subjectCode: string;
   subjectName: string;
   branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
@@ -31,4 +31,18 @@ export interface Subject {
   id: string;
   name: string;
   code: string;
+}
+
+export interface Bookmark {
+  id: string;
+  userId: string;
+  contentId: string;
+  type: 'Paper' | 'Resource';
+  paperType: 'Insem' | 'Endsem' | null;
+  resourceType: 'Book' | 'Notes' | 'Video' | 'Other' | null;
+  title: string;
+  name: string;
+  description: string;
+  link: string;
+  createdAt: string;
 } 

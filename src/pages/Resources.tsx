@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { RootState } from '../store';
-import { Resource } from '../types/content';
-import { Link } from 'react-router-dom';
+import { RootState, AppDispatch } from '../store';
+import { Resource, Bookmark } from '../types/content';
+import { addBookmark, removeBookmark } from '../store/slices/bookmarkSlice';
+import { setResources } from '../store/slices/resourceSlice';
 
 const FE_SUBJECTS = [
   { name: 'Engineering Mathematics I', code: 'EM1' },
@@ -58,7 +59,10 @@ const IT_SUBJECTS = {
 };
 
 const Resources: React.FC = () => {
-  const [resources, setResources] = useState<Resource[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
+  const { resources } = useSelector((state: RootState) => state.resources);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
@@ -80,7 +84,7 @@ const Resources: React.FC = () => {
           id: doc.id,
           ...doc.data()
         })) as Resource[];
-        setResources(resourcesData);
+        dispatch(setResources(resourcesData));
         setFilteredResources(resourcesData);
       } catch (err) {
         setError('Failed to fetch resources');
@@ -121,8 +125,8 @@ const Resources: React.FC = () => {
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ 
-      ...prev, 
+    setFilters(prev => ({
+      ...prev,
       [name]: value,
       // Reset subject when branch or year changes
       ...(name === 'branch' || name === 'year' ? { subjectName: '' } : {})
@@ -147,6 +151,35 @@ const Resources: React.FC = () => {
       return IT_SUBJECTS[filters.year as 'SE' | 'TE' | 'BE'];
     }
     return [];
+  };
+
+  const handleBookmark = async (resource: Resource) => {
+    if (!user) return;
+
+    const existingBookmark = bookmarks.find(
+      (bookmark: Bookmark) => bookmark.contentId === resource.id && bookmark.type === 'Resource'
+    );
+
+    if (existingBookmark) {
+      await dispatch(removeBookmark(existingBookmark.id));
+    } else {
+      await dispatch(addBookmark({
+        userId: user.uid,
+        contentId: resource.id,
+        type: 'Resource',
+        title: resource.title,
+        name: resource.title,
+        paperType: null,
+        resourceType: resource.type,
+        description: `${resource.branch} - ${resource.year} ${resource.pattern}`,
+        link: resource.driveLink,
+        createdAt: new Date().toISOString()
+      }));
+    }
+  };
+
+  const isBookmarked = (resourceId: string) => {
+    return bookmarks.some((bookmark: Bookmark) => bookmark.contentId === resourceId && bookmark.type === 'Resource');
   };
 
   if (loading) {
@@ -286,14 +319,37 @@ const Resources: React.FC = () => {
                 <p className="text-gray-700 mb-4">
                   <span className="font-medium">Type:</span> {resource.type}
                 </p>
-                <a
-                  href={resource.driveLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block"
-                >
-                  View Resource
-                </a>
+                <div className="flex justify-between items-center">
+                  <a
+                    href={resource.driveLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block"
+                  >
+                    View Resource
+                  </a>
+                  <button
+                    onClick={() => handleBookmark(resource)}
+                    className={`p-2 rounded-full ${isBookmarked(resource.id)
+                      ? 'text-yellow-500 hover:text-yellow-600'
+                      : 'text-gray-400 hover:text-gray-500'
+                      }`}
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill={isBookmarked(resource.id) ? 'currentColor' : 'none'}
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -303,4 +359,4 @@ const Resources: React.FC = () => {
   );
 };
 
-export default Resources; 
+export default Resources;

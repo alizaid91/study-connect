@@ -15,6 +15,7 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const { isAdmin } = useSelector((state: RootState) => state.admin);
   const { user } = useSelector((state: RootState) => state.auth);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -108,6 +109,15 @@ const Navbar = () => {
               >
                 Dashboard
               </Link>
+              <Link
+                to="/bookmarks"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/bookmarks')
+                    ? 'border-primary-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+              >
+                Bookmarks
+              </Link>
               {isAdmin && (
                 <Link
                   to="/admin/dashboard"
@@ -152,12 +162,12 @@ const Navbar = () => {
           </div>
           <div className="-mr-2 flex items-center sm:hidden">
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
             >
               <span className="sr-only">Open main menu</span>
               <svg
-                className={`${isMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
+                className={`${isMobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -171,7 +181,7 @@ const Navbar = () => {
                 />
               </svg>
               <svg
-                className={`${isMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
+                className={`${isMobileMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -192,13 +202,13 @@ const Navbar = () => {
       {/* Mobile menu */}
       <div
         ref={menuRef}
-        className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden`}
+        className={`${isMobileMenuOpen ? 'block' : 'hidden'} sm:hidden`}
       >
         <div className="relative">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setIsMenuOpen(false)}
+            onClick={() => setIsMobileMenuOpen(false)}
           />
 
           {/* Menu content */}
@@ -249,6 +259,15 @@ const Navbar = () => {
               >
                 Dashboard
               </Link>
+              <Link
+                to="/bookmarks"
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/bookmarks')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+              >
+                Bookmarks
+              </Link>
               {isAdmin && (
                 <Link
                   to="/admin/dashboard"
@@ -267,7 +286,7 @@ const Navbar = () => {
                       ? 'bg-primary-50 border-primary-500 text-primary-700'
                       : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Profile
                 </Link>

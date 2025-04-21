@@ -1,16 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  type: 'paper' | 'note' | 'ebook';
-  fileUrl: string;
-  uploadDate: string;
-  userId: string;
-  subject: string;
-  year?: number;
-}
+import { Resource } from '../../types/content';
 
 interface ResourceState {
   resources: Resource[];
