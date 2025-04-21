@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
+import { FaFileAlt, FaBook, FaTasks } from 'react-icons/fa';
 
 const Home = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -9,17 +10,20 @@ const Home = () => {
     {
       title: 'Past Year Papers',
       description: 'Access a comprehensive collection of previous years\' university papers to prepare effectively for your exams.',
-      path: '/pyqs'
+      path: '/pyqs',
+      icon: FaFileAlt
     },
     {
       title: 'Study Resources',
       description: 'Explore our library of open-source notes, e-books, and educational materials.',
-      path: '/resources'
+      path: '/resources',
+      icon: FaBook
     },
     {
       title: 'Task Management',
       description: 'Stay organized with our smart task management system for better time management.',
-      path: '/tasks'
+      path: '/tasks',
+      icon: FaTasks
     }
   ];
 
@@ -30,7 +34,7 @@ const Home = () => {
         <h1 className="text-5xl font-bold text-gray-900 mb-6">
           {user ? 'Welcome Back!' : 'Your All-in-One Academic Companion'}
         </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+        <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto px-4 sm:px-0">
           {user 
             ? 'Continue your academic journey with our comprehensive platform.'
             : 'Streamline your studies with our comprehensive platform featuring past papers and smart task management.'}
@@ -44,14 +48,15 @@ const Home = () => {
 
       {/* Features Section */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {features.map((feature, index) => (
+        {features.map(({ title, description, path, icon: FeatureIcon }, index) => (
           <Link 
             key={index} 
-            to={feature.path}
-            className="p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+            to={path}
+            className="p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col items-center"
           >
-            <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-            <p className="text-gray-600">{feature.description}</p>
+            <FeatureIcon className="text-primary-500 mb-4" size={48} />
+            <h3 className="text-xl font-semibold mb-3 text-center">{title}</h3>
+            <p className="text-gray-600 text-center">{description}</p>
           </Link>
         ))}
       </section>

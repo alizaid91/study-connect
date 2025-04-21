@@ -14,9 +14,14 @@ import { collection, doc, setDoc, getDoc } from 'firebase/firestore';
 import { setUser, logout } from '../store/slices/authSlice';
 import { RootState } from '../store';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
+import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
+import bannerImage from '../assets/banner-image.avif';
+import logo from '../assets/logo.png';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -126,215 +131,188 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isLogin ? 'Sign in to your account' : 'Create a new account'}
+    <div className="min-h-screen flex">
+      <div className="hidden lg:flex w-1/2 bg-primary-50">
+        <img src={bannerImage} alt="Banner" className="object-cover w-full h-full rounded-l-xl" />
+      </div>
+      <div className="flex flex-1 items-center justify-center bg-gray-50 py-6 px-2 lg:p-12">
+        <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-6 space-y-6">
+          <div className="flex justify-center">
+            <img src={logo} alt="Logo" className="h-12 w-auto" />
+          </div>
+          <h2 className="text-center text-3xl font-bold text-gray-800">
+            {isLogin ? 'Welcome Back!' : 'Create Your Account'}
           </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {!isLogin && (
-            <>
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                  Username
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                  Gender
-                </label>
-                <select
-                  id="gender"
-                  name="gender"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="prefer not to say">Prefer not to say</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
-                  Branch
-                </label>
-                <select
-                  id="branch"
-                  name="branch"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  value={formData.branch}
-                  onChange={handleInputChange}
-                >
-                  <option value="FE">First Year Engineering</option>
-                  <option value="CS">Computer Science</option>
-                  <option value="IT">Information Technology</option>
-                  <option value="Civil">Civil Engineering</option>
-                  <option value="Mechanical">Mechanical Engineering</option>
-                </select>
-              </div>
-
-              {formData.branch !== 'FE' && (
-                <div>
-                  <label htmlFor="year" className="block text-sm font-medium text-gray-700">
-                    Year
-                  </label>
-                  <select
-                    id="year"
-                    name="year"
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            {!isLogin && (
+              <>
+                <div className="relative">
+                  <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                    value={formData.year}
+                    placeholder="Full Name"
+                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    value={formData.fullName}
                     onChange={handleInputChange}
-                  >
-                    <option value="SE">Second Year</option>
-                    <option value="TE">Third Year</option>
-                    <option value="BE">Final Year</option>
-                  </select>
+                  />
                 </div>
-              )}
-
-              <div>
-                <label htmlFor="collegeName" className="block text-sm font-medium text-gray-700">
-                  College Name
-                </label>
-                <input
-                  id="collegeName"
-                  name="collegeName"
-                  type="text"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  value={formData.collegeName}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              value={formData.password}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          {!isLogin && (
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
+                <div className="relative">
+                  <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    required
+                    placeholder="Username"
+                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select
+                      id="gender"
+                      name="gender"
+                      required
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                      <option value="prefer not to say">Prefer not to say</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                    <select
+                      id="branch"
+                      name="branch"
+                      required
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      value={formData.branch}
+                      onChange={handleInputChange}
+                    >
+                      <option value="FE">First Year Engineering</option>
+                      <option value="CS">Computer Science</option>
+                      <option value="IT">Information Technology</option>
+                      <option value="Civil">Civil Engineering</option>
+                      <option value="Mechanical">Mechanical Engineering</option>
+                    </select>
+                  </div>
+                </div>
+                {formData.branch !== 'FE' && (
+                  <div>
+                    <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                    <select
+                      id="year"
+                      name="year"
+                      required
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      value={formData.year}
+                      onChange={handleInputChange}
+                    >
+                      <option value="SE">Second Year</option>
+                      <option value="TE">Third Year</option>
+                      <option value="BE">Final Year</option>
+                    </select>
+                  </div>
+                )}
+                <div className="relative">
+                  <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="collegeName"
+                    name="collegeName"
+                    type="text"
+                    required
+                    placeholder="College Name"
+                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    value={formData.collegeName}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </>
+            )}
+            <div className="relative">
+              <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
+                id="email"
+                name="email"
+                type="email"
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                value={formData.confirmPassword}
+                placeholder="Email Address"
+                className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                value={formData.email}
                 onChange={handleInputChange}
               />
             </div>
-          )}
-
-          {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
-          )}
-
-          <div>
+            <div className="relative">
+              <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="Password"
+                className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                value={formData.password}
+                onChange={handleInputChange}
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
+            </div>
+            {!isLogin && (
+              <div className="relative">
+                <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="Confirm Password"
+                  className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                />
+              </div>
+            )}
+            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              className="w-full flex justify-center py-2 px-4 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
-              {isLogin ? 'Sign in' : 'Sign up'}
+              {isLogin ? 'Sign In' : 'Sign Up'}
             </button>
+          </form>
+          <div className="mt-4 flex items-center justify-center">
+            <div className="border-t border-gray-300 flex-grow mr-3"></div>
+            <span className="text-sm text-gray-500">Or continue with</span>
+            <div className="border-t border-gray-300 flex-grow ml-3"></div>
           </div>
-        </form>
-
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="mt-6">
+          <div className="mt-4">
             <button
               onClick={handleGoogleSignIn}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
-              Google
+              <FcGoogle className="mr-2" size={20} /> Continue with Google
             </button>
           </div>
-        </div>
-
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-primary-600 hover:text-primary-500"
-          >
-            {isLogin
-              ? "Don't have an account? Sign up"
-              : 'Already have an account? Sign in'}
-          </button>
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm text-primary-600 hover:text-primary-500"
+            >
+              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

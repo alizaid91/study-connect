@@ -4,6 +4,11 @@ import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { fetchBookmarks } from '../store/slices/bookmarkSlice';
 import { formatDate } from '../utils/dateUtils';
+import { db } from '../config/firebase';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { setTasks, Task } from '../store/slices/taskSlice';
+import { setResources } from '../store/slices/resourceSlice';
+import { Resource } from '../types/content';
 
 const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -15,7 +20,36 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       dispatch(fetchBookmarks(user.uid));
-      // Resources are already set in the store from the Resources page
+
+      // fetch user-specific tasks
+      const fetchUserTasks = async () => {
+        const tasksQuery = query(
+          collection(db, 'tasks'),
+          where('userId', '==', user.uid)
+        );
+        const querySnapshot = await getDocs(tasksQuery);
+        const tasksData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        dispatch(setTasks(tasksData as Task[]));
+      };
+      fetchUserTasks();
+
+      // fetch all resources
+      const fetchAllResources = async () => {
+        const resourcesQuery = query(
+          collection(db, 'resources'),
+          orderBy('uploadedAt', 'desc')
+        );
+        const snapshot = await getDocs(resourcesQuery);
+        const resourcesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        dispatch(setResources(resourcesData as Resource[]));
+      };
+      fetchAllResources();
     }
   }, [dispatch, user]);
 
@@ -25,7 +59,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="px-2 flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex space-x-4">
           <Link to="/tasks" className="btn btn-primary">
@@ -41,14 +75,14 @@ const Dashboard = () => {
           <p className="text-3xl font-bold text-primary-600">{tasks.length}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Resources</h3>
-          <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Completed Tasks</h3>
           <p className="text-3xl font-bold text-primary-600">
             {tasks.filter(task => task.status === 'completed').length}
           </p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-gray-700">Resources</h3>
+          <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Bookmarks</h3>
@@ -115,13 +149,12 @@ const Dashboard = () => {
                   </p>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    task.status === 'completed'
+                  className={`px-3 py-1 rounded-full text-sm ${task.status === 'completed'
                       ? 'bg-green-100 text-green-800'
                       : task.status === 'in-progress'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
                 >
                   {task.status}
                 </span>
