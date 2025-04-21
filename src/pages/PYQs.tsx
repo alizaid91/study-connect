@@ -223,7 +223,7 @@ const PYQs: React.FC = () => {
                 <option value="">All Subjects</option>
                 {getAvailableSubjects().map((subject) => (
                   <option key={subject.code} value={subject.name}>
-                    {subject.name} ({subject.code})
+                    {subject.name} ({subject.code.toUpperCase()})
                   </option>
                 ))}
               </select>
