@@ -42,7 +42,7 @@ const Auth = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         dispatch(setUser(user));
-        navigate('/dashboard');
+        navigate('/');
       } else {
         dispatch(logout());
       }
@@ -131,14 +131,23 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:flex w-1/2 bg-primary-50">
-        <img src={bannerImage} alt="Banner" className="object-cover w-full h-full rounded-l-xl" />
-      </div>
-      <div className="flex flex-1 items-center justify-center bg-gray-50 py-6 px-2 lg:p-12">
+    <div className="">
+      <div className="flex flex-1 items-center justify-center bg-gray-50 p-4 px-2 lg:p-12">
         <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-6 space-y-6">
           <div className="flex justify-center">
             <img src={logo} alt="Logo" className="h-12 w-auto" />
+          </div>
+          <div className="flex justify-center space-x-4">
+            <button
+              type="button"
+              onClick={() => setIsLogin(true)}
+              className={`px-4 py-2 ${isLogin ? 'border-b-2 border-primary-600 text-primary-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            >Sign In</button>
+            <button
+              type="button"
+              onClick={() => setIsLogin(false)}
+              className={`px-4 py-2 ${!isLogin ? 'border-b-2 border-primary-600 text-primary-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            >Sign Up</button>
           </div>
           <h2 className="text-center text-3xl font-bold text-gray-800">
             {isLogin ? 'Welcome Back!' : 'Create Your Account'}
@@ -302,15 +311,6 @@ const Auth = () => {
               className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               <FcGoogle className="mr-2" size={20} /> Continue with Google
-            </button>
-          </div>
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary-600 hover:text-primary-500"
-            >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
         </div>

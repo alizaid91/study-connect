@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
 import { Paper, Bookmark } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
 import { Link } from 'react-router-dom';
+import { FiTrash2, FiCheckSquare } from 'react-icons/fi';
 
 interface Subject {
   name: string;
@@ -24,8 +25,27 @@ const PYQs: React.FC = () => {
     branch: '',
     year: '',
     pattern: '',
-    subjectName: ''
+    paperType: '',
+    subjectName: '',
+    subjectCode: ''
   });
+  // Quick filters state and types
+  type FilterValues = {
+    branch: string;
+    year: string;
+    pattern: string;
+    paperType: string;
+    subjectName: string;
+    subjectCode: string;
+  };
+  interface QuickFilter {
+    id: string;
+    values: FilterValues;
+  }
+  const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
+  // Drag-and-drop state for quick filters ordering
+  const [draggedQF, setDraggedQF] = useState<QuickFilter | null>(null);
+  const [draggedQFIndex, setDraggedQFIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchPapers = async () => {
@@ -57,6 +77,28 @@ const PYQs: React.FC = () => {
   }, [dispatch, user]);
 
   useEffect(() => {
+    if (user) {
+      const fetchQuick = async () => {
+        const q = query(collection(db, 'quickFilters'), where('userId', '==', user.uid));
+        const snap = await getDocs(q);
+        const data = snap.docs.map(d => ({
+          id: d.id,
+          values: {
+            branch: d.data().branch,
+            year: d.data().year,
+            pattern: d.data().pattern,
+            paperType: d.data().paperType,
+            subjectName: d.data().subjectName,
+            subjectCode: d.data().subjectCode
+          }
+        }));
+        setQuickFilters(data);
+      };
+      fetchQuick();
+    }
+  }, [user]);
+
+  useEffect(() => {
     let filtered = [...papers];
 
     if (filters.branch) {
@@ -71,6 +113,10 @@ const PYQs: React.FC = () => {
       filtered = filtered.filter(paper => paper.pattern === filters.pattern);
     }
 
+    if (filters.paperType) {
+      filtered = filtered.filter(paper => paper.paperType === filters.paperType);
+    }
+
     if (filters.subjectName) {
       filtered = filtered.filter(paper => paper.subjectName === filters.subjectName);
     }
@@ -80,11 +126,30 @@ const PYQs: React.FC = () => {
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value,
-      ...(name === 'branch' || name === 'year' ? { subjectName: '' } : {})
-    }));
+    setFilters(prev => {
+      // Reset subject filters when branch or year changes
+      if (name === 'branch' || name === 'year') {
+        return {
+          ...prev,
+          [name]: value,
+          subjectName: '',
+          subjectCode: ''
+        };
+      }
+      // When selecting subjectName, also capture its code
+      if (name === 'subjectName') {
+        const subj = getAvailableSubjects().find(s => s.name === value);
+        return {
+          ...prev,
+          subjectName: value,
+          subjectCode: subj ? subj.code.toUpperCase() : ''
+        };
+      }
+      return {
+        ...prev,
+        [name]: value
+      };
+    });
   };
 
   const clearFilters = () => {
@@ -92,8 +157,43 @@ const PYQs: React.FC = () => {
       branch: '',
       year: '',
       pattern: '',
-      subjectName: ''
+      paperType: '',
+      subjectName: '',
+      subjectCode: ''
     });
+  };
+
+  // Quick filter handlers
+  const handleSaveQuickFilter = async () => {
+    if (!user) return;
+    // Prevent saving duplicate quick filters
+    if (quickFilters.some(q =>
+      q.values.branch === filters.branch &&
+      q.values.year === filters.year &&
+      q.values.pattern === filters.pattern &&
+      q.values.paperType === filters.paperType &&
+      q.values.subjectName === filters.subjectName
+    )) {
+      return;
+    }
+    try {
+      const payload = { ...filters, userId: user.uid };
+      const docRef = await addDoc(collection(db, 'quickFilters'), payload);
+      setQuickFilters(prev => [...prev, { id: docRef.id, values: { ...filters } }]);
+    } catch (err) {
+      console.error('Error saving quick filter', err);
+    }
+  };
+  const handleApplyQuickFilter = (qf: QuickFilter) => {
+    setFilters(qf.values);
+  };
+  const handleDeleteQuickFilter = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'quickFilters', id));
+      setQuickFilters(prev => prev.filter(q => q.id !== id));
+    } catch (err) {
+      console.error('Error deleting quick filter', err);
+    }
   };
 
   const handleBookmark = async (paper: Paper) => {
@@ -140,6 +240,26 @@ const PYQs: React.FC = () => {
       .map(s => JSON.parse(s));
   };
 
+  // add drag handlers
+  const handleQFDragStart = (qf: QuickFilter, index: number) => {
+    setDraggedQF(qf);
+    setDraggedQFIndex(index);
+  };
+  const handleQFDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+  const handleQFDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    if (draggedQF && draggedQFIndex !== null) {
+      const updated = [...quickFilters];
+      updated.splice(draggedQFIndex, 1);
+      updated.splice(index, 0, draggedQF);
+      setQuickFilters(updated);
+    }
+    setDraggedQF(null);
+    setDraggedQFIndex(null);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -159,11 +279,40 @@ const PYQs: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Previous Year Question Papers</h1>
+    <div className="container mx-auto px-4 pb-8 pt-2">
+      <h1 className="text-3xl font-bold mb-6 text-center">Previous Year Question Papers</h1>
+      {quickFilters.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-3">Quick Filters</h2>
+          <div className="flex flex-wrap gap-3">
+            {quickFilters.map((qf, idx) => (
+              <div
+                key={qf.id}
+                draggable
+                onDragStart={() => handleQFDragStart(qf, idx)}
+                onDragOver={handleQFDragOver}
+                onDrop={(e) => handleQFDrop(e, idx)}
+                className="bg-white shadow-md rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab"
+              >
+                <div className="flex flex-wrap items-center space-x-2 text-sm text-gray-700">
+                  <span className="font-medium">{qf.values.branch}</span>
+                  {qf.values.branch !== 'FE' && qf.values.year && <span>- {qf.values.year}</span>}
+                  {qf.values.pattern && <span>- {qf.values.pattern} Pattern</span>}
+                  {qf.values.paperType && <span>- {qf.values.paperType}</span>}
+                  {qf.values.subjectName && <span>- {qf.values.subjectCode}</span>}
+                </div>
+                <div className="flex items-center space-x-4">
+                  <FiCheckSquare onClick={() => handleApplyQuickFilter(qf)} className="text-primary-600 hover:text-primary-700 cursor-pointer" size={20} />
+                  <FiTrash2 onClick={() => handleDeleteQuickFilter(qf.id)} className="text-red-500 hover:text-red-600 cursor-pointer" size={20} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <form>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
               <select
@@ -181,21 +330,22 @@ const PYQs: React.FC = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-              <select
-                name="year"
-                value={filters.year}
-                onChange={handleFilterChange}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                disabled={filters.branch === 'FE'}
-              >
-                <option value="">All Years</option>
-                <option value="SE">Second Year</option>
-                <option value="TE">Third Year</option>
-                <option value="BE">Final Year</option>
-              </select>
-            </div>
+            {filters.branch && filters.branch !== 'FE' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                <select
+                  name="year"
+                  value={filters.year}
+                  onChange={handleFilterChange}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">All Years</option>
+                  <option value="SE">Second Year</option>
+                  <option value="TE">Third Year</option>
+                  <option value="BE">Final Year</option>
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Pattern</label>
@@ -228,9 +378,23 @@ const PYQs: React.FC = () => {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Paper Type</label>
+              <select
+                name="paperType"
+                value={filters.paperType}
+                onChange={handleFilterChange}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="">All Paper Types</option>
+                <option value="Insem">Insem</option>
+                <option value="Endsem">Endsem</option>
+              </select>
+            </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col md:flex-row gap-2">
             <button
               type="button"
               onClick={clearFilters}
@@ -238,6 +402,15 @@ const PYQs: React.FC = () => {
             >
               Clear Filters
             </button>
+            { (filters.branch || filters.year || filters.pattern || filters.paperType || filters.subjectName) && (
+              <button
+                type="button"
+                onClick={handleSaveQuickFilter}
+                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded"
+              >
+                Save Quick Filter
+              </button>
+            ) }
           </div>
         </form>
       </div>
@@ -253,13 +426,10 @@ const PYQs: React.FC = () => {
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-2">{paper.subjectName}</h3>
                 <p className="text-gray-600 mb-2">
-                  {paper.branch} - {paper.year !== 'FE' ? paper.year : ''} {paper.pattern}
+                  {paper.branch} - {paper.year !== 'FE' ? paper.year : ''} {paper.pattern} Pattern
                 </p>
-                <p className="text-gray-700 mb-2">
-                  <span className="font-medium">Name: </span> {paper.paperName}
-                </p>
-                <p className="text-gray-700 mb-2">
-                  <span className="font-medium">Type:</span> {paper.paperType}
+                <p className="text-gray-700 mb-4">
+                  <span className="font-medium">{paper.paperType} </span> <span> Paper </span> <span className="font-medium">{paper.paperName} </span>
                 </p>
                 <div className="flex justify-between items-center">
                   <a
@@ -273,8 +443,8 @@ const PYQs: React.FC = () => {
                   <button
                     onClick={() => handleBookmark(paper)}
                     className={`p-2 rounded-full ${isBookmarked(paper.id)
-                        ? 'text-yellow-500 hover:text-yellow-600'
-                        : 'text-gray-400 hover:text-gray-500'
+                      ? 'text-yellow-500 hover:text-yellow-600'
+                      : 'text-gray-400 hover:text-gray-500'
                       }`}
                   >
                     <svg
