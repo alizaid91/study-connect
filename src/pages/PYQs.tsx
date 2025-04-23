@@ -19,6 +19,8 @@ const PYQs: React.FC = () => {
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filteredPapers, setFilteredPapers] = useState<Paper[]>([]);
   const [filters, setFilters] = useState({
@@ -46,6 +48,8 @@ const PYQs: React.FC = () => {
   // Drag-and-drop state for quick filters ordering
   const [draggedQF, setDraggedQF] = useState<QuickFilter | null>(null);
   const [draggedQFIndex, setDraggedQFIndex] = useState<number | null>(null);
+  // ID of the quick filter currently being deleted
+  const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPapers = async () => {
@@ -177,11 +181,14 @@ const PYQs: React.FC = () => {
       return;
     }
     try {
+      setSaving(true);
       const payload = { ...filters, userId: user.uid };
       const docRef = await addDoc(collection(db, 'quickFilters'), payload);
       setQuickFilters(prev => [...prev, { id: docRef.id, values: { ...filters } }]);
     } catch (err) {
       console.error('Error saving quick filter', err);
+    } finally {
+      setSaving(false);
     }
   };
   const handleApplyQuickFilter = (qf: QuickFilter) => {
@@ -189,10 +196,15 @@ const PYQs: React.FC = () => {
   };
   const handleDeleteQuickFilter = async (id: string) => {
     try {
+      setIsDeleting(true);
+      setDeletingQFId(id);
       await deleteDoc(doc(db, 'quickFilters', id));
       setQuickFilters(prev => prev.filter(q => q.id !== id));
     } catch (err) {
       console.error('Error deleting quick filter', err);
+    } finally {
+      setIsDeleting(false);
+      setDeletingQFId(null);
     }
   };
 
@@ -303,7 +315,14 @@ const PYQs: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                   <FiCheckSquare onClick={() => handleApplyQuickFilter(qf)} className="text-primary-600 hover:text-primary-700 cursor-pointer" size={20} />
-                  <FiTrash2 onClick={() => handleDeleteQuickFilter(qf.id)} className="text-red-500 hover:text-red-600 cursor-pointer" size={20} />
+                  {isDeleting && deletingQFId === qf.id ? (
+                    <div role="status" className="inline-flex items-center">
+                      <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-2"></div>
+                      <span className="sr-only">Deleting...</span>
+                    </div>
+                  ) : (
+                    <FiTrash2 onClick={() => handleDeleteQuickFilter(qf.id)} className="text-red-500 hover:text-red-600 cursor-pointer" size={20} />
+                  )}
                 </div>
               </div>
             ))}
@@ -402,15 +421,22 @@ const PYQs: React.FC = () => {
             >
               Clear Filters
             </button>
-            { (filters.branch || filters.year || filters.pattern || filters.paperType || filters.subjectName) && (
-              <button
-                type="button"
-                onClick={handleSaveQuickFilter}
-                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded"
-              >
-                Save Quick Filter
-              </button>
-            ) }
+            {(filters.branch || filters.year || filters.pattern || filters.paperType || filters.subjectName) && (
+              saving ? <button disabled type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center">
+                <svg aria-hidden="true" role="status" className="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB" />
+                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor" />
+                </svg>
+                Loading...
+              </button> :
+                <button
+                  type="button"
+                  onClick={handleSaveQuickFilter}
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded"
+                >
+                  Save Quick Filter
+                </button>
+            )}
           </div>
         </form>
       </div>
