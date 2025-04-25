@@ -10,6 +10,8 @@ const Bookmarks = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { bookmarks, loading } = useSelector((state: RootState) => state.bookmarks);
   const [activeTab, setActiveTab] = useState<'Paper' | 'Resource'>('Paper');
+  const [deletingBookmark, setDeletingBookmark] = useState(false)
+  const [bookmarkToDelete, setBookmarkToDelete] = useState<string>('');
 
   useEffect(() => {
     if (user) {
@@ -18,7 +20,10 @@ const Bookmarks = () => {
   }, [dispatch, user]);
 
   const handleRemoveBookmark = async (bookmarkId: string) => {
+    setBookmarkToDelete(bookmarkId)
+    setDeletingBookmark(true)
     await dispatch(removeBookmark(bookmarkId));
+    setDeletingBookmark(false)
   };
 
   // derive per-tab bookmark lists
@@ -82,24 +87,31 @@ const Bookmarks = () => {
                   >
                     View
                   </a>
-                  <button
-                    onClick={() => handleRemoveBookmark(bookmark.id)}
-                    className="text-red-500 hover:text-red-600 p-2 rounded-full"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
+                  {
+                    deletingBookmark && bookmark.id === bookmarkToDelete
+                      ? <div role="status" className="inline-flex items-center">
+                        <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-2"></div>
+                        <span className="sr-only">Deleting...</span>
+                      </div>
+                      : <button
+                        onClick={() => handleRemoveBookmark(bookmark.id)}
+                        className="text-red-500 hover:text-red-600 p-2 rounded-full"
+                      >
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                  }
                 </div>
               </div>
             </div>

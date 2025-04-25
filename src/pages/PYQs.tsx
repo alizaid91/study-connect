@@ -20,6 +20,8 @@ const PYQs: React.FC = () => {
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [changingBookmarkState, setChangingBookmarkState] = useState(false);
+  const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filteredPapers, setFilteredPapers] = useState<Paper[]>([]);
@@ -214,7 +216,8 @@ const PYQs: React.FC = () => {
     const existingBookmark = bookmarks.find(
       (bookmark: Bookmark) => bookmark.contentId === paper.id && bookmark.type === 'Paper'
     );
-
+    setItemToChangeBookmarkState(paper.id);
+    setChangingBookmarkState(true);
     if (existingBookmark) {
       await dispatch(removeBookmark(existingBookmark.id));
     } else {
@@ -231,6 +234,7 @@ const PYQs: React.FC = () => {
         createdAt: new Date().toISOString()
       }));
     }
+    setChangingBookmarkState(false);
   };
 
   const isBookmarked = (paperId: string) => {
@@ -466,27 +470,34 @@ const PYQs: React.FC = () => {
                   >
                     View Paper
                   </a>
-                  <button
-                    onClick={() => handleBookmark(paper)}
-                    className={`p-2 rounded-full ${isBookmarked(paper.id)
-                      ? 'text-yellow-500 hover:text-yellow-600'
-                      : 'text-gray-400 hover:text-gray-500'
-                      }`}
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill={isBookmarked(paper.id) ? 'currentColor' : 'none'}
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                      />
-                    </svg>
-                  </button>
+                  {
+                    changingBookmarkState && paper.id === itemToChangeBookmarkState
+                      ? <div role="status" className="inline-flex items-center">
+                        <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
+                        <span className="sr-only">Changing...</span>
+                      </div>
+                      : <button
+                        onClick={() => handleBookmark(paper)}
+                        className={`p-2 rounded-full ${isBookmarked(paper.id)
+                          ? 'text-yellow-500 hover:text-yellow-600'
+                          : 'text-gray-400 hover:text-gray-500'
+                          }`}
+                      >
+                        <svg
+                          className="w-6 h-6"
+                          fill={isBookmarked(paper.id) ? 'currentColor' : 'none'}
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                          />
+                        </svg>
+                      </button>
+                  }
                 </div>
               </div>
             </div>
