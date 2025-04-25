@@ -8,57 +8,6 @@ import { addBookmark, removeBookmark } from '../store/slices/bookmarkSlice';
 import { setResources } from '../store/slices/resourceSlice';
 import { FiTrash2, FiCheckSquare } from 'react-icons/fi';
 
-const FE_SUBJECTS = [
-  { name: 'Engineering Mathematics I', code: 'EM1' },
-  { name: 'Engineering Physics', code: 'EP' },
-  { name: 'Engineering Chemistry', code: 'EC' },
-  { name: 'Basic Electrical Engineering', code: 'BEE' },
-  { name: 'Basic Electronics Engineering', code: 'BEC' },
-  { name: 'Engineering Mechanics', code: 'EM' },
-  { name: 'Engineering Drawing', code: 'ED' },
-  { name: 'Communication Skills', code: 'CS' },
-  { name: 'Environmental Studies', code: 'ES' },
-  { name: 'Workshop Practice', code: 'WP' }
-];
-
-const IT_SUBJECTS = {
-  SE: [
-    { name: 'Discrete Mathematics', code: 'DM' },
-    { name: 'Logic Design & Computer Organization', code: 'LDCO' },
-    { name: 'Data Structures & Algorithms', code: 'DSA' },
-    { name: 'Objects Oriented Programming', code: 'OOP' },
-    { name: 'Basics of Computer Network', code: 'BCN' },
-    { name: 'Engineering Mathematics-III', code: 'EM3' },
-    { name: 'Processor Architecture', code: 'PA' },
-    { name: 'Database Management System', code: 'DBMS' },
-    { name: 'Computer Graphics', code: 'CG' },
-    { name: 'Software Engineering', code: 'SE' }
-  ],
-  TE: [
-    { name: 'Theory of Computation', code: 'TOC' },
-    { name: 'Operating Systems', code: 'OS' },
-    { name: 'Machine Learning', code: 'ML' },
-    { name: 'Human Computer Interaction', code: 'HCI' },
-    { name: 'Elective-I', code: 'E1' },
-    { name: 'Computer Networks & Security', code: 'CNS' },
-    { name: 'Data Science and Big Data Analytics', code: 'DSBDA' },
-    { name: 'Web Application Development', code: 'WAD' },
-    { name: 'Elective-II', code: 'E2' },
-    { name: 'Internship', code: 'INT' }
-  ],
-  BE: [
-    { name: 'Information Storage and Retrieval', code: 'ISR' },
-    { name: 'Software Project Management', code: 'SPM' },
-    { name: 'Deep Learning', code: 'DL' },
-    { name: 'Elective III', code: 'E3' },
-    { name: 'Elective IV', code: 'E4' },
-    { name: 'Distributed Systems', code: 'DS' },
-    { name: 'Elective V', code: 'E5' },
-    { name: 'Elective VI', code: 'E6' },
-    { name: 'Startup and Entrepreneurship', code: 'SE' }
-  ]
-};
-
 const Resources: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);

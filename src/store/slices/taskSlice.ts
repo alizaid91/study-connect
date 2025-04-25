@@ -8,6 +8,7 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   status: 'todo' | 'in-progress' | 'completed';
   userId: string;
+  attachPaperContent?: string;
 }
 
 interface TaskState {

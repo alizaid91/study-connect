@@ -19,7 +19,9 @@ const Tasks = () => {
   const [upadtingTask, setUpdatingTask] = useState(false)
   const [addingTask, setAddingTasks] = useState(false)
   const [deletingTask, setDeletingTask] = useState(false)
-  const [taskToDelete, setTaskToDelete] = useState(String)
+  const [togglingStatus, setTogglingStatus] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(String);
+  const [taskToToggleStatus, setTaskToToggleStatus] = useState('');
   const [formData, setFormData] = useState<Omit<Task, 'id' | 'userId'>>({
     title: '',
     description: '',
@@ -122,12 +124,16 @@ const Tasks = () => {
 
   const handleToggleComplete = async (task: Task) => {
     const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+    setTaskToToggleStatus(task.id);
+    setTogglingStatus(true)
     try {
       const taskRef = doc(db, 'tasks', task.id);
       await updateDoc(taskRef, { status: newStatus });
       dispatch(updateTask({ ...task, status: newStatus }));
     } catch (error) {
       console.error('Error toggling task status:', error);
+    } finally {
+      setTogglingStatus(false)
     }
   };
 
@@ -191,16 +197,23 @@ const Tasks = () => {
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
             >
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-3">
                 <div className="flex items-center space-x-3">
-                  <button onClick={() => handleToggleComplete(task)} className="focus:outline-none">
-                    {task.status === 'completed' ? (
-                      <AiOutlineCheckCircle className="text-green-500" size={20} />
-                    ) : (
-                      <FaRegCircle className="text-gray-400" size={20} />
-                    )}
+                  <button onClick={() => handleToggleComplete(task)} className="focus:outline-none flex items-center justify-center">
+                    {
+                      togglingStatus && task.id === taskToToggleStatus
+                        ? <div role="status" className="inline-flex items-center">
+                          <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
+                          <span className="sr-only">Changing...</span>
+                        </div>
+                        : (task.status === 'completed' ? (
+                          <AiOutlineCheckCircle className="text-green-500" size={20} />
+                        ) : (
+                          <FaRegCircle className="text-gray-400" size={20} />
+                        ))
+                    }
                   </button>
-                  <h3 className={`text-xl font-semibold ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
+                  <h3 className={`bg-gray-200/40 rounded-md py-1 px-2 text-base sm:text-lg font-semibold ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
                     {task.title}
                   </h3>
                 </div>
@@ -222,7 +235,18 @@ const Tasks = () => {
                   {task.priority}
                 </span>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-col gap-2 text-center sm:flex-row">
+                {
+                  task.attachPaperContent
+                  && <a
+                    href={task.attachPaperContent}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn bg-blue-500 hover:bg-blue-600 text-white px-4 rounded inline-block"
+                  >
+                    View Paper
+                  </a>
+                }
                 <button onClick={() => handleEdit(task)} className="btn btn-secondary">
                   Edit
                 </button>

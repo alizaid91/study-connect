@@ -5,7 +5,7 @@ import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
 import { Paper, Bookmark } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
-import { Link } from 'react-router-dom';
+import { addTask, Task } from '../store/slices/taskSlice';
 import { FiTrash2, FiCheckSquare } from 'react-icons/fi';
 
 interface Subject {
@@ -33,6 +33,18 @@ const PYQs: React.FC = () => {
     subjectName: '',
     subjectCode: ''
   });
+
+  const [taskInfo, setTaskInfo] = useState<Omit<Task, 'id' | 'userId'>>({
+    title: '',
+    description: '',
+    dueDate: '',
+    priority: 'high',
+    status: 'in-progress',
+    attachPaperContent: ''
+  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [addingTask, setAddingTasks] = useState(false)
+
   // Quick filters state and types
   type FilterValues = {
     branch: string;
@@ -157,6 +169,33 @@ const PYQs: React.FC = () => {
       };
     });
   };
+
+  const setDefaultTaskInfo = (paper: Paper) => {
+    const title = 'Solve ' + (paper.year !== 'FE' ? paper.year : '') + '-' + paper.branch + ' ' + (paper.subjectId.toUpperCase()) + ' ' + paper.paperType + ' Paper of ' + paper.paperName;
+    setTaskInfo({ title: title, description: '', dueDate: '', priority: 'high', status: 'in-progress', attachPaperContent: paper.driveLink });
+    setIsModalOpen(true);
+  }
+
+  const addTaskWithAttachment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.uid) return;
+
+    const taskData = {
+      ...taskInfo,
+      userId: user.uid,
+    };
+
+    setAddingTasks(true)
+    try {
+      const docRef = await addDoc(collection(db, 'tasks'), taskData);
+      dispatch(addTask({ ...taskData, id: docRef.id }));
+    } catch (error) {
+      console.error('Error saving task:', error);
+    } finally {
+      setAddingTasks(false)
+      setIsModalOpen(false)
+    }
+  }
 
   const clearFilters = () => {
     setFilters({
@@ -452,7 +491,7 @@ const PYQs: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPapers.map((paper) => (
-            <div key={paper.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div key={paper.id} className="bg-white rounded-lg shadow-md overflow-hidden pt-5 relative">
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-2">{paper.subjectName}</h3>
                 <p className="text-gray-600 mb-2">
@@ -461,7 +500,7 @@ const PYQs: React.FC = () => {
                 <p className="text-gray-700 mb-4">
                   <span className="font-medium">{paper.paperType} </span> <span> Paper </span> <span className="font-medium">{paper.paperName} </span>
                 </p>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2 sm:flex-row text-center">
                   <a
                     href={paper.driveLink}
                     target="_blank"
@@ -470,38 +509,156 @@ const PYQs: React.FC = () => {
                   >
                     View Paper
                   </a>
-                  {
-                    changingBookmarkState && paper.id === itemToChangeBookmarkState
-                      ? <div role="status" className="inline-flex items-center">
-                        <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                        <span className="sr-only">Changing...</span>
-                      </div>
-                      : <button
-                        onClick={() => handleBookmark(paper)}
-                        className={`p-2 rounded-full ${isBookmarked(paper.id)
-                          ? 'text-yellow-500 hover:text-yellow-600'
-                          : 'text-gray-400 hover:text-gray-500'
-                          }`}
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          fill={isBookmarked(paper.id) ? 'currentColor' : 'none'}
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                          />
-                        </svg>
-                      </button>
-                  }
+                  <button
+                    onClick={() => setDefaultTaskInfo(paper)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block"
+                  >
+                    Add to Tasks
+                  </button>
                 </div>
+              </div>
+              <div className='absolute top-2 right-2 p-1 flex justify-center items-center'>
+                {
+                  changingBookmarkState && paper.id === itemToChangeBookmarkState
+                    ? <div role="status" className="inline-flex items-center">
+                      <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                      <span className="sr-only">Changing...</span>
+                    </div>
+                    : <button
+                      onClick={() => handleBookmark(paper)}
+                      className={`rounded-full ${isBookmarked(paper.id)
+                        ? 'text-yellow-500 hover:text-yellow-600'
+                        : 'text-gray-400 hover:text-gray-500'
+                        }`}
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill={isBookmarked(paper.id) ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        />
+                      </svg>
+                    </button>
+                }
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative mx-4">
+            <button
+              onClick={() => {
+                setIsModalOpen(false);
+                setTaskInfo({ title: '', description: '', dueDate: '', priority: 'medium', status: 'todo', attachPaperContent: taskInfo.attachPaperContent });
+              }}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Add Task
+            </h2>
+            <form onSubmit={addTaskWithAttachment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <input
+                  type="text"
+                  placeholder="Task Title"
+                  value={taskInfo.title}
+                  onChange={(e) => setTaskInfo({ ...taskInfo, title: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <textarea
+                  placeholder="Task Description"
+                  value={taskInfo.description}
+                  onChange={(e) => setTaskInfo({ ...taskInfo, description: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                <input
+                  type="date"
+                  placeholder="Due Date"
+                  value={taskInfo.dueDate}
+                  onChange={(e) => setTaskInfo({ ...taskInfo, dueDate: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Priority</label>
+                  <select
+                    value={taskInfo.priority}
+                    onChange={(e) =>
+                      setTaskInfo({ ...taskInfo, priority: e.target.value as 'low' | 'medium' | 'high' })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <select
+                    value={taskInfo.status}
+                    onChange={(e) =>
+                      setTaskInfo({ ...taskInfo, status: e.target.value as 'todo' | 'in-progress' | 'completed' })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  >
+                    <option value="todo">To Do</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setTaskInfo({ title: '', description: '', dueDate: '', priority: 'medium', status: 'todo', attachPaperContent: taskInfo.attachPaperContent });
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                {
+                  addingTask
+                    ? <button disabled type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center justify-center">
+                      <svg aria-hidden="true" role="status" className="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB" />
+                        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor" />
+                      </svg>
+                      Saving...
+                    </button>
+                    : <button
+                      type="submit"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                    >
+                      Add Task
+                    </button>
+                }
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
