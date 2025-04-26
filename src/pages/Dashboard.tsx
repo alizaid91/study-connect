@@ -10,50 +10,68 @@ import { setTasks, Task } from '../store/slices/taskSlice';
 import { setResources } from '../store/slices/resourceSlice';
 import { Resource } from '../types/content';
 import { fetchPapers } from '../store/slices/papersSlice';
+import { useState } from 'react';
+
+const loader = (<div className="flex flex-row gap-2 mt-4">
+  <div className="w-3 h-3 rounded-full bg-blue-600 animate-bounce"></div>
+  <div className="w-3 h-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-.3s]"></div>
+  <div className="w-3 h-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-.5s]"></div>
+</div>)
 
 const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { tasks } = useSelector((state: RootState) => state.tasks);
   const { resources } = useSelector((state: RootState) => state.resources);
-  const { papers } = useSelector((state: RootState) => state.papers);
-  const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
+  const { papers, loading: papersLoading } = useSelector((state: RootState) => state.papers);
+  const { bookmarks, loading: bookmarksLoading } = useSelector((state: RootState) => state.bookmarks);
+  const [loading, setLoading] = useState({
+    tasks: false,
+    resources: false,
+  });
 
   useEffect(() => {
-    if (user) {
-      dispatch(fetchBookmarks(user.uid));
-      dispatch(fetchPapers());
-      // fetch user-specific tasks
-      const fetchUserTasks = async () => {
-        const tasksQuery = query(
-          collection(db, 'tasks'),
-          where('userId', '==', user.uid)
-        );
-        const querySnapshot = await getDocs(tasksQuery);
-        const tasksData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        dispatch(setTasks(tasksData as Task[]));
-      };
-      fetchUserTasks();
+    const fetchData = async () => {
+      if (user) {
+        // fetch user-specific tasks
+        const fetchUserTasks = async () => {
+          const tasksQuery = query(
+            collection(db, 'tasks'),
+            where('userId', '==', user.uid)
+          );
+          const querySnapshot = await getDocs(tasksQuery);
+          const tasksData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          dispatch(setTasks(tasksData as Task[]));
+        };
 
-      // fetch all resources
-      const fetchAllResources = async () => {
-        const resourcesQuery = query(
-          collection(db, 'resources'),
-          orderBy('uploadedAt', 'desc')
-        );
-        const snapshot = await getDocs(resourcesQuery);
-        const resourcesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        dispatch(setResources(resourcesData as Resource[]));
-      };
-      fetchAllResources();
-    }
-  }, [dispatch, user]);
+        // fetch all resources
+        const fetchAllResources = async () => {
+          const resourcesQuery = query(
+            collection(db, 'resources'),
+            orderBy('uploadedAt', 'desc')
+          );
+          const snapshot = await getDocs(resourcesQuery);
+          const resourcesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          dispatch(setResources(resourcesData as Resource[]));
+        };
+
+        dispatch(fetchBookmarks(user.uid));
+        dispatch(fetchPapers());
+
+        setLoading({ ...loading, tasks: true, resources: true });
+        await fetchUserTasks();
+        await fetchAllResources();
+        setLoading({ ...loading, tasks: false, resources: false });
+      }
+    };
+    fetchData();
+  }, [user]);
 
   const recentTasks = tasks.slice(0, 5);
   const recentResources = resources.slice(0, 5);
@@ -74,25 +92,53 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Tasks to Complete</h3>
-          <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => (task.status === 'in-progress' || task.status === 'todo')).length}</p>
+          {
+            loading.tasks ? (
+              loader
+            ) : (
+              <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => (task.status === 'in-progress' || task.status === 'todo')).length}</p>
+            )
+          }
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Completed Tasks</h3>
-          <p className="text-3xl font-bold text-primary-600">
-            {tasks.filter(task => task.status === 'completed').length}
-          </p>
+          {
+            loading.tasks ? (
+              loader
+            ) : (
+              <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => task.status === 'completed').length}</p>
+            )
+          }
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Available Papers</h3>
-          <p className="text-3xl font-bold text-primary-600">{papers.length}</p>
+          {
+            papersLoading ? (
+              loader
+            ) : (
+              <p className="text-3xl font-bold text-primary-600">{papers.length}</p>
+            )
+          }
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Available Resources</h3>
-          <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
+          {
+            loading.resources ? (
+              loader
+            ) : (
+              <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
+            )
+          }
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Bookmarks</h3>
-          <p className="text-3xl font-bold text-primary-600">{bookmarks.length}</p>
+          {
+            bookmarksLoading ? (
+              loader
+            ) : (
+              <p className="text-3xl font-bold text-primary-600">{bookmarks.length}</p>
+            )
+          }
         </div>
       </div>
 
