@@ -9,18 +9,20 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { setTasks, Task } from '../store/slices/taskSlice';
 import { setResources } from '../store/slices/resourceSlice';
 import { Resource } from '../types/content';
+import { fetchPapers } from '../store/slices/papersSlice';
 
 const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { tasks } = useSelector((state: RootState) => state.tasks);
   const { resources } = useSelector((state: RootState) => state.resources);
+  const { papers } = useSelector((state: RootState) => state.papers);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
 
   useEffect(() => {
     if (user) {
       dispatch(fetchBookmarks(user.uid));
-
+      dispatch(fetchPapers());
       // fetch user-specific tasks
       const fetchUserTasks = async () => {
         const tasksQuery = query(
@@ -71,8 +73,8 @@ const Dashboard = () => {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Total Tasks</h3>
-          <p className="text-3xl font-bold text-primary-600">{tasks.length}</p>
+          <h3 className="text-lg font-semibold text-gray-700">Tasks to Complete</h3>
+          <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => (task.status === 'in-progress' || task.status === 'todo')).length}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-700">Completed Tasks</h3>
@@ -81,7 +83,11 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Resources</h3>
+          <h3 className="text-lg font-semibold text-gray-700">Available Papers</h3>
+          <p className="text-3xl font-bold text-primary-600">{papers.length}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-gray-700">Available Resources</h3>
           <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -150,10 +156,10 @@ const Dashboard = () => {
                 </div>
                 <span
                   className={`px-3 py-1 rounded-full text-sm ${task.status === 'completed'
-                      ? 'bg-green-100 text-green-800'
-                      : task.status === 'in-progress'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
+                    ? 'bg-green-100 text-green-800'
+                    : task.status === 'in-progress'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800'
                     }`}
                 >
                   {task.status}

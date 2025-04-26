@@ -4,6 +4,7 @@ import taskReducer from './slices/taskSlice';
 import resourceReducer from './slices/resourceSlice';
 import adminReducer from './slices/adminSlice';
 import bookmarkReducer from './slices/bookmarkSlice';
+import papersReducer from './slices/papersSlice';
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -11,6 +12,7 @@ export const store = configureStore({
     resources: resourceReducer,
     admin: adminReducer,
     bookmarks: bookmarkReducer,
+    papers: papersReducer,
   },
 });
 

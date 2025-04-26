@@ -5,6 +5,7 @@ import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
 import { Paper, Bookmark } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
+import { fetchPapers } from '../store/slices/papersSlice';
 import { addTask, Task } from '../store/slices/taskSlice';
 import { FiTrash2, FiCheckSquare } from 'react-icons/fi';
 
@@ -17,13 +18,11 @@ const PYQs: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
-  const [papers, setPapers] = useState<Paper[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { papers, loading, error } = useSelector((state: RootState) => state.papers);
   const [saving, setSaving] = useState(false);
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filteredPapers, setFilteredPapers] = useState<Paper[]>([]);
   const [filters, setFilters] = useState({
     branch: '',
@@ -66,27 +65,10 @@ const PYQs: React.FC = () => {
   const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPapers = async () => {
-      try {
-        const papersRef = collection(db, 'papers');
-        const q = query(papersRef, orderBy('uploadedAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const papersData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Paper[];
-        setPapers(papersData);
-        setFilteredPapers(papersData);
-      } catch (err) {
-        setError('Failed to fetch papers');
-        console.error('Error fetching papers:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPapers();
-  }, []);
+    if (user) {
+      dispatch(fetchPapers());
+    }
+  }, [dispatch, user]);
 
   useEffect(() => {
     if (user) {

@@ -92,22 +92,31 @@ const Navbar = () => {
             >
               Dashboard
             </Link>
+            <Link
+              to="/bookmarks"
+              className={`text-sm font-medium ${isActive('/bookmarks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              Bookmarks
+            </Link>
             {/* More dropdown */}
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800"
-              >
-                More <FiChevronDown className="ml-1 h-4 w-4" />
-              </button>
-              {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md py-1 z-20">
-                  <Link to="/bookmarks" className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isActive('/bookmarks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}>Bookmarks</Link>
-                  {isAdmin && <Link to="/admin/dashboard" className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isActive('/admin/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}>Admin Dashboard</Link>}
-                  {user && <Link to="/profile" className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isActive('/profile') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}>Profile</Link>}
+            {
+              user && (
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800"
+                  >
+                    More <FiChevronDown className="ml-1 h-4 w-4" />
+                  </button>
+                  {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md py-1 z-20">
+                      {isAdmin && <Link to="/admin/dashboard" className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isActive('/admin/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}>Admin Dashboard</Link>}
+                      {user && <Link to="/profile" className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isActive('/profile') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}>Profile</Link>}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              )
+            }
           </div>
           {/* User/ Admin Logout */}
           <div className="hidden lg:ml-6 lg:flex lg:items-center space-x-4">
@@ -185,8 +194,8 @@ const Navbar = () => {
                 to="/"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 Home
@@ -195,8 +204,8 @@ const Navbar = () => {
                 to="/pyqs"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 PYQs
@@ -205,8 +214,8 @@ const Navbar = () => {
                 to="/resources"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/resources')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 Resources
@@ -215,8 +224,8 @@ const Navbar = () => {
                 to="/tasks"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/tasks')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 Tasks
@@ -225,8 +234,8 @@ const Navbar = () => {
                 to="/dashboard"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 Dashboard
@@ -235,8 +244,8 @@ const Navbar = () => {
                 to="/bookmarks"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/bookmarks')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 Bookmarks
@@ -246,8 +255,8 @@ const Navbar = () => {
                   to="/admin/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/admin/dashboard')
-                      ? 'bg-primary-50 border-primary-500 text-primary-700'
-                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                 >
                   Admin Dashboard
@@ -257,8 +266,8 @@ const Navbar = () => {
                 <Link
                   to="/profile"
                   className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile')
-                      ? 'bg-primary-50 border-primary-500 text-primary-700'
-                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
