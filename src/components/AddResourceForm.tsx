@@ -249,6 +249,7 @@ const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
           <option value="book">Book</option>
           <option value="notes">Notes</option>
           <option value="video">Video</option>
+          <option value="decodes">Decodes</option>
           <option value="other">Other</option>
         </select>
       </div>

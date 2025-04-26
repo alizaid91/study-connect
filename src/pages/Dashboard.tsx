@@ -12,10 +12,10 @@ import { Resource } from '../types/content';
 import { fetchPapers } from '../store/slices/papersSlice';
 import { useState } from 'react';
 
-const loader = (<div className="flex flex-row gap-2 mt-4">
-  <div className="w-3 h-3 rounded-full bg-blue-600 animate-bounce"></div>
-  <div className="w-3 h-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-.3s]"></div>
-  <div className="w-3 h-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-.5s]"></div>
+const loader = (<div className="flex flex-row gap-2 ml-1 mt-4">
+  <div className="w-3 h-3 rounded-full bg-primary-600 animate-bounce"></div>
+  <div className="w-3 h-3 rounded-full bg-primary-600 animate-bounce [animation-delay:-.3s]"></div>
+  <div className="w-3 h-3 rounded-full bg-primary-600 animate-bounce [animation-delay:-.5s]"></div>
 </div>)
 
 const Dashboard = () => {

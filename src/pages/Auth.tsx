@@ -16,7 +16,6 @@ import { RootState } from '../store';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
-import bannerImage from '../assets/banner-image.avif';
 import logo from '../assets/logo.png';
 
 const Auth = () => {

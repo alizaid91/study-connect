@@ -12,6 +12,7 @@ const Tasks = () => {
   const { tasks } = useSelector((state: RootState) => state.tasks);
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,7 +37,7 @@ const Tasks = () => {
         console.log('No user ID found');
         return;
       }
-
+      setLoading(true)
       try {
         // console.log('Fetching tasks for user:', user.uid);
         const tasksQuery = query(
@@ -55,6 +56,8 @@ const Tasks = () => {
         dispatch(setTasks(fetchedTasks));
       } catch (error) {
         console.error('Error fetching tasks:', error);
+      } finally {
+        setLoading(false)
       }
     };
 
@@ -157,6 +160,14 @@ const Tasks = () => {
     setDraggedTask(null);
     setDraggedIndex(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div>

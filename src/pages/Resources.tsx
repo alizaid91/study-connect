@@ -350,7 +350,6 @@ const Resources: React.FC = () => {
                 <option value="2024">2024</option>
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
               <select
@@ -363,10 +362,10 @@ const Resources: React.FC = () => {
                 <option value="book">Book</option>
                 <option value="notes">Notes</option>
                 <option value="video">Video</option>
+                <option value="decodes">Decodes</option>
                 <option value="other">Other</option>
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
               <select
