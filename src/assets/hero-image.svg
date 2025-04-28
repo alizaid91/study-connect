@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g opacity="0.8">
+    <!-- Background Elements -->
+    <circle cx="400" cy="300" r="250" fill="#1e3a8a" opacity="0.1"/>
+    <circle cx="400" cy="300" r="200" fill="#1e40af" opacity="0.1"/>
+    
+    <!-- Book Stack -->
+    <rect x="300" y="200" width="60" height="200" fill="#1e3a8a" opacity="0.9"/>
+    <rect x="320" y="180" width="60" height="200" fill="#1e40af" opacity="0.9"/>
+    <rect x="340" y="160" width="60" height="200" fill="#1d4ed8" opacity="0.9"/>
+    
+    <!-- Graduation Cap -->
+    <path d="M450 200 L500 180 L550 200 L500 220 Z" fill="#1e3a8a"/>
+    <rect x="475" y="200" width="50" height="20" fill="#1e40af"/>
+    
+    <!-- Light Bulb -->
+    <circle cx="600" cy="250" r="30" fill="#1d4ed8"/>
+    <path d="M600 220 L600 280" stroke="#1d4ed8" stroke-width="4"/>
+    <path d="M570 250 L630 250" stroke="#1d4ed8" stroke-width="4"/>
+    
+    <!-- Decorative Elements -->
+    <circle cx="200" cy="150" r="20" fill="#1e3a8a" opacity="0.6"/>
+    <circle cx="700" cy="450" r="30" fill="#1e40af" opacity="0.6"/>
+    <circle cx="150" cy="450" r="25" fill="#1d4ed8" opacity="0.6"/>
+  </g>
+</svg> 

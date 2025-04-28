@@ -134,7 +134,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="">
+    <div className="mx-4">
       <div className="flex flex-1 items-center justify-center bg-gray-50 p-4 px-2 lg:p-12">
         <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-6 space-y-6">
           <div className="flex justify-center">

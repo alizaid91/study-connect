@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g opacity="0.95">
+    <!-- Book -->
+    <rect x="100" y="100" width="200" height="150" fill="#FFFFFF" stroke="#FF9800" stroke-width="3"/>
+    <line x1="200" y1="100" x2="200" y2="250" stroke="#FF9800" stroke-width="3"/>
+    
+    <!-- Book Pages -->
+    <line x1="120" y1="120" x2="180" y2="120" stroke="#FF9800" stroke-width="2"/>
+    <line x1="120" y1="140" x2="180" y2="140" stroke="#FF9800" stroke-width="2"/>
+    <line x1="120" y1="160" x2="180" y2="160" stroke="#FF9800" stroke-width="2"/>
+    <line x1="120" y1="180" x2="180" y2="180" stroke="#FF9800" stroke-width="2"/>
+    <line x1="120" y1="200" x2="180" y2="200" stroke="#FF9800" stroke-width="2"/>
+    <line x1="120" y1="220" x2="180" y2="220" stroke="#FF9800" stroke-width="2"/>
+    
+    <!-- Magnifying Glass -->
+    <circle cx="250" cy="150" r="30" fill="none" stroke="#FF9800" stroke-width="3"/>
+    <line x1="270" y1="170" x2="290" y2="190" stroke="#FF9800" stroke-width="3"/>
+    
+    <!-- Decorative Elements -->
+    <circle cx="150" cy="50" r="15" fill="#FF9800" opacity="0.9"/>
+    <circle cx="300" cy="250" r="20" fill="#FF9800" opacity="0.9"/>
+  </g>
+</svg> 

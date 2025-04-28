@@ -11,6 +11,8 @@ import { setResources } from '../store/slices/resourceSlice';
 import { Resource } from '../types/content';
 import { fetchPapers } from '../store/slices/papersSlice';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { FaTasks, FaBook, FaFileAlt, FaBookmark, FaArrowRight } from 'react-icons/fa';
 
 const loader = (<div className="flex flex-row gap-2 ml-1 mt-4">
   <div className="w-3 h-3 rounded-full bg-primary-600 animate-bounce"></div>
@@ -77,89 +79,147 @@ const Dashboard = () => {
   const recentResources = resources.slice(0, 5);
   const recentBookmarks = bookmarks.slice(0, 5);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
   return (
-    <div className="space-y-8">
-      <div className="px-2 flex justify-between items-center">
+    <motion.div 
+      className="space-y-8 mx-4"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <motion.div 
+        className="px-2 flex justify-between items-center"
+        variants={itemVariants}
+      >
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex space-x-4">
           <Link to="/tasks" className="btn btn-primary">
             Add Task
           </Link>
         </div>
-      </div>
+      </motion.div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Tasks to Complete</h3>
-          {
-            loading.tasks ? (
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
+        variants={containerVariants}
+      >
+        <motion.div 
+          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          variants={itemVariants}
+          whileHover={{ y: -5 }}
+        >
+          <Link to="/tasks" className="block">
+            <h3 className="text-lg font-semibold text-gray-700">Tasks to Complete</h3>
+            {loading.tasks ? (
               loader
             ) : (
-              <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => (task.status === 'in-progress' || task.status === 'todo')).length}</p>
-            )
-          }
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Completed Tasks</h3>
-          {
-            loading.tasks ? (
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => (task.status === 'in-progress' || task.status === 'todo')).length}</p>
+                <FaArrowRight className="text-primary-600 text-xl" />
+              </div>
+            )}
+          </Link>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          variants={itemVariants}
+          whileHover={{ y: -5 }}
+        >
+          <Link to="/tasks" className="block">
+            <h3 className="text-lg font-semibold text-gray-700">Completed Tasks</h3>
+            {loading.tasks ? (
               loader
             ) : (
-              <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => task.status === 'completed').length}</p>
-            )
-          }
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Available Papers</h3>
-          {
-            papersLoading ? (
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-3xl font-bold text-green-600">{tasks.filter(task => task.status === 'completed').length}</p>
+                <FaArrowRight className="text-green-600 text-xl" />
+              </div>
+            )}
+          </Link>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          variants={itemVariants}
+          whileHover={{ y: -5 }}
+        >
+          <Link to="/pyqs" className="block">
+            <h3 className="text-lg font-semibold text-gray-700">Available Papers</h3>
+            {papersLoading ? (
               loader
             ) : (
-              <p className="text-3xl font-bold text-primary-600">{papers.length}</p>
-            )
-          }
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Available Resources</h3>
-          {
-            loading.resources ? (
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-3xl font-bold text-blue-600">{papers.length}</p>
+                <FaArrowRight className="text-blue-600 text-xl" />
+              </div>
+            )}
+          </Link>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          variants={itemVariants}
+          whileHover={{ y: -5 }}
+        >
+          <Link to="/bookmarks" className="block">
+            <h3 className="text-lg font-semibold text-gray-700">Bookmarks</h3>
+            {bookmarksLoading ? (
               loader
             ) : (
-              <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
-            )
-          }
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Bookmarks</h3>
-          {
-            bookmarksLoading ? (
-              loader
-            ) : (
-              <p className="text-3xl font-bold text-primary-600">{bookmarks.length}</p>
-            )
-          }
-        </div>
-      </div>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-3xl font-bold text-purple-600">{bookmarks.length}</p>
+                <FaArrowRight className="text-purple-600 text-xl" />
+              </div>
+            )}
+          </Link>
+        </motion.div>
+      </motion.div>
 
       {/* Bookmarks */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <motion.div 
+        className="bg-white rounded-lg shadow-md p-6"
+        variants={itemVariants}
+        whileHover={{ y: -5 }}
+      >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Bookmarks</h2>
-          <Link to="/bookmarks" className="text-primary-600 hover:text-primary-700">
-            View All
+          <h2 className="text-lg font-semibold">Bookmarks</h2>
+          <Link to="/bookmarks" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm">
+            View All <FaArrowRight />
           </Link>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {recentBookmarks.length > 0 ? (
             recentBookmarks.map(bookmark => (
-              <div
+              <motion.div
                 key={bookmark.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-md"
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-300"
+                whileHover={{ x: 5 }}
               >
-                <div>
-                  <h3 className="font-medium">{bookmark.title}</h3>
-                  <p className="text-sm text-gray-600">
+                <div className='pr-4'>
+                  <h3 className="text-sm font-medium">{bookmark.title}</h3>
+                  <p className="text-xs text-gray-600">
                     {bookmark.type} • {formatDate(bookmark.createdAt)}
                   </p>
                 </div>
@@ -167,75 +227,86 @@ const Dashboard = () => {
                   href={bookmark.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-secondary"
+                  className="btn btn-secondary flex items-center gap-2 text-sm"
                 >
-                  View
+                  View <FaArrowRight />
                 </a>
-              </div>
+              </motion.div>
             ))
           ) : (
-            <p className="text-gray-600">No bookmarks yet. Start bookmarking papers and resources!</p>
+            <p className="text-sm text-gray-600">No bookmarks yet. Start bookmarking papers and resources!</p>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Recent Tasks */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <motion.div 
+        className="bg-white rounded-lg shadow-md p-6"
+        variants={itemVariants}
+        whileHover={{ y: -5 }}
+      >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Recent Tasks</h2>
-          <Link to="/tasks" className="text-primary-600 hover:text-primary-700">
-            View All
+          <h2 className="text-lg font-semibold">Recent Tasks</h2>
+          <Link to="/tasks" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm">
+            View All <FaArrowRight />
           </Link>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {recentTasks.length > 0 ? (
             recentTasks.map(task => (
-              <div
+              <motion.div
                 key={task.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-md"
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-300"
+                whileHover={{ x: 5 }}
               >
-                <div>
-                  <h3 className="font-medium">{task.title}</h3>
-                  <p className="text-sm text-gray-600">
+                <div className='pr-4'>
+                  <h3 className="text-sm font-medium">{task.title}</h3>
+                  <p className="text-xs text-gray-600">
                     Due: {new Date(task.dueDate).toLocaleDateString()}
                   </p>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm ${task.status === 'completed'
-                    ? 'bg-green-100 text-green-800'
-                    : task.status === 'in-progress'
+                  className={`px-2 py-1 rounded-full text-xs flex items-center gap-2 ${
+                    task.status === 'completed'
+                      ? 'bg-green-100 text-green-800'
+                      : task.status === 'in-progress'
                       ? 'bg-blue-100 text-blue-800'
                       : 'bg-gray-100 text-gray-800'
-                    }`}
+                  }`}
                 >
                   {task.status}
                 </span>
-              </div>
+              </motion.div>
             ))
           ) : (
-            <p className="text-gray-600">No tasks yet. Create your first task!</p>
+            <p className="text-sm text-gray-600">No tasks yet. Create your first task!</p>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Recent Resources */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <motion.div 
+        className="bg-white rounded-lg shadow-md p-6"
+        variants={itemVariants}
+        whileHover={{ y: -5 }}
+      >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Recent Resources</h2>
-          <Link to="/resources" className="text-primary-600 hover:text-primary-700">
-            View All
+          <h2 className="text-lg font-semibold">Recent Resources</h2>
+          <Link to="/resources" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm">
+            View All <FaArrowRight />
           </Link>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {recentResources.length > 0 ? (
             recentResources.map(resource => (
-              <div
+              <motion.div
                 key={resource.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-md"
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-300"
+                whileHover={{ x: 5 }}
               >
-                <div>
-                  <h3 className="font-medium">{resource.title}</h3>
-                  <p className="text-sm text-gray-600">
+                <div className='pr-4'>
+                  <h3 className="text-sm font-medium">{resource.title}</h3>
+                  <p className="text-xs text-gray-600">
                     {resource.type} • {resource.subjectName}
                   </p>
                 </div>
@@ -243,18 +314,18 @@ const Dashboard = () => {
                   href={resource.driveLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-secondary"
+                  className="btn btn-secondary flex items-center gap-2 text-sm"
                 >
-                  View
+                  View <FaArrowRight />
                 </a>
-              </div>
+              </motion.div>
             ))
           ) : (
-            <p className="text-gray-600">No resources available yet.</p>
+            <p className="text-sm text-gray-600">No resources available yet.</p>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

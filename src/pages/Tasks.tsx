@@ -170,7 +170,7 @@ const Tasks = () => {
   }
 
   return (
-    <div>
+    <div className="mx-4">
       <div className="flex justify-between items-center mb-6 px-2">
         <h1 className="text-3xl font-bold">Tasks</h1>
         {
