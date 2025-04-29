@@ -24,7 +24,7 @@ const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { tasks } = useSelector((state: RootState) => state.tasks);
-  const { resources } = useSelector((state: RootState) => state.resources);
+  const { resources, loading: resourcesLoading } = useSelector((state: RootState) => state.resources);
   const { papers, loading: papersLoading } = useSelector((state: RootState) => state.papers);
   const { bookmarks, loading: bookmarksLoading } = useSelector((state: RootState) => state.bookmarks);
   const [loading, setLoading] = useState({
@@ -102,7 +102,7 @@ const Dashboard = () => {
 
   return (
     <motion.div 
-      className="space-y-8 mx-4"
+      className="space-y-8 container mx-auto px-4 pb-8 pt-2"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -173,6 +173,24 @@ const Dashboard = () => {
               <div className="flex items-center justify-between mt-2">
                 <p className="text-3xl font-bold text-blue-600">{papers.length}</p>
                 <FaArrowRight className="text-blue-600 text-xl" />
+              </div>
+            )}
+          </Link>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          variants={itemVariants}
+          whileHover={{ y: -5 }}
+        >
+          <Link to="/resources" className="block">
+            <h3 className="text-lg font-semibold text-gray-700">Available Resources</h3>
+            {resourcesLoading ? (
+              loader
+            ) : (
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
+                <FaArrowRight className="text-primary-600 text-xl" />
               </div>
             )}
           </Link>

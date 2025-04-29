@@ -40,7 +40,7 @@ const Bookmarks = () => {
   }
 
   return (
-    <div className="container px-4 pb-8 pt-2">
+    <div className="container mx-auto px-4 pb-8 pt-2">
       <h1 className="text-3xl font-bold mb-6 text-center">My Bookmarks</h1>
 
       {/* Tabs for Papers and Resources */}

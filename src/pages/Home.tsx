@@ -8,6 +8,7 @@ import heroImage from '../assets/hero-image.svg';
 import featureImage1 from '../assets/feature-1.svg';
 import featureImage2 from '../assets/feature-2.svg';
 import featureImage3 from '../assets/feature-3.svg';
+import Footer from '../components/Footer';
 
 const Home = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -283,7 +284,7 @@ const Home = () => {
               >
                 <Link
                   to={path}
-                  className="p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex flex-col items-center relative overflow-hidden group"
+                  className="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex flex-col items-center relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-primary-100 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                   <div className="bg-primary-50 p-4 rounded-full mb-4">

@@ -4,14 +4,30 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { logoutAdmin } from '../store/slices/adminSlice';
 import { logout } from '../store/slices/authSlice';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DEFAULT_AVATAR } from '../types/user';
 import logo from '../assets/logo.png';
-import { FiChevronDown } from 'react-icons/fi';
+import {
+  FiBook,
+  FiBookmark,
+  FiClipboard,
+  FiGrid,
+  FiHome,
+  FiLogOut,
+  FiSettings,
+  FiShield,
+  FiFileText
+} from 'react-icons/fi';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ avatarUrl: string }>({ avatarUrl: '' });
   const menuRef = useRef<HTMLDivElement>(null);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -19,11 +35,31 @@ const Navbar = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Close menu when clicking outside
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setUserProfile(userDoc.data() as { avatarUrl: string });
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [user]);
+
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
+      }
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
+        setIsAvatarMenuOpen(false);
       }
     };
 
@@ -33,9 +69,10 @@ const Navbar = () => {
     };
   }, []);
 
-  // Close menu when route changes
+  // Close menus when route changes
   useEffect(() => {
     setIsMenuOpen(false);
+    setIsAvatarMenuOpen(false);
   }, [location]);
 
   const handleAdminLogout = () => {
@@ -66,120 +103,163 @@ const Navbar = () => {
               <span className="text-xl font-bold text-gray-800">Study Connect</span>
             </Link>
           </div>
-          {/* Desktop Nav: show 3 items + More dropdown only on large screens */}
+
+          {/* Desktop Nav */}
           <div className="hidden lg:flex lg:items-center lg:space-x-6">
             <Link
               to="/pyqs"
-              className={`text-sm font-medium ${isActive('/pyqs') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/pyqs') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
             >
-              PYQs
+              <FiFileText className="h-4 w-4" />
+              <span>PYQs</span>
             </Link>
             <Link
               to="/resources"
-              className={`text-sm font-medium ${isActive('/resources') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/resources') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
             >
-              Resources
+              <FiBook className="h-4 w-4" />
+              <span>Resources</span>
             </Link>
             <Link
               to="/tasks"
-              className={`text-sm font-medium ${isActive('/tasks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/tasks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
             >
-              Tasks
+              <FiClipboard className="h-4 w-4" />
+              <span>Tasks</span>
             </Link>
             <Link
               to="/dashboard"
-              className={`text-sm font-medium ${isActive('/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
             >
-              Dashboard
+              <FiGrid className="h-4 w-4" />
+              <span>Dashboard</span>
             </Link>
             <Link
               to="/bookmarks"
-              className={`text-sm font-medium ${isActive('/bookmarks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/bookmarks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
             >
-              Bookmarks
+              <FiBookmark className="h-4 w-4" />
+              <span>Bookmarks</span>
             </Link>
-            {/* More dropdown */}
-            {
-              user && (
-                <div className="relative" ref={menuRef}>
-                  <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800"
-                  >
-                    More <FiChevronDown className="ml-1 h-4 w-4" />
-                  </button>
-                  {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md py-1 z-20">
-                      {isAdmin && <Link to="/admin/dashboard" className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isActive('/admin/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}>Admin Dashboard</Link>}
-                      {user && <Link to="/profile" className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${isActive('/profile') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}>Profile</Link>}
-                    </div>
-                  )}
-                </div>
-              )
-            }
-          </div>
-          {/* User/ Admin Logout */}
-          <div className="hidden lg:ml-6 lg:flex lg:items-center space-x-4">
-            {user && (
-              <button
-                onClick={handleUserLogout}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-              >
-                User Logout
-              </button>
-            )}
             {isAdmin && (
-              <button
-                onClick={handleAdminLogout}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+              <Link
+                to="/admin/dashboard"
+                className={`text-sm font-medium flex items-center space-x-1 ${isActive('/admin/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
               >
-                Admin Logout
-              </button>
+                <FiShield className="h-4 w-4" />
+                <span>Admin Dashboard</span>
+              </Link>
             )}
           </div>
-          <div className="-mr-2 flex items-center lg:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
-            >
-              <span className="sr-only">Open main menu</span>
-              <svg
-                className={`${isMobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+
+          <div className="flex items-center space-x-4">
+            {/* Mobile menu button */}
+            <div className="flex items-center lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-              <svg
-                className={`${isMobileMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                <span className="sr-only">Open main menu</span>
+                <svg
+                  className={`${isMobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+                <svg
+                  className={`${isMobileMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Avatar Menu */}
+            {user && (
+              <div className="relative" ref={avatarMenuRef}>
+                <button
+                  onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)}
+                  className="flex items-center focus:outline-none"
+                >
+                  <div className="w-8 h-8 rounded-full overflow-hidden">
+                    <img
+                      src={userProfile.avatarUrl || DEFAULT_AVATAR.male}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {isAvatarMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-48 bg-white border border-gray-400/60 rounded-md shadow-lg py-1 z-50"
+                      style={{ top: '100%' }}
+                    >
+                      <Link
+                        to="/profile"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsAvatarMenuOpen(false)}
+                      >
+                        <FiSettings className="h-4 w-4" />
+                        <span>Settings</span>
+                      </Link>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            handleAdminLogout();
+                            setIsAvatarMenuOpen(false);
+                          }}
+                          className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                        >
+                          <FiLogOut className="h-4 w-4" />
+                          <span>Admin Logout</span>
+                        </button>
+                      )}
+                      {user && (
+                        <button
+                          onClick={() => {
+                            handleUserLogout();
+                            setIsAvatarMenuOpen(false);
+                          }}
+                          className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                        >
+                          <FiLogOut className="h-4 w-4" />
+                          <span>Logout</span>
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div
-        className={`${isMobileMenuOpen ? 'block' : 'hidden'} lg:hidden`}
-      >
+      <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} lg:hidden`}>
         <div className="relative">
           {/* Backdrop */}
           <div
@@ -193,107 +273,95 @@ const Navbar = () => {
               <Link
                 to="/"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
-                Home
+                <FiHome className="h-5 w-5" />
+                <span>Home</span>
               </Link>
               <Link
                 to="/pyqs"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
-                PYQs
+                <FiFileText className="h-5 w-5" />
+                <span>PYQs</span>
               </Link>
               <Link
                 to="/resources"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/resources')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/resources')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
-                Resources
+                <FiBook className="h-5 w-5" />
+                <span>Resources</span>
               </Link>
               <Link
                 to="/tasks"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/tasks')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/tasks')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
-                Tasks
+                <FiClipboard className="h-5 w-5" />
+                <span>Tasks</span>
               </Link>
               <Link
                 to="/dashboard"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
-                Dashboard
+                <FiGrid className="h-5 w-5" />
+                <span>Dashboard</span>
               </Link>
               <Link
                 to="/bookmarks"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/bookmarks')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/bookmarks')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
-                Bookmarks
+                <FiBookmark className="h-5 w-5" />
+                <span>Bookmarks</span>
               </Link>
               {isAdmin && (
                 <Link
                   to="/admin/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/admin/dashboard')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/admin/dashboard')
+                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                 >
-                  Admin Dashboard
+                  <FiShield className="h-5 w-5" />
+                  <span>Admin Dashboard</span>
                 </Link>
               )}
               {user && (
                 <Link
                   to="/profile"
-                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile')
+                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Profile
+                  <FiSettings className="h-5 w-5" />
+                  <span>Settings</span>
                 </Link>
               )}
-              <div className="pt-4 pb-3 border-t border-gray-200">
-                <div className="px-4 space-y-2">
-                  {user && (
-                    <button
-                      onClick={() => { handleUserLogout(); setIsMobileMenuOpen(false); }}
-                      className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                    >
-                      User Logout
-                    </button>
-                  )}
-                  {isAdmin && (
-                    <button
-                      onClick={() => { handleAdminLogout(); setIsMobileMenuOpen(false); }}
-                      className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                    >
-                      Admin Logout
-                    </button>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
+import { useEffect } from 'react';
 import Navbar from './components/Navbar.tsx';
 import Home from './pages/Home.tsx';
 import Dashboard from './pages/Dashboard.tsx';
@@ -14,14 +15,31 @@ import PrivateRoute from './components/PrivateRoute.tsx';
 import AdminRoute from './components/AdminRoute.tsx';
 import Profile from './pages/Profile';
 import Bookmarks from './pages/Bookmarks';
+import Footer from './components/Footer';
+import NotFound from './pages/NotFound.tsx';
+
+// Separate component for scroll to top functionality
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, [pathname]);
+
+  return null;
+};
 
 function App() {
   return (
     <Provider store={store}>
       <Router>
-        <div className="min-h-screen bg-gray-50">
+        <ScrollToTop />
+        <div className="min-h-screen bg-gray-50 flex flex-col">
           <Navbar />
-          <main className="container mx-auto py-8">
+          <main className="w-full pt-8 flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
@@ -82,8 +100,10 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          <Footer />
         </div>
       </Router>
     </Provider>
