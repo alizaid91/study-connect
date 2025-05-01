@@ -6,9 +6,9 @@ import { fetchBookmarks } from '../store/slices/bookmarkSlice';
 import { formatDate } from '../utils/dateUtils';
 import { db } from '../config/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { setTasks, Task } from '../store/slices/taskSlice';
+import { setTasks } from '../store/slices/taskSlice';
 import { setResources } from '../store/slices/resourceSlice';
-import { Resource } from '../types/content';
+import { Resource, Task } from '../types/content';
 import { fetchPapers } from '../store/slices/papersSlice';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -101,13 +101,13 @@ const Dashboard = () => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-8 container mx-auto px-4 pb-8 pt-2"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
-      <motion.div 
+      <motion.div
         className="px-2 flex justify-between items-center"
         variants={itemVariants}
       >
@@ -120,11 +120,11 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Quick Stats */}
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 md:grid-cols-4 gap-6"
         variants={containerVariants}
       >
-        <motion.div 
+        <motion.div
           className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
@@ -135,14 +135,14 @@ const Dashboard = () => {
               loader
             ) : (
               <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => (task.status === 'in-progress' || task.status === 'todo')).length}</p>
+                <p className="text-3xl font-bold text-primary-600">{tasks.filter(task => (task.status === 'todo')).length}</p>
                 <FaArrowRight className="text-primary-600 text-xl" />
               </div>
             )}
           </Link>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
@@ -160,7 +160,7 @@ const Dashboard = () => {
           </Link>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
@@ -178,7 +178,7 @@ const Dashboard = () => {
           </Link>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
@@ -196,7 +196,7 @@ const Dashboard = () => {
           </Link>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
@@ -216,14 +216,14 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Bookmarks */}
-      <motion.div 
+      <motion.div
         className="bg-white rounded-lg shadow-md p-6"
         variants={itemVariants}
         whileHover={{ y: -5 }}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Bookmarks</h2>
-          <Link to="/bookmarks" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm">
+          <Link to="/bookmarks" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm md:text-base lg:text-md">
             View All <FaArrowRight />
           </Link>
         </div>
@@ -236,8 +236,8 @@ const Dashboard = () => {
                 whileHover={{ x: 5 }}
               >
                 <div className='pr-4'>
-                  <h3 className="text-sm font-medium">{bookmark.title}</h3>
-                  <p className="text-xs text-gray-600">
+                  <h3 className="text-sm md:text-base lg:text-md font-medium">{bookmark.title}</h3>
+                  <p className="text-xs md:text-sm lg:text-base text-gray-600">
                     {bookmark.type} • {formatDate(bookmark.createdAt)}
                   </p>
                 </div>
@@ -245,27 +245,27 @@ const Dashboard = () => {
                   href={bookmark.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-secondary flex items-center gap-2 text-sm"
+                  className="btn btn-secondary flex items-center gap-2 text-sm md:text-base lg:text-md"
                 >
                   View <FaArrowRight />
                 </a>
               </motion.div>
             ))
           ) : (
-            <p className="text-sm text-gray-600">No bookmarks yet. Start bookmarking papers and resources!</p>
+            <p className="text-sm md:text-base lg:text-md text-gray-600">No bookmarks yet. Start bookmarking papers and resources!</p>
           )}
         </div>
       </motion.div>
 
       {/* Recent Tasks */}
-      <motion.div 
+      <motion.div
         className="bg-white rounded-lg shadow-md p-6"
         variants={itemVariants}
         whileHover={{ y: -5 }}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Recent Tasks</h2>
-          <Link to="/tasks" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm">
+          <Link to="/tasks" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm md:text-base lg:text-md">
             View All <FaArrowRight />
           </Link>
         </div>
@@ -278,39 +278,38 @@ const Dashboard = () => {
                 whileHover={{ x: 5 }}
               >
                 <div className='pr-4'>
-                  <h3 className="text-sm font-medium">{task.title}</h3>
-                  <p className="text-xs text-gray-600">
+                  <h3 className="text-sm md:text-base lg:text-md font-medium">{task.title}</h3>
+                  <p className="text-xs md:text-sm lg:text-base text-gray-600">
                     Due: {new Date(task.dueDate).toLocaleDateString()}
                   </p>
                 </div>
                 <span
-                  className={`px-2 py-1 rounded-full text-xs flex items-center gap-2 ${
-                    task.status === 'completed'
+                  className={`px-2 py-1 rounded-full text-xs md:text-sm lg:text-base flex items-center gap-2 ${task.status === 'completed'
                       ? 'bg-green-100 text-green-800'
-                      : task.status === 'in-progress'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
+                      : task.status === 'todo'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
                 >
                   {task.status}
                 </span>
               </motion.div>
             ))
           ) : (
-            <p className="text-sm text-gray-600">No tasks yet. Create your first task!</p>
+            <p className="text-sm md:text-base lg:text-md text-gray-600">No tasks yet. Create your first task!</p>
           )}
         </div>
       </motion.div>
 
       {/* Recent Resources */}
-      <motion.div 
+      <motion.div
         className="bg-white rounded-lg shadow-md p-6"
         variants={itemVariants}
         whileHover={{ y: -5 }}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Recent Resources</h2>
-          <Link to="/resources" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm">
+          <Link to="/resources" className="text-primary-600 hover:text-primary-700 flex items-center gap-2 text-sm md:text-base lg:text-md">
             View All <FaArrowRight />
           </Link>
         </div>
@@ -323,8 +322,8 @@ const Dashboard = () => {
                 whileHover={{ x: 5 }}
               >
                 <div className='pr-4'>
-                  <h3 className="text-sm font-medium">{resource.title}</h3>
-                  <p className="text-xs text-gray-600">
+                  <h3 className="text-sm md:text-base lg:text-md font-medium">{resource.title}</h3>
+                  <p className="text-xs md:text-sm lg:text-base text-gray-600">
                     {resource.type} • {resource.subjectName}
                   </p>
                 </div>
@@ -332,14 +331,14 @@ const Dashboard = () => {
                   href={resource.driveLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-secondary flex items-center gap-2 text-sm"
+                  className="btn btn-secondary flex items-center gap-2 text-sm md:text-base lg:text-md"
                 >
                   View <FaArrowRight />
                 </a>
               </motion.div>
             ))
           ) : (
-            <p className="text-sm text-gray-600">No resources available yet.</p>
+            <p className="text-sm md:text-base lg:text-md text-gray-600">No resources available yet.</p>
           )}
         </div>
       </motion.div>

@@ -163,10 +163,10 @@ const Home = () => {
         </motion.div>
 
         <div className="relative z-10">
-          <h1 className="text-4xl font-bold text-white mb-3">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
             {user ? 'Welcome Back!' : 'Your All-in-One Academic Companion'}
           </h1>
-          <p className="text-md text-blue-100 mb-8 max-w-2xl mx-auto px-4 sm:px-0">
+          <p className="text-md md:text-lg text-blue-100 mb-8 max-w-2xl mx-auto px-4 sm:px-0">
             {user
               ? 'Continue your academic journey with our comprehensive platform.'
               : 'Streamline your studies with our comprehensive platform featuring past papers and smart task management.'}
