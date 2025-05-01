@@ -1,35 +1,60 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'todo' | 'in-progress' | 'completed';
-  userId: string;
-  attachPaperContent?: string;
-}
+import { Task, List } from '../../types/content';
 
 interface TaskState {
   tasks: Task[];
+  lists: List[];
   loading: boolean;
   error: string | null;
 }
 
 const initialState: TaskState = {
   tasks: [],
+  lists: [],
   loading: false,
-  error: null,
+  error: null
 };
 
 const taskSlice = createSlice({
   name: 'tasks',
   initialState,
   reducers: {
+    // Loading and error states
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
+    
+    // List actions
+    setLists: (state, action: PayloadAction<List[]>) => {
+      // Sort lists by position
+      state.lists = action.payload.sort((a, b) => a.position - b.position);
+    },
+    addList: (state, action: PayloadAction<List>) => {
+      state.lists.push(action.payload);
+      // Re-sort lists by position
+      state.lists.sort((a, b) => a.position - b.position);
+    },
+    updateList: (state, action: PayloadAction<List>) => {
+      const index = state.lists.findIndex(list => list.id === action.payload.id);
+      if (index !== -1) {
+        state.lists[index] = action.payload;
+        // Re-sort lists by position
+        state.lists.sort((a, b) => a.position - b.position);
+      }
+    },
+    deleteList: (state, action: PayloadAction<string>) => {
+      state.lists = state.lists.filter(list => list.id !== action.payload);
+    },
+    reorderLists: (state, action: PayloadAction<List[]>) => {
+      state.lists = action.payload.sort((a, b) => a.position - b.position);
+    },
+    
+    // Task actions
     setTasks: (state, action: PayloadAction<Task[]>) => {
       state.tasks = action.payload;
-      state.error = null;
     },
     addTask: (state, action: PayloadAction<Task>) => {
       state.tasks.push(action.payload);
@@ -43,22 +68,47 @@ const taskSlice = createSlice({
     deleteTask: (state, action: PayloadAction<string>) => {
       state.tasks = state.tasks.filter(task => task.id !== action.payload);
     },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
+    
+    // Move task between lists
+    moveTask: (state, action: PayloadAction<{
+      taskId: string;
+      sourceListId: string;
+      destinationListId: string;
+      destinationIndex: number;
+    }>) => {
+      const { taskId, sourceListId, destinationListId, destinationIndex } = action.payload;
+      
+      // Get the task to move
+      const taskIndex = state.tasks.findIndex(task => task.id === taskId);
+      if (taskIndex === -1) return;
+      
+      // Create updated task with new listId
+      const updatedTask = {
+        ...state.tasks[taskIndex],
+        listId: destinationListId,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update the task in the state
+      state.tasks[taskIndex] = updatedTask;
     },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-  },
+    
+    // Clear state (e.g., on logout)
+    clearTaskState: (state) => {
+      state.tasks = [];
+      state.lists = [];
+      state.loading = false;
+      state.error = null;
+    }
+  }
 });
 
 export const {
-  setTasks,
-  addTask,
-  updateTask,
-  deleteTask,
-  setLoading,
-  setError,
+  setLoading, setError,
+  setLists, addList, updateList, deleteList, reorderLists,
+  setTasks, addTask, updateTask, deleteTask,
+  moveTask,
+  clearTaskState
 } = taskSlice.actions;
 
 export default taskSlice.reducer; 

@@ -107,7 +107,7 @@ const Home = () => {
   };
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-16 pb-16 pt-8">
       {/* Hero Section with Animation */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
@@ -439,7 +439,7 @@ const Home = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center py-16 bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg relative overflow-hidden"
+          className="mx-4 text-center py-16 bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg relative overflow-hidden"
         >
           {/* Lighter Lightning Border Animation */}
           <motion.div

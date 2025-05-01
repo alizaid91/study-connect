@@ -45,4 +45,59 @@ export interface Bookmark {
   description: string;
   link: string;
   createdAt: string;
+}
+
+export type Priority = 'low' | 'medium' | 'high';
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  listId: string;
+  boardId: string;
+  priority: Priority;
+  dueDate?: string;
+  userId: string;
+  position: number;
+  attachments?: string[];
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface List {
+  id: string;
+  title: string;
+  boardId: string;
+  userId: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Board {
+  id: string;
+  title: string;
+  userId: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskForm {
+  title: string;
+  description?: string;
+  listId: string;
+  boardId: string;
+  priority: Priority;
+  dueDate?: string;
+  position?: number;
+  attachments?: string[];
+  completed?: boolean;
+}
+
+export interface ListForm {
+  title: string;
+  boardId: string;
+  position?: number;
 } 

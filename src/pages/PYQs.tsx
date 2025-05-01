@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { collection, query, where, getDocs, orderBy, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
-import { Paper, Bookmark } from '../types/content';
+import { Paper, Bookmark, TaskForm, Task, List } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
-import { fetchPapers } from '../store/slices/papersSlice';
-import { addTask, Task } from '../store/slices/taskSlice';
-import { FiTrash2, FiCheckSquare } from 'react-icons/fi';
+import { fetchPapers, setLoading } from '../store/slices/papersSlice';
+import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import TaskModal from '../components/TaskModal';
+import { setLists } from '../store/slices/taskSlice';
 
 interface Subject {
   name: string;
@@ -19,6 +21,7 @@ const PYQs: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
   const { papers, loading, error } = useSelector((state: RootState) => state.papers);
+  const { lists } = useSelector((state: RootState) => state.tasks);
   const [saving, setSaving] = useState(false);
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
@@ -33,16 +36,11 @@ const PYQs: React.FC = () => {
     subjectCode: ''
   });
 
-  const [taskInfo, setTaskInfo] = useState<Omit<Task, 'id' | 'userId'>>({
-    title: '',
-    description: '',
-    dueDate: '',
-    priority: 'high',
-    status: 'in-progress',
-    attachPaperContent: ''
-  });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [addingTask, setAddingTasks] = useState(false)
+  // Task Modal state
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  const [defaultListId, setDefaultListId] = useState<string | null>(null);
 
   // Quick filters state and types
   type FilterValues = {
@@ -63,11 +61,45 @@ const PYQs: React.FC = () => {
   const [draggedQFIndex, setDraggedQFIndex] = useState<number | null>(null);
   // ID of the quick filter currently being deleted
   const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
+  // UI states
+  const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+
+  // Effect to prevent background scrolling when modal is open
+  useEffect(() => {
+    if (isTaskModalOpen) {
+      // Disable scrolling on body
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable scrolling when modal closes
+      document.body.style.overflow = 'auto';
+    }
+    
+    // Cleanup function to ensure scrolling is re-enabled when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isTaskModalOpen]);
 
   useEffect(() => {
     if (user) {
       dispatch(fetchPapers());
     }
+
+    // fetch task lists
+    const fetchTaskLists = async () => {
+      if (!user) return;
+      const listsQuery = query(
+        collection(db, 'lists'),
+        where('userId', '==', user.uid)
+      );
+      const querySnapshot = await getDocs(listsQuery);
+      const listsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      dispatch(setLists(listsData as List[]));
+    };
+    fetchTaskLists();
   }, [dispatch, user]);
 
   useEffect(() => {
@@ -124,6 +156,16 @@ const PYQs: React.FC = () => {
     setFilteredPapers(filtered);
   }, [filters, papers]);
 
+  useEffect(() => {
+    // Find the default list (position 0) when lists are loaded
+    if (lists.length > 0) {
+      const defaultList = lists.find(list => list.position === 0);
+      if (defaultList) {
+        setDefaultListId(defaultList.id);
+      }
+    }
+  }, [lists]);
+
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters(prev => {
@@ -153,31 +195,50 @@ const PYQs: React.FC = () => {
   };
 
   const setDefaultTaskInfo = (paper: Paper) => {
-    const title = 'Solve ' + (paper.year !== 'FE' ? paper.year : '') + '-' + paper.branch + ' ' + (paper.subjectId.toUpperCase()) + ' ' + paper.paperType + ' Paper of ' + paper.paperName;
-    setTaskInfo({ title: title, description: '', dueDate: '', priority: 'high', status: 'in-progress', attachPaperContent: paper.driveLink });
-    setIsModalOpen(true);
-  }
+    setSelectedPaper(paper);
+    setIsTaskModalOpen(true);
+  };
 
-  const addTaskWithAttachment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user?.uid) return;
+  const handleSaveTask = async (taskData: TaskForm) => {
+    if (!user?.uid || !defaultListId) return;
 
-    const taskData = {
-      ...taskInfo,
-      userId: user.uid,
-    };
-
-    setAddingTasks(true)
+    setIsSubmitting(true);
     try {
-      const docRef = await addDoc(collection(db, 'tasks'), taskData);
-      dispatch(addTask({ ...taskData, id: docRef.id }));
+      // Get the board ID from the default list
+      const defaultList = lists.find(list => list.id === defaultListId);
+      if (!defaultList) {
+        throw new Error('Default list not found');
+      }
+
+      const boardId = defaultList.boardId;
+
+      // Get tasks in the same list to determine position
+      const listTasks = lists.filter(list => list.id === taskData.listId);
+      const position = listTasks.length > 0
+        ? Math.max(...listTasks.map(list => list.position)) + 1
+        : 0;
+
+      const newTask = {
+        ...taskData,
+        boardId,
+        userId: user.uid,
+        position,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Add to Firestore only - the listener will update Redux
+      await addDoc(collection(db, 'tasks'), newTask);
+
+      setIsTaskModalOpen(false);
+      alert('Task added successfully!');
     } catch (error) {
       console.error('Error saving task:', error);
+      alert('Error adding task');
     } finally {
-      setAddingTasks(false)
-      setIsModalOpen(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const clearFilters = () => {
     setFilters({
@@ -274,7 +335,7 @@ const PYQs: React.FC = () => {
       }));
 
     return Array.from(new Set(subjects.map(s => JSON.stringify(s))))
-      .map(s => JSON.parse(s));
+      .map(s => JSON.parse(s) as Subject);
   };
 
   // add drag handlers
@@ -297,351 +358,397 @@ const PYQs: React.FC = () => {
     setDraggedQFIndex(null);
   };
 
+  // Create a mock task for the modal when a paper is selected
+  const taskForModal = useMemo(() => {
+    if (!selectedPaper || !defaultListId) return null;
+
+    const defaultList = lists.find(list => list.id === defaultListId);
+    if (!defaultList) return null;
+
+    // Create title based on paper information
+    const title = 'Solve ' +
+      (selectedPaper.year !== 'FE' ? selectedPaper.year : '') +
+      '-' + selectedPaper.branch + ' ' +
+      (selectedPaper.subjectId.toUpperCase()) + ' ' +
+      selectedPaper.paperType + ' Paper of ' +
+      selectedPaper.paperName;
+
+    // Create a mock task with the paper information
+    return {
+      id: 'temp-id', // Temporary ID, will be replaced when saved
+      title,
+      description: '',
+      listId: defaultListId,
+      boardId: defaultList.boardId,
+      priority: 'high',
+      dueDate: '',
+      userId: user?.uid || '',
+      position: 0,
+      attachments: selectedPaper.driveLink ? [selectedPaper.driveLink] : undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } as Task;
+  }, [selectedPaper, defaultListId, lists, user]);
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="relative w-24 h-24">
+          <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
+          <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
+          <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto mt-8">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="container mx-auto mt-8"
+      >
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md">
+          <p className="font-bold">Error</p>
+          <p>{error}</p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 pb-8 pt-2">
-      <h1 className="text-3xl font-bold mb-6 text-center">Previous Year Question Papers</h1>
-      {quickFilters.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-3">Quick Filters</h2>
-          <div className="flex flex-wrap gap-3">
-            {quickFilters.map((qf, idx) => (
-              <div
-                key={qf.id}
-                draggable
-                onDragStart={() => handleQFDragStart(qf, idx)}
-                onDragOver={handleQFDragOver}
-                onDrop={(e) => handleQFDrop(e, idx)}
-                className="bg-white shadow-md rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab"
-              >
-                <div className="flex flex-wrap items-center space-x-2 text-sm text-gray-700">
-                  <span className="font-medium">{qf.values.branch}</span>
-                  {qf.values.branch !== 'FE' && qf.values.year && <span>- {qf.values.year}</span>}
-                  {qf.values.pattern && <span>- {qf.values.pattern} Pattern</span>}
-                  {qf.values.paperType && <span>- {qf.values.paperType}</span>}
-                  {qf.values.subjectName && <span>- {qf.values.subjectCode}</span>}
-                </div>
-                <div className="flex items-center space-x-4">
-                  <FiCheckSquare onClick={() => handleApplyQuickFilter(qf)} className="text-primary-600 hover:text-primary-700 cursor-pointer" size={20} />
-                  {isDeleting && deletingQFId === qf.id ? (
-                    <div role="status" className="inline-flex items-center">
-                      <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-2"></div>
-                      <span className="sr-only">Deleting...</span>
-                    </div>
-                  ) : (
-                    <FiTrash2 onClick={() => handleDeleteQuickFilter(qf.id)} className="text-red-500 hover:text-red-600 cursor-pointer" size={20} />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <form>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
-              <select
-                name="branch"
-                value={filters.branch}
-                onChange={handleFilterChange}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">All Branches</option>
-                <option value="FE">First Year</option>
-                <option value="CS">Computer Science</option>
-                <option value="IT">Information Technology</option>
-                <option value="Civil">Civil</option>
-                <option value="Mechanical">Mechanical</option>
-              </select>
-            </div>
+    <div className="container mx-auto px-4 py-8 min-h-screen">
+      <motion.h1
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-3xl font-bold mb-8 text-center text-gray-800 pb-2"
+      >
+        PYQ Papers
+      </motion.h1>
 
-            {filters.branch && filters.branch !== 'FE' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                <select
-                  name="year"
-                  value={filters.year}
-                  onChange={handleFilterChange}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">All Years</option>
-                  <option value="SE">Second Year</option>
-                  <option value="TE">Third Year</option>
-                  <option value="BE">Final Year</option>
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Pattern</label>
-              <select
-                name="pattern"
-                value={filters.pattern}
-                onChange={handleFilterChange}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">All Patterns</option>
-                <option value="2019">2019</option>
-                <option value="2024">2024</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-              <select
-                name="subjectName"
-                value={filters.subjectName}
-                onChange={handleFilterChange}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                disabled={!filters.branch || (filters.branch !== 'FE' && !filters.year)}
-              >
-                <option value="">All Subjects</option>
-                {getAvailableSubjects().map((subject) => (
-                  <option key={subject.code} value={subject.name}>
-                    {subject.name} ({subject.code.toUpperCase()})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Paper Type</label>
-              <select
-                name="paperType"
-                value={filters.paperType}
-                onChange={handleFilterChange}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">All Paper Types</option>
-                <option value="Insem">Insem</option>
-                <option value="Endsem">Endsem</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col md:flex-row gap-2">
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded"
-            >
-              Clear Filters
-            </button>
-            {(filters.branch || filters.year || filters.pattern || filters.paperType || filters.subjectName) && (
-              saving ? <button disabled type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center">
-                <svg aria-hidden="true" role="status" className="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB" />
-                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor" />
-                </svg>
-                Loading...
-              </button> :
-                <button
-                  type="button"
-                  onClick={handleSaveQuickFilter}
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded"
-                >
-                  Save Quick Filter
-                </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {filteredPapers.length === 0 ? (
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-          No papers found matching the selected filters.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPapers.map((paper) => (
-            <div key={paper.id} className="bg-white rounded-lg shadow-md overflow-hidden pt-5 relative">
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">{paper.subjectName}</h3>
-                <p className="text-gray-600 mb-2">
-                  {paper.branch} - {paper.year !== 'FE' ? paper.year : ''} {paper.pattern} Pattern
-                </p>
-                <p className="text-gray-700 mb-4">
-                  <span className="font-medium">{paper.paperType} </span> <span> Paper </span> <span className="font-medium">{paper.paperName} </span>
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row text-center">
-                  <a
-                    href={paper.driveLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block"
-                  >
-                    View Paper
-                  </a>
-                  <button
-                    onClick={() => setDefaultTaskInfo(paper)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block"
-                  >
-                    Add to Tasks
-                  </button>
-                </div>
-              </div>
-              <div className='absolute top-2 right-2 p-1 flex justify-center items-center'>
-                {
-                  changingBookmarkState && paper.id === itemToChangeBookmarkState
-                    ? <div role="status" className="inline-flex items-center">
-                      <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                      <span className="sr-only">Changing...</span>
-                    </div>
-                    : <button
-                      onClick={() => handleBookmark(paper)}
-                      className={`rounded-full ${isBookmarked(paper.id)
-                        ? 'text-yellow-500 hover:text-yellow-600'
-                        : 'text-gray-400 hover:text-gray-500'
-                        }`}
-                    >
-                      <svg
-                        className="w-6 h-6"
-                        fill={isBookmarked(paper.id) ? 'currentColor' : 'none'}
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                        />
-                      </svg>
-                    </button>
-                }
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative mx-4">
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setTaskInfo({ title: '', description: '', dueDate: '', priority: 'medium', status: 'todo', attachPaperContent: taskInfo.attachPaperContent });
-              }}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
-            >
-              &times;
-            </button>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Add Task
+      <AnimatePresence>
+        {quickFilters.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-8"
+          >
+            <h2 className="text-xl font-semibold mb-4 text-gray-700 flex items-center">
+              <FiFilter className="mr-2" /> Quick Filters
             </h2>
-            <form onSubmit={addTaskWithAttachment} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Title</label>
-                <input
-                  type="text"
-                  placeholder="Task Title"
-                  value={taskInfo.title}
-                  onChange={(e) => setTaskInfo({ ...taskInfo, title: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
-                  placeholder="Task Description"
-                  value={taskInfo.description}
-                  onChange={(e) => setTaskInfo({ ...taskInfo, description: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Due Date</label>
-                <input
-                  type="date"
-                  placeholder="Due Date"
-                  value={taskInfo.dueDate}
-                  onChange={(e) => setTaskInfo({ ...taskInfo, dueDate: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Priority</label>
-                  <select
-                    value={taskInfo.priority}
-                    onChange={(e) =>
-                      setTaskInfo({ ...taskInfo, priority: e.target.value as 'low' | 'medium' | 'high' })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <select
-                    value={taskInfo.status}
-                    onChange={(e) =>
-                      setTaskInfo({ ...taskInfo, status: e.target.value as 'todo' | 'in-progress' | 'completed' })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setTaskInfo({ title: '', description: '', dueDate: '', priority: 'medium', status: 'todo', attachPaperContent: taskInfo.attachPaperContent });
-                  }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+            <div className="flex flex-wrap gap-3">
+              {quickFilters.map((qf, idx) => (
+                <motion.div
+                  key={qf.id}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.2, delay: idx * 0.05 }}
+                  draggable
+                  onDragStart={() => handleQFDragStart(qf, idx)}
+                  onDragOver={handleQFDragOver}
+                  onDrop={(e) => handleQFDrop(e, idx)}
+                  className="bg-white shadow-lg rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab transition-all duration-200 hover:shadow-xl border-l-4 border-blue-500"
+                  whileHover={{ y: -5 }}
                 >
-                  Cancel
-                </button>
-                {
-                  addingTask
-                    ? <button disabled type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center justify-center">
+                  <div className="flex flex-wrap items-center space-x-2 text-sm text-gray-700">
+                    <span className="font-medium">{qf.values.branch}</span>
+                    {qf.values.branch !== 'FE' && qf.values.year && <span>- {qf.values.year}</span>}
+                    {qf.values.pattern && <span>- {qf.values.pattern} Pattern</span>}
+                    {qf.values.paperType && <span>- {qf.values.paperType}</span>}
+                    {qf.values.subjectName && <span>- {qf.values.subjectCode}</span>}
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.95 }}>
+                      <FiCheckSquare onClick={() => handleApplyQuickFilter(qf)} className="text-primary-600 hover:text-primary-700 cursor-pointer" size={20} />
+                    </motion.div>
+                    {isDeleting && deletingQFId === qf.id ? (
+                      <div role="status" className="inline-flex items-center">
+                        <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-2"></div>
+                        <span className="sr-only">Deleting...</span>
+                      </div>
+                    ) : (
+                      <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.95 }}>
+                        <FiTrash2 onClick={() => handleDeleteQuickFilter(qf.id)} className="text-red-500 hover:text-red-600 cursor-pointer" size={20} />
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="bg-white rounded-lg shadow-lg p-6 mb-8 border border-gray-100"
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-700 flex items-center">
+            <FiFilter className="mr-2" /> Filter Papers
+          </h2>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <FiChevronsDown className={`transform transition-transform duration-300 ${isFilterExpanded ? 'rotate-180' : ''}`} size={24} />
+          </motion.button>
+        </div>
+
+        <AnimatePresence>
+          {isFilterExpanded && (
+            <motion.form
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                  <select
+                    name="branch"
+                    value={filters.branch}
+                    onChange={handleFilterChange}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                  >
+                    <option value="">All Branches</option>
+                    <option value="FE">First Year</option>
+                    <option value="CS">Computer Science</option>
+                    <option value="IT">Information Technology</option>
+                    <option value="Civil">Civil</option>
+                    <option value="Mechanical">Mechanical</option>
+                  </select>
+                </motion.div>
+
+                {filters.branch && filters.branch !== 'FE' && (
+                  <motion.div
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                    <select
+                      name="year"
+                      value={filters.year}
+                      onChange={handleFilterChange}
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                    >
+                      <option value="">All Years</option>
+                      <option value="SE">Second Year</option>
+                      <option value="TE">Third Year</option>
+                      <option value="BE">Final Year</option>
+                    </select>
+                  </motion.div>
+                )}
+
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Pattern</label>
+                  <select
+                    name="pattern"
+                    value={filters.pattern}
+                    onChange={handleFilterChange}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                  >
+                    <option value="">All Patterns</option>
+                    <option value="2019">2019</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </motion.div>
+
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                  <select
+                    name="subjectName"
+                    value={filters.subjectName}
+                    onChange={handleFilterChange}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                    disabled={!filters.branch || (filters.branch !== 'FE' && !filters.year)}
+                  >
+                    <option value="">All Subjects</option>
+                    {getAvailableSubjects().map((subject) => (
+                      <option key={subject.code} value={subject.name}>
+                        {subject.name} ({subject.code.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </motion.div>
+
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Paper Type</label>
+                  <select
+                    name="paperType"
+                    value={filters.paperType}
+                    onChange={handleFilterChange}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                  >
+                    <option value="">All Paper Types</option>
+                    <option value="Insem">Insem</option>
+                    <option value="Endsem">Endsem</option>
+                  </select>
+                </motion.div>
+              </div>
+
+              <div className="mt-6 flex flex-col md:flex-row gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onClick={clearFilters}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2.5 rounded-md font-medium transition-all duration-200 flex items-center justify-center"
+                >
+                  Clear Filters
+                </motion.button>
+                {(filters.branch || filters.year || filters.pattern || filters.paperType || filters.subjectName) && (
+                  saving ?
+                    <button disabled type="button" className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-md text-sm px-6 py-2.5 text-center inline-flex items-center justify-center">
                       <svg aria-hidden="true" role="status" className="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB" />
                         <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor" />
                       </svg>
                       Saving...
-                    </button>
-                    : <button
-                      type="submit"
-                      className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                    </button> :
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      type="button"
+                      onClick={handleSaveQuickFilter}
+                      className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-md font-medium transition-all duration-200 flex items-center justify-center"
                     >
-                      Add Task
-                    </button>
-                }
+                      Save Quick Filter
+                    </motion.button>
+                )}
               </div>
-            </form>
-          </div>
-        </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      <AnimatePresence>
+        {filteredPapers.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
+            className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow-md"
+          >
+            <div className="flex items-center">
+              <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+              </svg>
+              <p>No papers found matching the selected filters.</p>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {filteredPapers.map((paper, index) => (
+              <motion.div
+                key={paper.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                className="bg-white rounded-lg shadow-md overflow-hidden relative group"
+              >
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                <div className="p-6">
+                  <h3 className="text-md md:text-lg font-semibold mb-2 text-gray-800 pr-4">{paper.subjectName}</h3>
+                  <p className="text-sm md:text-md text-gray-600 mb-2">
+                    {paper.branch} - {paper.year !== 'FE' ? paper.year : ''} {paper.pattern} Pattern
+                  </p>
+                  <p className="text-sm md:text-md text-gray-700 mb-6">
+                    <span className="font-medium">{paper.paperType} </span> <span> Paper </span> <span className="font-medium">{paper.paperName} </span>
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 text-center">
+                    <motion.a
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      href={paper.driveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
+                    >
+                      View Paper
+                    </motion.a>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setDefaultTaskInfo(paper)}
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
+                    >
+                      Add to Tasks
+                    </motion.button>
+                  </div>
+                </div>
+                <div className='absolute top-3 right-3 p-1 flex justify-center items-center'>
+                  {
+                    changingBookmarkState && paper.id === itemToChangeBookmarkState
+                      ? <div role="status" className="inline-flex items-center justify-center p-2">
+                        <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                        <span className="sr-only">Changing...</span>
+                      </div>
+                      : <motion.button
+                        whileHover={{ scale: 1.2 }}
+                        whileTap={{ scale: 0.8 }}
+                        onClick={() => handleBookmark(paper)}
+                        className={`rounded-full p-2 ${isBookmarked(paper.id)
+                          ? 'text-yellow-500 bg-yellow-50'
+                          : 'text-gray-400 bg-gray-50'
+                          } transition-all duration-200`}
+                      >
+                        <FiBookmark
+                          className={`w-5 h-5 ${isBookmarked(paper.id) ? 'fill-current' : ''}`}
+                        />
+                      </motion.button>
+                  }
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {isTaskModalOpen && defaultListId && taskForModal && (
+        <TaskModal
+          isOpen={isTaskModalOpen}
+          lists={lists}
+          task={taskForModal}
+          onClose={() => {
+            setIsTaskModalOpen(false);
+            setSelectedPaper(null);
+          }}
+          onSave={handleSaveTask}
+          isSubmitting={isSubmitting}
+          boardId={lists.find(list => list.id === defaultListId)?.boardId || ''}
+        />
       )}
     </div>
   );
