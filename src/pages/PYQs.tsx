@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { collection, query, where, getDocs, orderBy, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
 import { Paper, Bookmark, TaskForm, Task, List } from '../types/content';
@@ -9,7 +9,7 @@ import { fetchPapers, setLoading } from '../store/slices/papersSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import TaskModal from '../components/TaskModal';
-import { setLists } from '../store/slices/taskSlice';
+import { setLists, setTasks } from '../store/slices/taskSlice';
 
 interface Subject {
   name: string;
@@ -21,7 +21,7 @@ const PYQs: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
   const { papers, loading, error } = useSelector((state: RootState) => state.papers);
-  const { lists } = useSelector((state: RootState) => state.tasks);
+  const { lists, tasks } = useSelector((state: RootState) => state.tasks);
   const [saving, setSaving] = useState(false);
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
@@ -73,7 +73,7 @@ const PYQs: React.FC = () => {
       // Re-enable scrolling when modal closes
       document.body.style.overflow = 'auto';
     }
-    
+
     // Cleanup function to ensure scrolling is re-enabled when component unmounts
     return () => {
       document.body.style.overflow = 'auto';
@@ -97,8 +97,10 @@ const PYQs: React.FC = () => {
         id: doc.id,
         ...doc.data()
       }));
+
       dispatch(setLists(listsData as List[]));
     };
+
     fetchTaskLists();
   }, [dispatch, user]);
 
@@ -213,7 +215,37 @@ const PYQs: React.FC = () => {
       const boardId = defaultList.boardId;
 
       // Get tasks in the same list to determine position
-      const listTasks = lists.filter(list => list.id === taskData.listId);
+      const fetchTasks = async (boardId: string) => {
+        const tasksQuery = query(
+          collection(db, 'tasks'),
+          where('boardId', '==', boardId)
+        );
+
+        onSnapshot(
+          tasksQuery,
+          (snapshot) => {
+            const fetchedTasks = snapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...data,
+                position: typeof data.position === 'number' ? data.position : 0,
+                createdAt: data.createdAt || new Date().toISOString(),
+                updatedAt: data.updatedAt || new Date().toISOString()
+              };
+            }) as Task[];
+
+            dispatch(setTasks(fetchedTasks));
+          },
+          (error) => {
+            dispatch(setLoading(false));
+          }
+        );
+      }
+
+      await fetchTasks(taskData.boardId);
+
+      const listTasks = tasks.filter(task => task.listId === taskData.listId);
       const position = listTasks.length > 0
         ? Math.max(...listTasks.map(list => list.position)) + 1
         : 0;
@@ -231,7 +263,6 @@ const PYQs: React.FC = () => {
       await addDoc(collection(db, 'tasks'), newTask);
 
       setIsTaskModalOpen(false);
-      alert('Task added successfully!');
     } catch (error) {
       console.error('Error saving task:', error);
       alert('Error adding task');
@@ -428,13 +459,13 @@ const PYQs: React.FC = () => {
         PYQ Papers
       </motion.h1>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {quickFilters.length > 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mb-8"
+            className="mb-8 overflow-hidden"
           >
             <h2 className="text-xl font-semibold mb-4 text-gray-700 flex items-center">
               <FiFilter className="mr-2" /> Quick Filters
@@ -488,7 +519,7 @@ const PYQs: React.FC = () => {
         transition={{ duration: 0.3, delay: 0.1 }}
         className="bg-white rounded-lg shadow-lg p-6 mb-8 border border-gray-100"
       >
-        <div className="flex justify-between items-center mb-4">
+        <div className={`flex justify-between items-center ${isFilterExpanded && 'mb-4'}`}>
           <h2 className="text-xl font-semibold text-gray-700 flex items-center">
             <FiFilter className="mr-2" /> Filter Papers
           </h2>
@@ -502,13 +533,14 @@ const PYQs: React.FC = () => {
           </motion.button>
         </div>
 
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {isFilterExpanded && (
             <motion.form
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
+              className="overflow-hidden"
             >
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <motion.div
@@ -647,7 +679,7 @@ const PYQs: React.FC = () => {
         </AnimatePresence>
       </motion.div>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {filteredPapers.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}

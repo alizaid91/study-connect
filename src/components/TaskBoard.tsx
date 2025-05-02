@@ -412,10 +412,10 @@ const TaskBoard = () => {
                                         />
                                     </div>
                                 ))}
-                                <div className="snap-start ml-2 pt-2 flex items-start">
+                                <div className="snap-start ml-2 pt-1 flex items-start">
                                     <button
                                         onClick={handleAddList}
-                                        className="text-nowrap bg-gray-800 hover:bg-gray-700 text-gray-200 h-10 px-4 py-2 rounded-xl flex items-center space-x-2 transition-colors shadow-sm"
+                                        className="text-nowrap bg-white shadow-md h-10 px-4 py-2 rounded-xl flex items-center space-x-2 transition-colors"
                                     >
                                         <FiPlus />
                                         <span>Add Another List</span>

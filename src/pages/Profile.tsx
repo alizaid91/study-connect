@@ -1,9 +1,60 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { auth, db } from '../config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { RootState } from '../store';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
+import { motion, AnimatePresence } from 'framer-motion';
+import Cropper from 'react-easy-crop';
+import { FiUser, FiEdit, FiSave, FiX, FiCheck } from 'react-icons/fi';
+
+// Function to create image from canvas for cropping
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.setAttribute('crossOrigin', 'anonymous');
+    image.src = url;
+  });
+
+// Function to get cropped image
+const getCroppedImg = async (
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<Blob> => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('Could not create canvas context');
+  }
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        throw new Error('Canvas is empty');
+      }
+      resolve(blob);
+    }, 'image/jpeg', 0.95);
+  });
+};
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -12,9 +63,16 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [updating, setUpdating] = useState(false)
+  const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image cropping state
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -44,27 +102,59 @@ const Profile = () => {
     }));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image size should be less than 2MB');
+      return;
+    }
+
+    setError('');
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result as string);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setImageSrc(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropComplete = async () => {
+    if (!imageSrc || !croppedAreaPixels || !user) return;
 
     try {
       setUploading(true);
       setError('');
 
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Please upload an image file');
-      }
-
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        throw new Error('Image size should be less than 2MB');
-      }
+      // Get the cropped image blob
+      const croppedImage = await getCroppedImg(
+        imageSrc,
+        croppedAreaPixels as { x: number; y: number; width: number; height: number }
+      );
 
       // Create form data for Cloudinary upload
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', croppedImage);
       formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
       formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
 
@@ -94,6 +184,8 @@ const Profile = () => {
       await updateDoc(doc(db, 'users', user.uid), updatedProfile);
       setProfile(updatedProfile);
       setSuccess('Avatar updated successfully');
+      setShowCropper(false);
+      setImageSrc(null);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -107,7 +199,7 @@ const Profile = () => {
     setSuccess('');
 
     if (!user) return;
-    setUpdating(true)
+    setUpdating(true);
     try {
       const updatedProfile = {
         ...profile,
@@ -119,7 +211,7 @@ const Profile = () => {
     } catch (error: any) {
       setError('Failed to update profile');
     } finally {
-      setUpdating(false)
+      setUpdating(false);
     }
   };
 
@@ -136,195 +228,315 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 mx-2">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Settings</h2>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-600"></div>
+        
+        <motion.h2 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-2xl font-bold text-gray-900 mb-6 flex items-center"
+        >
+          <FiUser className="mr-2 text-blue-500" /> Profile Settings
+        </motion.h2>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
-            {error}
-          </div>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-md flex items-center"
+            >
+              <FiX className="mr-2" /> {error}
+            </motion.div>
+          )}
 
-        {success && (
-          <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-md">
-            {success}
-          </div>
-        )}
+          {success && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-md flex items-center"
+            >
+              <FiCheck className="mr-2" /> {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="mb-6 flex flex-col items-center">
-          <div className="relative">
-            <div className="w-32 h-32 rounded-full overflow-hidden">
+        {/* Image Cropper Modal */}
+        <AnimatePresence>
+          {showCropper && imageSrc && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.9 }}
+                className="bg-white rounded-lg p-6 w-full max-w-md"
+              >
+                <h3 className="text-xl font-semibold mb-4">Crop Your Avatar</h3>
+                <div className="relative h-60 w-full mb-4">
+                  <Cropper
+                    image={imageSrc}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={1}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropComplete={onCropComplete}
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Zoom</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.1"
+                    value={zoom}
+                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={handleCropCancel}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                    disabled={uploading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCropComplete}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>Save</>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="mb-8 flex flex-col items-center">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="relative group"
+          >
+            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 shadow-md">
               <img
                 src={profile.avatarUrl || DEFAULT_AVATAR[profile.gender || 'prefer not to say']}
                 alt="Profile"
-                className="object-cover"
+                className="w-full h-full object-cover"
               />
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="absolute bottom-0 right-0 bg-white rounded-full p-2 border-2 border-primary-500 hover:bg-primary-50"
+              className="absolute bottom-0 right-0 bg-white rounded-full p-3 shadow-lg border border-gray-200 hover:bg-blue-50 transition-all duration-200 text-blue-500"
             >
               {uploading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
+                <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
               ) : (
-                <svg
-                  className="w-4 h-4 text-primary-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
+                <FiEdit size={18} />
               )}
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
           <input
             type="file"
             ref={fileInputRef}
-            onChange={handleImageUpload}
+            onChange={handleFileSelect}
             accept="image/*"
             className="hidden"
           />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-              Full Name
-            </label>
-            <input
-              id="fullName"
-              name="fullName"
-              type="text"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              value={profile.fullName || ''}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Username
-            </label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              value={profile.username || ''}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
-              Branch
-            </label>
-            <select
-              id="branch"
-              name="branch"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              value={profile.branch || 'FE'}
-              onChange={handleInputChange}
+          <div className="grid grid-cols-1 gap-6">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
             >
-              <option value="FE">First Year Engineering</option>
-              <option value="CS">Computer Science</option>
-              <option value="IT">Information Technology</option>
-              <option value="Civil">Civil Engineering</option>
-              <option value="Mechanical">Mechanical Engineering</option>
-            </select>
-          </div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                value={profile.fullName || ''}
+                onChange={handleInputChange}
+              />
+            </motion.div>
 
-          {profile.branch !== 'FE' && (
-            <div>
-              <label htmlFor="year" className="block text-sm font-medium text-gray-700">
-                Year
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                value={profile.username || ''}
+                onChange={handleInputChange}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
+                Branch
               </label>
               <select
-                id="year"
-                name="year"
+                id="branch"
+                name="branch"
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                value={profile.year || 'SE'}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                value={profile.branch || 'FE'}
                 onChange={handleInputChange}
               >
-                <option value="SE">Second Year</option>
-                <option value="TE">Third Year</option>
-                <option value="BE">Final Year</option>
+                <option value="FE">First Year Engineering</option>
+                <option value="CS">Computer Science</option>
+                <option value="IT">Information Technology</option>
+                <option value="Civil">Civil Engineering</option>
+                <option value="Mechanical">Mechanical Engineering</option>
               </select>
-            </div>
-          )}
+            </motion.div>
 
-          <div>
-            <label htmlFor="collegeName" className="block text-sm font-medium text-gray-700">
-              College Name
-            </label>
-            <input
-              id="collegeName"
-              name="collegeName"
-              type="text"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              value={profile.collegeName || ''}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-              Gender
-            </label>
-            <select
-              id="gender"
-              name="gender"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              value={profile.gender || 'prefer not to say'}
-              onChange={handleInputChange}
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-              <option value="prefer not to say">Prefer not to say</option>
-            </select>
-          </div>
-
-          <div>
-            {
-              updating
-                ? <button disabled type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center justify-center w-full">
-                  <svg aria-hidden="true" role="status" className="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB" />
-                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor" />
-                  </svg>
-                  Updating...
-                </button>
-                : <button
-                  type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            {profile.branch !== 'FE' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                  Year
+                </label>
+                <select
+                  id="year"
+                  name="year"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                  value={profile.year || 'SE'}
+                  onChange={handleInputChange}
                 >
-                  Update Profile
-                </button>
-            }
+                  <option value="SE">Second Year</option>
+                  <option value="TE">Third Year</option>
+                  <option value="BE">Final Year</option>
+                </select>
+              </motion.div>
+            )}
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <label htmlFor="collegeName" className="block text-sm font-medium text-gray-700">
+                College Name
+              </label>
+              <input
+                id="collegeName"
+                name="collegeName"
+                type="text"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                value={profile.collegeName || ''}
+                onChange={handleInputChange}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                Gender
+              </label>
+              <select
+                id="gender"
+                name="gender"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                value={profile.gender || 'prefer not to say'}
+                onChange={handleInputChange}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+                <option value="prefer not to say">Prefer not to say</option>
+              </select>
+            </motion.div>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="mt-8"
+          >
+            {updating ? (
+              <button 
+                disabled 
+                type="button" 
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600"
+              >
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Updating Profile...
+              </button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+              >
+                <FiSave className="mr-2" /> Update Profile
+              </motion.button>
+            )}
+          </motion.div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

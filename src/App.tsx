@@ -39,7 +39,7 @@ function App() {
         <ScrollToTop />
         <div className="min-h-screen bg-gray-50 flex flex-col">
           <Navbar />
-          <main className="w-full flex-grow">
+          <main className="w-full flex-grow pt-16">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
