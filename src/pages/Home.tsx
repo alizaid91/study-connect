@@ -81,24 +81,28 @@ const Home = () => {
 
   const faqs = [
     {
-      question: "How do I access past year papers?",
-      answer: "Simply navigate to the PYQs section and use the search filters to find the papers you need."
+      question: "How do I navigate through the PYQs section?",
+      answer: "The PYQs page features an intuitive filter panel where you can select branch, year, pattern, and subject. You can also save your frequently used filters as Quick Filters for faster access next time. Each paper has options to view it directly or add it to your tasks."
     },
     {
-      question: "Can I save papers for later?",
-      answer: "Yes! You can bookmark any paper or resource and access it later from your bookmarks."
+      question: "How can I bookmark papers and resources?",
+      answer: "Each paper and resource card has a bookmark icon in the top-right corner. Simply click on it to save the item to your bookmarks. You can access all your bookmarks through the Bookmarks page, which organizes them into Papers and Resources tabs."
     },
     {
-      question: "Is the platform free to use?",
-      answer: "Yes, all features are completely free for students."
+      question: "Can I add papers to my task list?",
+      answer: "Yes! On the PYQs page, each paper card has an 'Add to Tasks' button. Clicking it opens a modal where you can set details like priority and due date before adding it to your task board."
     },
     {
-      question: "Can I add question papers to tasks?",
-      answer: "Yes, you can add question papers to tasks and manage your study schedule effectively."
+      question: "Can I create multiple task lists on Task Borad?",
+      answer: "Yes, you can create any number of task lists and organize your task efficeintly."
     },
     {
-      question: "How do I manage my tasks?",
-      answer: "You can create and organize your study tasks in the Tasks section."
+      question: "How are the resources organized?",
+      answer: "The Resources page groups study materials by category and type. You can use the filter panel to narrow down your search by branch, year, and subject. Each resource card shows key information and provides direct access to the material."
+    },
+    {
+      question: "What features does the Dashboard provide?",
+      answer: "The Dashboard gives you a complete overview of your academic progress with quick access to recent papers, pending tasks, and saved resources. You can track your study progress, see upcoming deadlines, and get personalized recommendations based on your study patterns."
     }
   ];
 
