@@ -21,39 +21,39 @@ const FE_SUBJECTS = [
 
 const IT_SUBJECTS = {
   SE: [
-    { name: 'Discrete Mathematics', code: 'DM' },
-    { name: 'Logic Design & Computer Organization', code: 'LDCO' },
-    { name: 'Data Structures & Algorithms', code: 'DSA' },
-    { name: 'Objects Oriented Programming', code: 'OOP' },
-    { name: 'Basics of Computer Network', code: 'BCN' },
-    { name: 'Engineering Mathematics-III', code: 'EM3' },
-    { name: 'Processor Architecture', code: 'PA' },
-    { name: 'Database Management System', code: 'DBMS' },
-    { name: 'Computer Graphics', code: 'CG' },
-    { name: 'Software Engineering', code: 'SE' }
+    { name: 'Discrete Mathematics', code: 'DM', semester: 3 },
+    { name: 'Logic Design & Computer Organization', code: 'LDCO', semester: 3 },
+    { name: 'Data Structures & Algorithms', code: 'DSA', semester: 3 },
+    { name: 'Objects Oriented Programming', code: 'OOP', semester: 3 },
+    { name: 'Basics of Computer Network', code: 'BCN', semester: 3 },
+    { name: 'Engineering Mathematics-III', code: 'EM3', semester: 4 },
+    { name: 'Processor Architecture', code: 'PA', semester: 4 },
+    { name: 'Database Management System', code: 'DBMS', semester: 4 },
+    { name: 'Computer Graphics', code: 'CG', semester: 4 },
+    { name: 'Software Engineering', code: 'SE', semester: 4 },
   ],
   TE: [
-    { name: 'Theory of Computation', code: 'TOC' },
-    { name: 'Operating Systems', code: 'OS' },
-    { name: 'Machine Learning', code: 'ML' },
-    { name: 'Human Computer Interaction', code: 'HCI' },
-    { name: 'Elective-I', code: 'E1' },
-    { name: 'Computer Networks & Security', code: 'CNS' },
-    { name: 'Data Science and Big Data Analytics', code: 'DSBDA' },
-    { name: 'Web Application Development', code: 'WAD' },
-    { name: 'Elective-II', code: 'E2' },
-    { name: 'Internship', code: 'INT' }
+    { name: 'Theory of Computation', code: 'TOC', semester: 5 },
+    { name: 'Operating Systems', code: 'OS', semester: 5 },
+    { name: 'Machine Learning', code: 'ML', semester: 5 },
+    { name: 'Human Computer Interaction', code: 'HCI', semester: 5 },
+    { name: 'Elective-I', code: 'E1', semester: 5 },
+    { name: 'Computer Networks & Security', code: 'CNS', semester: 6 },
+    { name: 'Data Science and Big Data Analytics', code: 'DSBDA', semester: 6 },
+    { name: 'Web Application Development', code: 'WAD', semester: 6 },
+    { name: 'Elective-II', code: 'E2', semester: 6 },
+    { name: 'Internship', code: 'INT', semester: 6 },
   ],
   BE: [
-    { name: 'Information Storage and Retrieval', code: 'ISR' },
-    { name: 'Software Project Management', code: 'SPM' },
-    { name: 'Deep Learning', code: 'DL' },
-    { name: 'Elective III', code: 'E3' },
-    { name: 'Elective IV', code: 'E4' },
-    { name: 'Distributed Systems', code: 'DS' },
-    { name: 'Elective V', code: 'E5' },
-    { name: 'Elective VI', code: 'E6' },
-    { name: 'Startup and Entrepreneurship', code: 'SE' }
+    { name: 'Information Storage and Retrieval', code: 'ISR', semester: 7 },
+    { name: 'Software Project Management', code: 'SPM', semester: 7 },
+    { name: 'Deep Learning', code: 'DL', semester: 7 },
+    { name: 'Elective III', code: 'E3', semester: 7 },
+    { name: 'Elective IV', code: 'E4', semester: 7 },
+    { name: 'Distributed Systems', code: 'DS', semester: 8 },
+    { name: 'Elective V', code: 'E5', semester: 8 },
+    { name: 'Elective VI', code: 'E6', semester: 8 },
+    { name: 'Startup and Entrepreneurship', code: 'SE', semester: 8 },
   ]
 };
 
@@ -70,6 +70,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
     subjectName: '',
     branch: 'FE' as Paper['branch'],
     year: 'FE' as Paper['year'],
+    semester: 1,
     pattern: '2019' as Paper['pattern'],
     paperType: 'Insem' as 'Insem' | 'Endsem',
     paperName: '',
@@ -92,6 +93,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
       ...formData,
       branch: newBranch,
       year: newBranch === 'FE' ? 'FE' : 'SE',
+      semester: newBranch === 'FE' ? 1 : 3,
       subjectId: '',
       subjectName: '',
     });
@@ -101,6 +103,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
     setFormData({
       ...formData,
       year: e.target.value as Paper['year'],
+      semester: formData.year === 'SE' ? 3 : formData.year === 'TE' ? 5 : 7,
       subjectId: '',
       subjectName: '',
     });
@@ -120,7 +123,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isAdmin) {
       setError('You must be logged in as admin to add papers');
       return;
@@ -146,6 +149,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
         subjectName: formData.subjectName,
         branch: formData.branch,
         year: formData.year,
+        semester: formData.semester,
         pattern: formData.pattern,
         paperType: formData.paperType,
         paperName: formData.paperName,
@@ -171,7 +175,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && <div className="text-red-500">{error}</div>}
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700">Branch</label>
         <select
@@ -205,6 +209,40 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
       )}
 
       <div>
+        <label className="block text-sm font-medium text-gray-700">Semester</label>
+        <select
+          value={formData.semester}
+          onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          required
+        >
+          {
+            formData.branch === 'FE' ? (
+              <>
+                <option value={1}>Semester 1</option>
+                <option value={2}>Semester 2</option>
+              </>
+            ) : formData.year === 'SE' ? (
+              <>
+                <option value={3}>Semester 3</option>
+                <option value={4}>Semester 4</option>
+              </>
+            ) : formData.year === 'TE' ? (
+              <>
+                <option value={5}>Semester 5</option>
+                <option value={6}>Semester 6</option>
+              </>
+            ) : formData.year === 'BE' ? (
+              <>
+                <option value={7}>Semester 7</option>
+                <option value={8}>Semester 8</option>
+              </>
+            ) : null
+          }
+        </select>
+      </div>
+
+      <div>
         <label className="block text-sm font-medium text-gray-700">Pattern</label>
         <select
           value={formData.pattern}
@@ -226,7 +264,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
           required
         >
           <option value="">Select a subject</option>
-          {(formData.branch === 'IT' && formData.year !== 'FE' ? IT_SUBJECTS[formData.year] : FE_SUBJECTS).map((subject) => (
+          {(formData.branch === 'IT' && formData.year !== 'FE' ? IT_SUBJECTS[formData.year].filter((sub) => sub.semester === formData.semester) : FE_SUBJECTS).map((subject) => (
             <option key={subject.code} value={subject.name}>
               {subject.name}
             </option>

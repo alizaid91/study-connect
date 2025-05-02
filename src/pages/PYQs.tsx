@@ -30,6 +30,7 @@ const PYQs: React.FC = () => {
   const [filters, setFilters] = useState({
     branch: '',
     year: '',
+    semester: 0,
     pattern: '',
     paperType: '',
     subjectName: '',
@@ -46,6 +47,7 @@ const PYQs: React.FC = () => {
   type FilterValues = {
     branch: string;
     year: string;
+    semester: number;
     pattern: string;
     paperType: string;
     subjectName: string;
@@ -120,6 +122,7 @@ const PYQs: React.FC = () => {
           values: {
             branch: d.data().branch,
             year: d.data().year,
+            semester: d.data().semester,
             pattern: d.data().pattern,
             paperType: d.data().paperType,
             subjectName: d.data().subjectName,
@@ -141,6 +144,10 @@ const PYQs: React.FC = () => {
 
     if (filters.year) {
       filtered = filtered.filter(paper => paper.year === filters.year);
+    }
+
+    if (filters.semester) {
+      filtered = filtered.filter(paper => paper.semester === filters.semester);
     }
 
     if (filters.pattern) {
@@ -170,6 +177,8 @@ const PYQs: React.FC = () => {
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
+    console.log('Filter changed:', name, value);
+    console.log(filters)
     setFilters(prev => {
       // Reset subject filters when branch or year changes
       if (name === 'branch' || name === 'year') {
@@ -187,6 +196,12 @@ const PYQs: React.FC = () => {
           ...prev,
           subjectName: value,
           subjectCode: subj ? subj.code.toUpperCase() : ''
+        };
+      }
+      if (name === 'semester') {
+        return {
+          ...prev,
+          [name]: parseInt(value, 10)
         };
       }
       return {
@@ -275,6 +290,7 @@ const PYQs: React.FC = () => {
     setFilters({
       branch: '',
       year: '',
+      semester: 0,
       pattern: '',
       paperType: '',
       subjectName: '',
@@ -359,6 +375,7 @@ const PYQs: React.FC = () => {
       .filter(paper =>
         (!filters.branch || paper.branch === filters.branch) &&
         (!filters.year || paper.year === filters.year)
+        && (!filters.semester || paper.semester === filters.semester)
       )
       .map(paper => ({
         name: paper.subjectName,
@@ -487,6 +504,7 @@ const PYQs: React.FC = () => {
                   <div className="flex flex-wrap items-center space-x-2 text-sm text-gray-700">
                     <span className="font-medium">{qf.values.branch}</span>
                     {qf.values.branch !== 'FE' && qf.values.year && <span>- {qf.values.year}</span>}
+                    {qf.values.semester && <span>- Semester {qf.values.semester}</span>}
                     {qf.values.pattern && <span>- {qf.values.pattern} Pattern</span>}
                     {qf.values.paperType && <span>- {qf.values.paperType}</span>}
                     {qf.values.subjectName && <span>- {qf.values.subjectCode}</span>}
@@ -584,6 +602,44 @@ const PYQs: React.FC = () => {
                     </select>
                   </motion.div>
                 )}
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Semester</label>
+                  <select
+                    name="semester"
+                    value={filters.semester}
+                    onChange={handleFilterChange}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                  >
+                    <option value="">All Semesters</option>
+                    {
+                      filters.branch === 'FE' ? (
+                        <>
+                          <option value={1}>Semester 1</option>
+                          <option value={2}>Semester 2</option>
+                        </>
+                      ) : filters.year === 'SE' ? (
+                        <>
+                          <option value={3}>Semester 3</option>
+                          <option value={4}>Semester 4</option>
+                        </>
+                      ) : filters.year === 'TE' ? (
+                        <>
+                          <option value={5}>Semester 5</option>
+                          <option value={6}>Semester 6</option>
+                        </>
+                      ) : filters.year === 'BE' ? (
+                        <>
+                          <option value={7}>Semester 7</option>
+                          <option value={8}>Semester 8</option>
+                        </>
+                      ) : null
+                    }
+                  </select>
+                </motion.div>
 
                 <motion.div
                   initial={{ x: -10, opacity: 0 }}

@@ -4,6 +4,7 @@ export interface Paper {
   subjectName: string;
   branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
   year: 'FE' | 'SE' | 'TE' | 'BE';
+  semester: number;
   pattern: '2019' | '2024';
   paperType: 'Insem' | 'Endsem';
   paperName: string;

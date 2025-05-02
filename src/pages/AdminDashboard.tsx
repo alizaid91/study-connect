@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import AddPaperForm from '../components/AddPaperForm';
 import AddResourceForm from '../components/AddResourceForm';
-import { collection, query, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Paper, Resource } from '../types/content';
 
@@ -87,6 +87,21 @@ const AdminDashboard = () => {
     }
   };
 
+  // useEffect(() => {
+  //   const colRef = collection(db, 'papers');
+
+  //   const updateAllDocs = async () => {
+  //     const snapshot = await getDocs(colRef);
+
+  //     snapshot.forEach(async (docSnap) => {
+  //       await updateDoc(doc(db, "papers", docSnap.id), {
+  //         semester: 4,
+  //       });
+  //     });
+  //   };
+  //   updateAllDocs()
+  // }, [])
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -114,21 +129,19 @@ const AdminDashboard = () => {
         <div className="flex flex-wrap gap-2 sm:gap-4">
           <button
             onClick={() => setActiveTab('papers')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm sm:text-base ${
-              activeTab === 'papers'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm sm:text-base ${activeTab === 'papers'
+              ? 'bg-primary-600 text-white'
+              : 'bg-gray-200 text-gray-700'
+              }`}
           >
             Manage Papers
           </button>
           <button
             onClick={() => setActiveTab('resources')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm sm:text-base ${
-              activeTab === 'resources'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm sm:text-base ${activeTab === 'resources'
+              ? 'bg-primary-600 text-white'
+              : 'bg-gray-200 text-gray-700'
+              }`}
           >
             Manage Resources
           </button>
