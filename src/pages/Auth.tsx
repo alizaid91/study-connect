@@ -156,8 +156,8 @@ const Auth = () => {
             {isLogin ? 'Welcome Back!' : 'Create Your Account'}
           </h2>
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            {!isLogin && (
-              <>
+            {
+              !isLogin && (
                 <div className="relative">
                   <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -171,6 +171,23 @@ const Auth = () => {
                     onChange={handleInputChange}
                   />
                 </div>
+              )
+            }
+            <div className="relative">
+              <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                placeholder="Email Address"
+                className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                value={formData.email}
+                onChange={handleInputChange}
+              />
+            </div>
+            {!isLogin && (
+              <>
                 <div className="relative">
                   <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -251,19 +268,6 @@ const Auth = () => {
                 </div>
               </>
             )}
-            <div className="relative">
-              <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                placeholder="Email Address"
-                className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-            </div>
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input

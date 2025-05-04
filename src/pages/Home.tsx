@@ -167,13 +167,13 @@ const Home = () => {
         </motion.div>
 
         <div className="relative z-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
-            {user ? 'Welcome Back!' : 'Your All-in-One Academic Companion'}
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 max-w-[650px] mx-auto px-4 sm:px-0">
+            {user ? 'Welcome Back!' : 'Ace Your Engineering Semesters with Past Papers, Study Resources, Smart Task Boards.'}
           </h1>
           <p className="text-md md:text-lg text-blue-100 mb-8 max-w-2xl mx-auto px-4 sm:px-0">
             {user
               ? 'Continue your academic journey with our comprehensive platform.'
-              : 'Streamline your studies with our comprehensive platform featuring past papers and smart task management.'}
+              : 'From PYQs to Task Lists, everything you need is now in one place — just for SPPU students.'}
           </p>
           {!user ? (
             <motion.div
