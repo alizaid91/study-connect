@@ -2,12 +2,12 @@ export interface UserProfile {
   uid: string;
   email: string;
   fullName: string;
-  username: string;
+  username?: string;
   avatarUrl: string;
-  gender: 'male' | 'female' | 'other' | 'prefer not to say';
-  branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
-  year: 'FE' | 'SE' | 'TE' | 'BE';
-  collegeName: string;
+  gender?: 'male' | 'female' | 'other' | 'prefer not to say' | '';
+  branch?: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical' | '';
+  year?: 'FE' | 'SE' | 'TE' | 'BE' | '';
+  collegeName?: string | '';
   createdAt: string;
   updatedAt: string;
 }

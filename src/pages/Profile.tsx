@@ -236,8 +236,8 @@ const Profile = () => {
         className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-600"></div>
-        
-        <motion.h2 
+
+        <motion.h2
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-2xl font-bold text-gray-900 mb-6 flex items-center"
@@ -247,7 +247,7 @@ const Profile = () => {
 
         <AnimatePresence>
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, height: 0 }}
@@ -258,7 +258,7 @@ const Profile = () => {
           )}
 
           {success && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, height: 0 }}
@@ -340,7 +340,7 @@ const Profile = () => {
         </AnimatePresence>
 
         <div className="mb-8 flex flex-col items-center">
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.05 }}
             className="relative group"
           >
@@ -407,7 +407,6 @@ const Profile = () => {
                 id="username"
                 name="username"
                 type="text"
-                required
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                 value={profile.username || ''}
                 onChange={handleInputChange}
@@ -425,11 +424,11 @@ const Profile = () => {
               <select
                 id="branch"
                 name="branch"
-                required
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                value={profile.branch || 'FE'}
+                value={profile.branch || ""}
                 onChange={handleInputChange}
               >
+                <option value="">Select Branch</option>
                 <option value="FE">First Year Engineering</option>
                 <option value="CS">Computer Science</option>
                 <option value="IT">Information Technology</option>
@@ -451,11 +450,11 @@ const Profile = () => {
                 <select
                   id="year"
                   name="year"
-                  required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                  value={profile.year || 'SE'}
+                  value={profile.year || ""}
                   onChange={handleInputChange}
                 >
+                  <option value="">Select Year</option>
                   <option value="SE">Second Year</option>
                   <option value="TE">Third Year</option>
                   <option value="BE">Final Year</option>
@@ -475,7 +474,6 @@ const Profile = () => {
                 id="collegeName"
                 name="collegeName"
                 type="text"
-                required
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                 value={profile.collegeName || ''}
                 onChange={handleInputChange}
@@ -493,11 +491,11 @@ const Profile = () => {
               <select
                 id="gender"
                 name="gender"
-                required
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                value={profile.gender || 'prefer not to say'}
+                value={profile.gender || ""}
                 onChange={handleInputChange}
               >
+                <option value="">Select Gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
@@ -513,9 +511,9 @@ const Profile = () => {
             className="mt-8"
           >
             {updating ? (
-              <button 
-                disabled 
-                type="button" 
+              <button
+                disabled
+                type="button"
                 className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600"
               >
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

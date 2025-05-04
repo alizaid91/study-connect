@@ -8,9 +8,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
-  signOut,
 } from 'firebase/auth';
-import { collection, doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { setUser, logout } from '../store/slices/authSlice';
 import { RootState } from '../store';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
@@ -26,11 +25,6 @@ const Auth = () => {
     password: '',
     confirmPassword: '',
     fullName: '',
-    username: '',
-    gender: 'male' as UserProfile['gender'],
-    branch: 'FE' as UserProfile['branch'],
-    year: 'FE' as UserProfile['year'],
-    collegeName: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -82,12 +76,12 @@ const Auth = () => {
         const userProfile: Omit<UserProfile, 'uid'> = {
           email: formData.email,
           fullName: formData.fullName,
-          username: formData.username,
-          avatarUrl: DEFAULT_AVATAR[formData.gender],
-          gender: formData.gender,
-          branch: formData.branch,
-          year: formData.year,
-          collegeName: formData.collegeName,
+          avatarUrl: DEFAULT_AVATAR.male,
+          username: '',
+          gender: '',
+          branch: '',
+          year: '',
+          collegeName: '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -118,10 +112,6 @@ const Auth = () => {
           fullName: user.displayName || '',
           username: user.email?.split('@')[0] || '',
           avatarUrl: user.photoURL || DEFAULT_AVATAR.male,
-          gender: 'male',
-          branch: 'FE',
-          year: 'FE',
-          collegeName: '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -186,7 +176,7 @@ const Auth = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {!isLogin && (
+            {/* {!isLogin && (
               <>
                 <div className="relative">
                   <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -267,7 +257,7 @@ const Auth = () => {
                   />
                 </div>
               </>
-            )}
+            )} */}
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
