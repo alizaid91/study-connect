@@ -7,7 +7,7 @@ import { db } from '../config/firebase';
 import { Board } from '../types/content';
 import TaskBoard from '../components/TaskBoard';
 import BoardsOverview from '../components/BoardsOverview';
-import { FiLayout, FiGrid } from 'react-icons/fi';
+import { IoArrowBackSharp } from "react-icons/io5";
 import { motion } from 'framer-motion';
 
 const Tasks = () => {
@@ -90,8 +90,21 @@ const Tasks = () => {
     <div className="flex flex-col overflow-hidden">
       {selectedBoardId ? (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="bg-white border-b shadow-sm px-6 py-4 flex items-center mb-4">
-            <div className="flex-1 flex items-center">
+          <div className="bg-white border-b shadow-sm px-6 py-4 flex items-center gap-2 mb-4">
+            <div className="flex items-center">
+              <div className="group relative">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleBackToOverview}
+                  className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 p-2 rounded-md text-gray-800 hover:text-blue-600 transition-colors duration-200"
+                  aria-label="Back to boards overview"
+                >
+                  <IoArrowBackSharp size={22} />
+                </motion.button>
+              </div>
+            </div>
+            <div className="flex items-center">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
                 <span className="mr-2">
                   {boards.find(b => b.id === selectedBoardId)?.title || 'Board'}
@@ -102,20 +115,6 @@ const Tasks = () => {
                   </span>
                 )}
               </h2>
-            </div>
-
-            <div className="flex items-center">
-              <div className="group relative">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleBackToOverview}
-                  className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 p-2 rounded-md text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                  aria-label="Back to boards overview"
-                >
-                  <FiGrid size={20} />
-                </motion.button>
-              </div>
             </div>
           </div>
           <div className="flex-1 overflow-hidden relative">

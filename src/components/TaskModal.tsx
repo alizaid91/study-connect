@@ -116,17 +116,16 @@ const TaskModal = ({
 
 
     setForm((prev) => {
-      // if (name === 'boardId') {
-      //   return {
-      //     ...prev,
-      //     [name]: value,
-      //     listId: lists.find(list => list.boardId === value)?.id || '',
-      //   }
-      // }
+      if (name as string === "boardId") {
+        return {
+          ...prev,
+          [name]: value,
+          listId: lists.find(list => list.boardId === value)?.id || '',
+        }
+      }
 
       return {
         ...prev,
-        listId: name === 'boardId' ? lists.find(list => list.boardId === value)?.id || prev.listId : '',
         [name]: value,
       }
     })

@@ -518,7 +518,7 @@ const TaskBoard = () => {
 
     // Shared loading spinner component
     const LoadingSpinner = () => (
-        <div className="absolute inset-0 flex justify-center items-center bg-white z-10">
+        <div className="absolute inset-0 flex justify-center items-center bg-gray-50 z-10 h-full ">
             <div className="relative w-20 h-20">
                 <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
                 <div className="absolute top-2 left-2 w-16 h-16 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
@@ -529,8 +529,8 @@ const TaskBoard = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex flex-col w-full sm:flex-row gap-2 sm:justify-between sm:items-center pb-4 px-4 border-b">
-                <div className="relative" ref={boardSelectorRef}>
+            <div className="w-full">
+                <div ref={boardSelectorRef} className="relative w-full flex justify-center">
                     <button
                         onClick={() => setIsBoardDropdownOpen(!isBoardDropdownOpen)}
                         className="bg-white border border-gray-300 rounded-md px-3 py-2 flex items-center space-x-2 shadow-sm hover:bg-gray-50"
@@ -538,9 +538,7 @@ const TaskBoard = () => {
                         <span className="font-medium">{selectedBoard?.title || 'Select Board'}</span>
                         <FiChevronDown />
                     </button>
-
-                    {isBoardDropdownOpen && (
-                        <div className="absolute z-10 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg animate-fadeIn">
+                        <div className={`absolute ${isBoardDropdownOpen ? 'visible opacity-100 top-full' : '-top-1 opacity-0 invisible'} transition-all duration-300 z-10 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg`}>
                             <div className="py-1">
                                 {boards.map(board => (
                                     <button
@@ -559,40 +557,13 @@ const TaskBoard = () => {
                                 </button>
                             </div>
                         </div>
-                    )}
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:space-x-3">
-                    {selectedBoardId && (
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md flex items-center space-x-2"
-                            onClick={handleAddList}
-                        >
-                            <FiPlus />
-                            <span>Add List</span>
-                        </motion.button>
-                    )}
-
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md flex items-center space-x-2"
-                        onClick={handleAddBoard}
-                    >
-                        <FiPlus />
-                        <span>New Board</span>
-                    </motion.button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-x-auto relative">
                 {isBoardChanging && <LoadingSpinner />}
                 {selectedBoardId && (
-                    <div className={`flex p-4 overflow-x-auto pb-6 h-full ${isBoardChanging ? 'opacity-30' : ''}`} style={{
-                        background: 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)'
-                    }}>
+                    <div className={`flex p-4 overflow-x-auto pb-6 h-full`}>
                         <div className="flex space-x-4 md:space-x-6 pb-4 md:pb-0 snap-x snap-mandatory">
                             {lists.map(list => (
                                 <div key={list.id} className="snap-start">
