@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import {
     setLoading,
     setTasks,
     setLists,
+    setBoards,
+    setSelectedBoardId,
 } from '../store/slices/taskSlice';
 import { db } from '../config/firebase';
 import {
@@ -19,73 +21,166 @@ import {
     onSnapshot,
     writeBatch
 } from 'firebase/firestore';
-import { Task, List, TaskForm } from '../types/content';
+import { Task, List, TaskForm, Board } from '../types/content';
 import TaskList from './TaskList';
 import TaskModal from './TaskModal';
 import ListFormModal from './ListFormModal';
+import BoardFormModal from './BoardFormModal';
 import { motion } from 'framer-motion';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiChevronDown } from 'react-icons/fi';
 
 const TaskBoard = () => {
     const dispatch = useDispatch();
     const { user } = useSelector((state: RootState) => state.auth);
-    const { tasks, lists, loading } = useSelector((state: RootState) => state.tasks);
+    const { tasks, lists, boards, selectedBoardId, loading } = useSelector((state: RootState) => state.tasks);
 
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [isListModalOpen, setIsListModalOpen] = useState(false);
+    const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
+    const [isBoardDropdownOpen, setIsBoardDropdownOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [editingBoard, setEditingBoard] = useState<Board | null>(null);
     const [selectedListId, setSelectedListId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [defaultBoardId, setDefaultBoardId] = useState<string | null>(null);
     const [activeListenerBoardId, setActiveListenerBoardId] = useState<string | null>(null);
+    const boardSelectorRef = useRef<HTMLDivElement | null>(null);
+    const [isBoardChanging, setIsBoardChanging] = useState(false);
 
     useEffect(() => {
         if (!user?.uid) return;
 
         dispatch(setLoading(true));
-        let cleanupFunction = () => { };
-
-        let isSettingUp = false;
         let mounted = true;
+        let unsubscribeFn: () => void = () => { };
 
-        const setupBoard = async () => {
-            if (isSettingUp || !mounted) return;
-            isSettingUp = true;
-
+        const setupListeners = async () => {
             try {
+                // Fetch boards
                 const boardsQuery = query(
                     collection(db, 'boards'),
-                    where('userId', '==', user.uid),
-                    where('isDefault', '==', true)
+                    where('userId', '==', user.uid)
                 );
 
-                const boardsSnapshot = await getDocs(boardsQuery);
+                const unsubscribeBoards = onSnapshot(
+                    boardsQuery,
+                    (snapshot) => {
+                        if (!mounted) return;
 
-                if (!mounted) {
-                    isSettingUp = false;
-                    return;
-                }
+                        const fetchedBoards = snapshot.docs.map((doc) => ({
+                            id: doc.id,
+                            ...doc.data()
+                        })) as Board[];
 
-                let boardId: string;
-                let boardExists = false;
+                        dispatch(setBoards(fetchedBoards));
 
-                if (boardsSnapshot.empty) {
-                    const newBoard = {
-                        title: 'My Board',
-                        userId: user.uid,
-                        isDefault: true,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
+                        // Find default board
+                        const defaultBoard = fetchedBoards.find(board => board.isDefault);
+                        if (defaultBoard) {
+                            setDefaultBoardId(defaultBoard.id);
 
-                    const boardRef = await addDoc(collection(db, 'boards'), newBoard);
-                    boardId = boardRef.id;
-
-                    if (!mounted) {
-                        isSettingUp = false;
-                        return;
+                            // If no board is selected, select the default board
+                            if (!selectedBoardId) {
+                                dispatch(setSelectedBoardId(defaultBoard.id));
+                            }
+                        } else if (fetchedBoards.length > 0 && !selectedBoardId) {
+                            // If no default board but we have boards, select the first one
+                            dispatch(setSelectedBoardId(fetchedBoards[0].id));
+                        }
+                    },
+                    (error) => {
+                        if (mounted) {
+                            dispatch(setLoading(false));
+                        }
                     }
+                );
 
+                // Create default board if needed
+                await setupDefaultBoard();
+
+                return () => {
+                    unsubscribeBoards();
+                    if (activeListenerBoardId) {
+                        setupBoardListeners(null);
+                    }
+                };
+            } catch (error) {
+                if (mounted) {
+                    dispatch(setLoading(false));
+                }
+                return () => { };
+            }
+        };
+
+        // Initialize listeners and store cleanup function
+        setupListeners().then(cleanup => {
+            if (mounted) {
+                unsubscribeFn = cleanup;
+            } else {
+                cleanup();
+            }
+        });
+
+        return () => {
+            mounted = false;
+            unsubscribeFn();
+        };
+    }, [dispatch, user?.uid]);
+
+    // Function to create default board if needed
+    const setupDefaultBoard = async () => {
+        if (!user?.uid) return;
+
+        try {
+            const boardsQuery = query(
+                collection(db, 'boards'),
+                where('userId', '==', user.uid),
+                where('isDefault', '==', true)
+            );
+
+            const boardsSnapshot = await getDocs(boardsQuery);
+
+            let boardId: string;
+            let boardExists = false;
+
+            if (boardsSnapshot.empty) {
+                const newBoard = {
+                    title: 'My Board',
+                    userId: user.uid,
+                    isDefault: true,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                const boardRef = await addDoc(collection(db, 'boards'), newBoard);
+                boardId = boardRef.id;
+
+                const newList = {
+                    title: 'To Do',
+                    boardId: boardId,
+                    userId: user.uid,
+                    position: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                await addDoc(collection(db, 'lists'), newList);
+            } else {
+                boardId = boardsSnapshot.docs[0].id;
+                boardExists = true;
+            }
+
+            setDefaultBoardId(boardId);
+
+            if (boardExists) {
+                const listsQuery = query(
+                    collection(db, 'lists'),
+                    where('boardId', '==', boardId)
+                );
+
+                const listsSnapshot = await getDocs(listsQuery);
+
+                if (listsSnapshot.empty) {
                     const newList = {
                         title: 'To Do',
                         boardId: boardId,
@@ -96,68 +191,47 @@ const TaskBoard = () => {
                     };
 
                     await addDoc(collection(db, 'lists'), newList);
-                } else {
-                    boardId = boardsSnapshot.docs[0].id;
-                    boardExists = true;
                 }
-
-                if (!mounted) {
-                    isSettingUp = false;
-                    return;
-                }
-
-                setDefaultBoardId(boardId);
-
-                if (boardExists) {
-                    const listsQuery = query(
-                        collection(db, 'lists'),
-                        where('boardId', '==', boardId)
-                    );
-
-                    const listsSnapshot = await getDocs(listsQuery);
-
-                    if (!mounted) {
-                        isSettingUp = false;
-                        return;
-                    }
-
-                    if (listsSnapshot.empty) {
-                        const newList = {
-                            title: 'To Do',
-                            boardId: boardId,
-                            userId: user.uid,
-                            position: 0,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        };
-
-                        await addDoc(collection(db, 'lists'), newList);
-                    }
-                }
-
-                if (!mounted) {
-                    isSettingUp = false;
-                    return;
-                }
-
-                cleanupFunction = setupListeners(boardId);
-                isSettingUp = false;
-            } catch (error) {
-                dispatch(setLoading(false));
-                isSettingUp = false;
             }
-        };
+        } catch (error) {
+            dispatch(setLoading(false));
+        }
+    };
 
-        setupBoard();
+    // Effect to listen for board selection changes
+    useEffect(() => {
+        if (!selectedBoardId || !user?.uid) return;
+
+        // Show loading animation when changing boards
+        setIsBoardChanging(true);
+
+        // Setup listeners for the selected board
+        const cleanup = setupBoardListeners(selectedBoardId);
+
+        // Hide loading animation after a delay
+        const timer = setTimeout(() => {
+            setIsBoardChanging(false);
+        }, 800);
 
         return () => {
-            mounted = false;
-            cleanupFunction();
+            cleanup();
+            clearTimeout(timer);
         };
-    }, [dispatch, user?.uid]);
+    }, [selectedBoardId, user?.uid]);
 
-    const setupListeners = (boardId: string) => {
+    const setupBoardListeners = (boardId: string | null) => {
         if (activeListenerBoardId === boardId) {
+            return () => { };
+        }
+
+        // Clear previous listeners
+        if (activeListenerBoardId) {
+            dispatch(setLists([]));
+            dispatch(setTasks([]));
+        }
+
+        if (!boardId) {
+            setActiveListenerBoardId(null);
             return () => { };
         }
 
@@ -228,7 +302,7 @@ const TaskBoard = () => {
     };
 
     const handleSaveTask = async (taskData: TaskForm) => {
-        if (!user?.uid || !defaultBoardId) return;
+        if (!user?.uid || !selectedBoardId) return;
 
         setIsSubmitting(true);
         try {
@@ -238,7 +312,7 @@ const TaskBoard = () => {
 
                     const updatedTask: Record<string, any> = {
                         ...taskData,
-                        boardId: defaultBoardId,
+                        boardId: selectedBoardId,
                         updatedAt: new Date().toISOString()
                     };
 
@@ -262,7 +336,7 @@ const TaskBoard = () => {
 
                 const newTask = {
                     ...taskData,
-                    boardId: defaultBoardId,
+                    boardId: selectedBoardId,
                     userId: user.uid,
                     position,
                     completed: !!taskData.completed,
@@ -293,7 +367,7 @@ const TaskBoard = () => {
     };
 
     const handleSaveList = async (title: string) => {
-        if (!user?.uid || !defaultBoardId) return;
+        if (!user?.uid || !selectedBoardId) return;
 
         setIsSubmitting(true);
         try {
@@ -303,7 +377,7 @@ const TaskBoard = () => {
 
             const newList = {
                 title,
-                boardId: defaultBoardId,
+                boardId: selectedBoardId,
                 userId: user.uid,
                 position: nextPosition,
                 createdAt: new Date().toISOString(),
@@ -343,6 +417,82 @@ const TaskBoard = () => {
         } catch (error) { }
     };
 
+    const handleAddBoard = () => {
+        setEditingBoard(null);
+        setIsBoardModalOpen(true);
+    };
+
+    const handleSaveBoard = async (title: string) => {
+        if (!user?.uid) return;
+
+        setIsSubmitting(true);
+        try {
+            if (editingBoard) {
+                const boardRef = doc(db, 'boards', editingBoard.id);
+                await updateDoc(boardRef, {
+                    title,
+                    updatedAt: new Date().toISOString()
+                });
+            } else {
+                const newBoard = {
+                    title,
+                    userId: user.uid,
+                    isDefault: false,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                const boardRef = await addDoc(collection(db, 'boards'), newBoard);
+
+                // Create a default list in the new board
+                const newList = {
+                    title: 'To Do',
+                    boardId: boardRef.id,
+                    userId: user.uid,
+                    position: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                await addDoc(collection(db, 'lists'), newList);
+
+                // Set the new board as selected
+                dispatch(setSelectedBoardId(boardRef.id));
+            }
+
+            setIsBoardModalOpen(false);
+            setEditingBoard(null);
+        } catch (error) {
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleSelectBoard = (boardId: string) => {
+        dispatch(setSelectedBoardId(boardId));
+        setIsBoardDropdownOpen(false);
+    };
+
+    const getSelectedBoard = () => {
+        return boards.find(board => board.id === selectedBoardId) || null;
+    };
+
+    // Close board dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (isBoardDropdownOpen &&
+                boardSelectorRef.current &&
+                !boardSelectorRef.current.contains(event.target as Node)) {
+                setIsBoardDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isBoardDropdownOpen]);
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -364,74 +514,119 @@ const TaskBoard = () => {
         return tasksWithPosition.sort((a, b) => a.position - b.position);
     };
 
+    const selectedBoard = getSelectedBoard();
+
+    // Shared loading spinner component
+    const LoadingSpinner = () => (
+        <div className="absolute inset-0 flex justify-center items-center bg-white z-10">
+            <div className="relative w-20 h-20">
+                <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
+                <div className="absolute top-2 left-2 w-16 h-16 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
+                <div className="absolute top-4 left-4 w-12 h-12 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="h-full flex flex-col">
-            <div className="flex justify-between items-center pb-4 px-4 border-b">
-                <h1 className="text-2xl font-bold text-gray-800">Task Board</h1>
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md flex items-center space-x-2"
-                    onClick={handleAddList}
-                >
-                    <FiPlus />
-                    <span>Add List</span>
-                </motion.button>
-            </div>
+            <div className="flex flex-col w-full sm:flex-row gap-2 sm:justify-between sm:items-center pb-4 px-4 border-b">
+                <div className="relative" ref={boardSelectorRef}>
+                    <button
+                        onClick={() => setIsBoardDropdownOpen(!isBoardDropdownOpen)}
+                        className="bg-white border border-gray-300 rounded-md px-3 py-2 flex items-center space-x-2 shadow-sm hover:bg-gray-50"
+                    >
+                        <span className="font-medium">{selectedBoard?.title || 'Select Board'}</span>
+                        <FiChevronDown />
+                    </button>
 
-            <div className="flex-1 overflow-x-auto">
-                <div className="flex p-4 overflow-x-auto pb-6 h-full" style={{
-                    background: 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)'
-                }}>
-                    {lists.length === 0 ? (
-                        <div className="w-full flex flex-col items-center justify-center text-gray-500">
-                            <p className="mb-4 text-lg">No lists yet. Create your first list to get started!</p>
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center space-x-2"
-                                onClick={handleAddList}
-                            >
-                                <FiPlus />
-                                <span>Add List</span>
-                            </motion.button>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="flex space-x-4 md:space-x-6 pb-4 md:pb-0 snap-x snap-mandatory">
-                                {lists.map(list => (
-                                    <div key={list.id} className="snap-start">
-                                        <TaskList
-                                            list={list}
-                                            tasks={getTasksByListId(list.id)}
-                                            onAddTask={handleAddTask}
-                                            onEditTask={handleEditTask}
-                                            onDeleteTask={handleDeleteTask}
-                                            onEditList={handleEditList}
-                                            onDeleteList={handleDeleteList}
-                                        />
-                                    </div>
-                                ))}
-                                <div className="snap-start ml-2 pt-1 flex items-start">
+                    {isBoardDropdownOpen && (
+                        <div className="absolute z-10 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg animate-fadeIn">
+                            <div className="py-1">
+                                {boards.map(board => (
                                     <button
-                                        onClick={handleAddList}
-                                        className="text-nowrap bg-white shadow-md h-10 px-4 py-2 rounded-xl flex items-center space-x-2 transition-colors"
+                                        key={board.id}
+                                        onClick={() => handleSelectBoard(board.id)}
+                                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex justify-between items-center ${board.id === selectedBoardId ? 'bg-blue-50 text-blue-700' : ''}`}
                                     >
-                                        <FiPlus />
-                                        <span>Add Another List</span>
+                                        <span>{board.title} {board.isDefault && <span className="text-xs text-gray-500">(Default)</span>}</span>
                                     </button>
-                                </div>
+                                ))}
+                                <button
+                                    onClick={handleAddBoard}
+                                    className="w-full text-left px-4 py-2 text-blue-600 border-t border-gray-200 hover:bg-blue-50 flex items-center"
+                                >
+                                    <FiPlus className="mr-2" /> Create New Board
+                                </button>
                             </div>
-                        </>
+                        </div>
                     )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:space-x-3">
+                    {selectedBoardId && (
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md flex items-center space-x-2"
+                            onClick={handleAddList}
+                        >
+                            <FiPlus />
+                            <span>Add List</span>
+                        </motion.button>
+                    )}
+
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md flex items-center space-x-2"
+                        onClick={handleAddBoard}
+                    >
+                        <FiPlus />
+                        <span>New Board</span>
+                    </motion.button>
                 </div>
             </div>
 
-            {defaultBoardId && (
+            <div className="flex-1 overflow-x-auto relative">
+                {isBoardChanging && <LoadingSpinner />}
+                {selectedBoardId && (
+                    <div className={`flex p-4 overflow-x-auto pb-6 h-full ${isBoardChanging ? 'opacity-30' : ''}`} style={{
+                        background: 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)'
+                    }}>
+                        <div className="flex space-x-4 md:space-x-6 pb-4 md:pb-0 snap-x snap-mandatory">
+                            {lists.map(list => (
+                                <div key={list.id} className="snap-start">
+                                    <TaskList
+                                        list={list}
+                                        tasks={getTasksByListId(list.id)}
+                                        onAddTask={handleAddTask}
+                                        onEditTask={handleEditTask}
+                                        onDeleteTask={handleDeleteTask}
+                                        onEditList={handleEditList}
+                                        onDeleteList={handleDeleteList}
+                                    />
+                                </div>
+                            ))}
+                            <div className="snap-start ml-2 pt-1 flex items-start">
+                                <button
+                                    onClick={handleAddList}
+                                    className="text-nowrap bg-white shadow-md h-10 px-4 py-2 rounded-xl flex items-center space-x-2 transition-colors"
+                                >
+                                    <FiPlus />
+                                    <span>Add Another List</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {selectedBoardId && (
                 <>
                     <TaskModal
                         isOpen={isTaskModalOpen}
                         lists={lists}
+                        boards={boards}
                         task={editingTask}
                         listId={selectedListId || undefined}
                         onClose={() => {
@@ -441,7 +636,7 @@ const TaskBoard = () => {
                         }}
                         onSave={handleSaveTask}
                         isSubmitting={isSubmitting}
-                        boardId={defaultBoardId}
+                        boardId={selectedBoardId}
                     />
 
                     <ListFormModal
@@ -452,6 +647,18 @@ const TaskBoard = () => {
                     />
                 </>
             )}
+
+            <BoardFormModal
+                isOpen={isBoardModalOpen}
+                onClose={() => {
+                    setIsBoardModalOpen(false);
+                    setEditingBoard(null);
+                }}
+                onSave={handleSaveBoard}
+                isSubmitting={isSubmitting}
+                initialTitle={editingBoard?.title || ''}
+                mode={editingBoard ? 'edit' : 'create'}
+            />
         </div>
     );
 };

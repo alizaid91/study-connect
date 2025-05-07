@@ -1,13 +1,140 @@
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { setBoards, setSelectedBoardId } from '../store/slices/taskSlice';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { Board } from '../types/content';
 import TaskBoard from '../components/TaskBoard';
+import BoardsOverview from '../components/BoardsOverview';
+import { FiLayout, FiGrid } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 
-const Task = () => {
-  return (
-    <div className="pt-4 h-screen flex flex-col">
-      <div className="flex-1 overflow-hidden">
-        <TaskBoard />
+const Tasks = () => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { boards, selectedBoardId, loading } = useSelector((state: RootState) => state.tasks);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBoardChanging, setIsBoardChanging] = useState(false);
+
+  // Fetch all boards
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    setIsLoading(true);
+    const boardsQuery = query(
+      collection(db, 'boards'),
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      boardsQuery,
+      (snapshot) => {
+        const fetchedBoards = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Board[];
+
+        dispatch(setBoards(fetchedBoards));
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching boards:', error);
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [dispatch, user?.uid]);
+
+  // Add loading effect when changing boards
+  useEffect(() => {
+    if (selectedBoardId && !isLoading) {
+      setIsBoardChanging(true);
+
+      // Set a timeout to simulate loading
+      const timer = setTimeout(() => {
+        setIsBoardChanging(false);
+      }, 800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedBoardId]);
+
+  const handleSelectBoard = (boardId: string) => {
+    dispatch(setSelectedBoardId(boardId));
+  };
+
+  const handleBackToOverview = () => {
+    dispatch(setSelectedBoardId(null));
+  };
+
+  const refreshBoards = () => {
+    // Boards are refreshed automatically via onSnapshot
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="relative w-24 h-24">
+          <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
+          <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
+          <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col overflow-hidden">
+      {selectedBoardId ? (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="bg-white border-b shadow-sm px-6 py-4 flex items-center mb-4">
+            <div className="flex-1 flex items-center">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                <span className="mr-2">
+                  {boards.find(b => b.id === selectedBoardId)?.title || 'Board'}
+                </span>
+                {boards.find(b => b.id === selectedBoardId)?.isDefault && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                    Default
+                  </span>
+                )}
+              </h2>
+            </div>
+
+            <div className="flex items-center">
+              <div className="group relative">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleBackToOverview}
+                  className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 p-2 rounded-md text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                  aria-label="Back to boards overview"
+                >
+                  <FiGrid size={20} />
+                </motion.button>
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden relative">
+            <div>
+              <TaskBoard />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto bg-gradient-to-b from-gray-50 to-white">
+          <BoardsOverview
+            boards={boards}
+            onSelectBoard={handleSelectBoard}
+            onRefresh={refreshBoards}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
-export default Task; 
+export default Tasks; 

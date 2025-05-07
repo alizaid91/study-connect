@@ -3,13 +3,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
-import { Paper, Bookmark, TaskForm, Task, List } from '../types/content';
+import { Paper, Bookmark, TaskForm, Task, List, Board } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
 import { fetchPapers, setLoading } from '../store/slices/papersSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import TaskModal from '../components/TaskModal';
-import { setLists, setTasks } from '../store/slices/taskSlice';
+import { setBoards, setLists, setTasks } from '../store/slices/taskSlice';
 
 interface Subject {
   name: string;
@@ -21,7 +21,8 @@ const PYQs: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
   const { papers, loading, error } = useSelector((state: RootState) => state.papers);
-  const { lists, tasks } = useSelector((state: RootState) => state.tasks);
+  const { boards, lists, tasks } = useSelector((state: RootState) => state.tasks);
+
   const [saving, setSaving] = useState(false);
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
@@ -87,6 +88,32 @@ const PYQs: React.FC = () => {
       dispatch(fetchPapers());
     }
 
+    const fetchBoards = async () => {
+      if (!user) return;
+
+      const boardsQuery = query(
+        collection(db, 'boards'),
+        where('userId', '==', user.uid)
+      );
+
+      const unsubscribe = onSnapshot(
+        boardsQuery,
+        (snapshot) => {
+          const fetchedBoards = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Board[];
+
+          dispatch(setBoards(fetchedBoards));
+        },
+        (error) => {
+          console.error('Error fetching boards:', error);
+        }
+      );
+
+      return () => unsubscribe();
+    }
+
     // fetch task lists
     const fetchTaskLists = async () => {
       if (!user) return;
@@ -103,6 +130,7 @@ const PYQs: React.FC = () => {
       dispatch(setLists(listsData as List[]));
     };
 
+    fetchBoards();
     fetchTaskLists();
   }, [dispatch, user]);
 
@@ -221,13 +249,8 @@ const PYQs: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      // Get the board ID from the default list
-      const defaultList = lists.find(list => list.id === defaultListId);
-      if (!defaultList) {
-        throw new Error('Default list not found');
-      }
 
-      const boardId = defaultList.boardId;
+      const boardId = taskData.boardId;
 
       // Get tasks in the same list to determine position
       const fetchTasks = async (boardId: string) => {
@@ -828,6 +851,7 @@ const PYQs: React.FC = () => {
         <TaskModal
           isOpen={isTaskModalOpen}
           lists={lists}
+          boards={boards}
           task={taskForModal}
           onClose={() => {
             setIsTaskModalOpen(false);

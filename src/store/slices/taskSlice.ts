@@ -1,9 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Task, List } from '../../types/content';
+import { Task, List, Board } from '../../types/content';
 
 interface TaskState {
   tasks: Task[];
   lists: List[];
+  boards: Board[];
+  selectedBoardId: string | null;
   loading: boolean;
   error: string | null;
 }
@@ -11,6 +13,8 @@ interface TaskState {
 const initialState: TaskState = {
   tasks: [],
   lists: [],
+  boards: [],
+  selectedBoardId: null,
   loading: false,
   error: null
 };
@@ -25,6 +29,26 @@ const taskSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
+    },
+    
+    // Board actions
+    setBoards: (state, action: PayloadAction<Board[]>) => {
+      state.boards = action.payload;
+    },
+    addBoard: (state, action: PayloadAction<Board>) => {
+      state.boards.push(action.payload);
+    },
+    updateBoard: (state, action: PayloadAction<Board>) => {
+      const index = state.boards.findIndex(board => board.id === action.payload.id);
+      if (index !== -1) {
+        state.boards[index] = action.payload;
+      }
+    },
+    deleteBoard: (state, action: PayloadAction<string>) => {
+      state.boards = state.boards.filter(board => board.id !== action.payload);
+    },
+    setSelectedBoardId: (state, action: PayloadAction<string | null>) => {
+      state.selectedBoardId = action.payload;
     },
     
     // List actions
@@ -97,6 +121,8 @@ const taskSlice = createSlice({
     clearTaskState: (state) => {
       state.tasks = [];
       state.lists = [];
+      state.boards = [];
+      state.selectedBoardId = null;
       state.loading = false;
       state.error = null;
     }
@@ -105,6 +131,7 @@ const taskSlice = createSlice({
 
 export const {
   setLoading, setError,
+  setBoards, addBoard, updateBoard, deleteBoard, setSelectedBoardId,
   setLists, addList, updateList, deleteList, reorderLists,
   setTasks, addTask, updateTask, deleteTask,
   moveTask,

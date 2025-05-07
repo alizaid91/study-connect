@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Task, List, TaskForm } from '../types/content';
+import { Task, List, TaskForm, Board } from '../types/content';
 import { FiX, FiPaperclip, FiExternalLink } from 'react-icons/fi';
 
 // Helper function to format date to YYYY-MM-DD for input value
 const formatDateForInput = (dateString: string | undefined): string => {
   if (!dateString) return '';
-  
+
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return ''; // Invalid date
-    
+
     return date.toISOString().split('T')[0];
   } catch (e) {
     return '';
@@ -20,11 +20,11 @@ const formatDateForInput = (dateString: string | undefined): string => {
 // Helper to format date for display
 const formatDateForDisplay = (dateString: string | undefined): string => {
   if (!dateString) return '';
-  
+
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return ''; // Invalid date
-    
+
     return date.toLocaleDateString();
   } catch (e) {
     return '';
@@ -35,6 +35,7 @@ interface TaskModalProps {
   isOpen: boolean;
   lists: List[];
   task?: Task | null;
+  boards: Board[];
   listId?: string;
   onClose: () => void;
   onSave: (taskData: TaskForm) => void;
@@ -45,6 +46,7 @@ interface TaskModalProps {
 const TaskModal = ({
   isOpen,
   lists,
+  boards,
   task,
   listId,
   onClose,
@@ -88,20 +90,20 @@ const TaskModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Create a copy of the form data
-    const formData = {...form};
-    
+    const formData = { ...form };
+
     // If dueDate is empty string, set it to undefined so it gets removed in the backend
     if (formData.dueDate === '') {
       delete formData.dueDate;
     }
-    
+
     // Remove attachments if undefined or empty array
     if (!formData.attachments || formData.attachments.length === 0) {
       delete formData.attachments;
     }
-    
+
     onSave(formData);
   };
 
@@ -111,11 +113,23 @@ const TaskModal = ({
     const target = e.target as HTMLInputElement;
     const name = target.name;
     const value = target.type === 'checkbox' ? target.checked : target.value;
-    
-    setForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
+
+
+    setForm((prev) => {
+      // if (name === 'boardId') {
+      //   return {
+      //     ...prev,
+      //     [name]: value,
+      //     listId: lists.find(list => list.boardId === value)?.id || '',
+      //   }
+      // }
+
+      return {
+        ...prev,
+        listId: name === 'boardId' ? lists.find(list => list.boardId === value)?.id || prev.listId : '',
+        [name]: value,
+      }
+    })
   };
 
   const handleClearDate = () => {
@@ -168,6 +182,23 @@ const TaskModal = ({
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4">
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Board</label>
+                      <select
+                        name="boardId"
+                        value={form.boardId}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="" disabled>Select a board</option>
+                        {boards.map(board => (
+                          <option key={board.id} value={board.id}>
+                            {board.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">List</label>
                       <select
                         name="listId"
@@ -177,7 +208,7 @@ const TaskModal = ({
                         required
                       >
                         <option value="" disabled>Select a list</option>
-                        {lists.map(list => (
+                        {lists.filter((list) => list.boardId === form.boardId).map(list => (
                           <option key={list.id} value={list.id}>
                             {list.title}
                           </option>
@@ -248,7 +279,7 @@ const TaskModal = ({
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Task Status */}
                     <div>
                       <div className="flex items-center">
@@ -265,7 +296,7 @@ const TaskModal = ({
                         </label>
                       </div>
                     </div>
-                    
+
                     {/* Attachments Section */}
                     {form.attachments && form.attachments.length > 0 && (
                       <div>
