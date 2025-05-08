@@ -16,7 +16,6 @@ const Tasks = () => {
   const { boards, selectedBoardId, loading } = useSelector((state: RootState) => state.tasks);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isBoardChanging, setIsBoardChanging] = useState(false);
 
   // Fetch all boards
   useEffect(() => {
@@ -47,20 +46,6 @@ const Tasks = () => {
 
     return () => unsubscribe();
   }, [dispatch, user?.uid]);
-
-  // Add loading effect when changing boards
-  useEffect(() => {
-    if (selectedBoardId && !isLoading) {
-      setIsBoardChanging(true);
-
-      // Set a timeout to simulate loading
-      const timer = setTimeout(() => {
-        setIsBoardChanging(false);
-      }, 800);
-
-      return () => clearTimeout(timer);
-    }
-  }, [selectedBoardId]);
 
   const handleSelectBoard = (boardId: string) => {
     dispatch(setSelectedBoardId(boardId));

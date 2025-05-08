@@ -148,6 +148,7 @@ const TaskBoard = () => {
                     title: 'My Board',
                     userId: user.uid,
                     isDefault: true,
+                    position: 0,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
@@ -438,6 +439,7 @@ const TaskBoard = () => {
                     title,
                     userId: user.uid,
                     isDefault: false,
+                    position: boards.length + 1,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };

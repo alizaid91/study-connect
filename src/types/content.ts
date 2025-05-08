@@ -81,6 +81,7 @@ export interface Board {
   title: string;
   userId: string;
   isDefault: boolean;
+  position: number;
   createdAt: string;
   updatedAt: string;
 }

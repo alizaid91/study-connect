@@ -6,7 +6,7 @@ import { FiPlus, FiEdit2, FiTrash2, FiMoreVertical } from 'react-icons/fi';
 import { Board } from '../types/content';
 import { setSelectedBoardId } from '../store/slices/taskSlice';
 import BoardFormModal from './BoardFormModal';
-import { doc, addDoc, updateDoc, deleteDoc, writeBatch, collection } from 'firebase/firestore';
+import { doc, addDoc, updateDoc, deleteDoc, writeBatch, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 interface BoardsOverviewProps {
@@ -18,12 +18,12 @@ interface BoardsOverviewProps {
 const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProps) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  
+
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
-  
+
   // Reference for clicked elements to handle click outside
   const menuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -57,16 +57,38 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
 
   const handleDeleteBoard = async (boardId: string) => {
     if (!user?.uid || boards.length <= 1) return;
-    
+
     setIsSubmitting(true);
     try {
       const batch = writeBatch(db);
-      
+
       // Delete board
       batch.delete(doc(db, 'boards', boardId));
-      
-      // Delete lists and tasks would be handled by the database triggers or additional logic
-      
+
+      // Get all lists in the board
+      const listsQuery = query(
+        collection(db, 'lists'),
+        where('boardId', '==', boardId)
+      );
+      const listsSnapshot = await getDocs(listsQuery);
+
+      // Delete all lists in the board
+      listsSnapshot.forEach(listDoc => {
+        batch.delete(doc(db, 'lists', listDoc.id));
+      });
+
+      // Get all tasks in the board
+      const tasksQuery = query(
+        collection(db, 'tasks'),
+        where('boardId', '==', boardId)
+      );
+      const tasksSnapshot = await getDocs(tasksQuery);
+
+      // Delete all tasks in the board
+      tasksSnapshot.forEach(taskDoc => {
+        batch.delete(doc(db, 'tasks', taskDoc.id));
+      });
+
       await batch.commit();
       onRefresh();
     } catch (error) {
@@ -79,7 +101,7 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
 
   const handleSaveBoard = async (title: string) => {
     if (!user?.uid) return;
-    
+
     setIsSubmitting(true);
     try {
       if (editingBoard) {
@@ -91,13 +113,14 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
         const newBoard = {
           title,
           userId: user.uid,
-          isDefault: boards.length === 0, // Make default if it's the first board
+          isDefault: boards.length === 0 ? true : false,
+          position: boards.length === 0 ? 0 : boards.length,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        
+
         const boardRef = await addDoc(collection(db, 'boards'), newBoard);
-        
+
         // Create default list in new board
         const newList = {
           title: 'To Do',
@@ -107,10 +130,10 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        
+
         await addDoc(collection(db, 'lists'), newList);
       }
-      
+
       onRefresh();
     } catch (error) {
       console.error('Error saving board:', error);
@@ -135,7 +158,7 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
       'from-cyan-400 to-sky-600',
       'from-teal-400 to-emerald-600'
     ];
-    
+
     return gradients[index % gradients.length];
   };
 
@@ -197,8 +220,8 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
                   </div>
                 </div>
               </motion.div>
-              
-              <div 
+
+              <div
                 className="absolute top-2 right-2"
                 ref={el => menuRefs.current[board.id] = el}
               >
@@ -211,7 +234,7 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
                 >
                   <FiMoreVertical size={18} />
                 </button>
-                
+
                 {menuOpenFor === board.id && (
                   <div className="absolute right-0 mt-1 w-36 bg-white rounded-md shadow-lg z-10 py-1 animate-fadeIn">
                     <button
@@ -241,7 +264,7 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
               </div>
             </div>
           ))}
-          
+
           <motion.div
             whileHover={{ y: -5 }}
             className="border-2 border-dashed border-gray-300 h-48 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors duration-300 bg-white"
@@ -254,7 +277,7 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
           </motion.div>
         </div>
       )}
-      
+
       <BoardFormModal
         isOpen={isBoardModalOpen}
         onClose={() => setIsBoardModalOpen(false)}
