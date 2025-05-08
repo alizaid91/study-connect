@@ -450,7 +450,7 @@ const PYQs: React.FC = () => {
       title,
       description: '',
       listId: defaultListId,
-      boardId: defaultList.boardId,
+      boardId: boards.find(board => board.isDefault === true)?.id || '',
       priority: 'high',
       dueDate: '',
       userId: user?.uid || '',
@@ -859,7 +859,7 @@ const PYQs: React.FC = () => {
           }}
           onSave={handleSaveTask}
           isSubmitting={isSubmitting}
-          boardId={lists.find(list => list.id === defaultListId)?.boardId || ''}
+          boardId={boards.find(board => board.isDefault === true)?.id || ''}
         />
       )}
     </div>
