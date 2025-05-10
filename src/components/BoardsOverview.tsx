@@ -4,7 +4,6 @@ import { RootState } from '../store';
 import { motion } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiMoreVertical } from 'react-icons/fi';
 import { Board } from '../types/content';
-import { setSelectedBoardId } from '../store/slices/taskSlice';
 import BoardFormModal from './BoardFormModal';
 import { doc, addDoc, updateDoc, deleteDoc, writeBatch, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -23,6 +22,8 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  const [deletingBoard, setDeletingBoard] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState<string | null>(null);
 
   // Reference for clicked elements to handle click outside
   const menuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -59,6 +60,8 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
     if (!user?.uid || boards.length <= 1) return;
 
     setIsSubmitting(true);
+    setDeletingBoard(true);
+    setDeleteIndex(boardId);
     try {
       const batch = writeBatch(db);
 
@@ -95,6 +98,8 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
       console.error('Error deleting board:', error);
     } finally {
       setIsSubmitting(false);
+      setDeleteIndex(null);
+      setDeletingBoard(false);
       setMenuOpenFor(null);
     }
   };
@@ -201,6 +206,7 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {boards.map((board, index) => (
             <div key={board.id} className="relative group">
+              <div className={`absolute z-50 inset-0 bg-white/70 ${deletingBoard && deleteIndex === board.id ? 'flex' : 'hidden'} items-center justify-center text-red-600 text-md font-bold`}>Deleting...</div>
               <motion.div
                 whileHover={{ y: -5 }}
                 className={`bg-gradient-to-br ${getRandomGradient(index)} h-48 rounded-lg shadow-md flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer`}
