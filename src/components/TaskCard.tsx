@@ -87,7 +87,7 @@ const TaskCard = ({ task, index, onEditTask, onDeleteTask }: TaskCardProps) => {
       transition={{ duration: 0.2 }}
     >
       <div
-        className={`bg-white rounded-lg shadow hover:shadow-md p-3 transition-all ${isCompleted ? 'opacity-75' : 'opacity-100'}`}
+        className={`border border-gray-300/70 bg-white rounded-lg hover:shadow-sm p-3 transition-all ${isCompleted ? 'opacity-75' : 'opacity-100'}`}
       >
         <div className="flex">
           {/* Checkbox Column */}

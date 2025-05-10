@@ -26,16 +26,23 @@ const TaskList = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(list.title);
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  
+
   // Check if this is the default list (position 0)
   const isDefaultList = list.position === 0;
-  
+
   // Calculate completion metrics
-  const completedTasks = tasks.filter(task => task.completed).length;
+  const completedTasksCount = tasks.filter(task => task.completed).length;
   const totalTasks = tasks.length;
-  const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  
+  const completionPercentage = totalTasks > 0 ? Math.round((completedTasksCount / totalTasks) * 100) : 0;
+
+  useEffect(() => {
+    const completedTasks = tasks.filter(task => task.completed);
+    setCompletedTasks(completedTasks);
+  }, [tasks]);
+
   // Handle click outside to close menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -43,7 +50,7 @@ const TaskList = ({
         setIsMenuOpen(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -59,8 +66,8 @@ const TaskList = ({
   };
 
   return (
-    <motion.div 
-      className={`bg-white rounded-xl shadow-md w-72 min-w-[280px] md:min-w-[340px] max-w-[90vw] mx-2 flex-shrink-0 flex flex-col h-fit max-h-full ${isDefaultList ? 'border-l-4 border-blue-500' : 'border border-gray-100'}`}
+    <motion.div
+      className={`bg-white rounded-xl shadow-md w-72 min-w-[300px] md:min-w-[340px] max-w-[90vw] mx-2 flex-shrink-0 flex flex-col h-fit max-h-full ${isDefaultList ? 'border-l-4 border-blue-500' : 'border border-gray-100'}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -137,21 +144,20 @@ const TaskList = ({
         <div className="flex justify-between items-center mb-1">
           <div className="flex items-center text-xs text-gray-500">
             <FiCheckCircle className="mr-1" size={12} />
-            <span>{completedTasks} of {totalTasks} completed</span>
+            <span>{completedTasksCount} of {totalTasks} completed</span>
           </div>
           <div className="text-xs font-medium text-gray-500">
             {completionPercentage}%
           </div>
         </div>
         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <motion.div 
-            className={`h-full ${
-              completionPercentage === 100 
-                ? 'bg-green-500' 
-                : completionPercentage > 50 
-                  ? 'bg-blue-500' 
-                  : 'bg-blue-400'
-            }`}
+          <motion.div
+            className={`h-full ${completionPercentage === 100
+              ? 'bg-green-500'
+              : completionPercentage > 50
+                ? 'bg-blue-500'
+                : 'bg-blue-400'
+              }`}
             initial={{ width: 0 }}
             animate={{ width: `${completionPercentage}%` }}
             transition={{ duration: 0.5 }}
@@ -160,36 +166,88 @@ const TaskList = ({
       </div>
 
       <div className="p-2 flex-1 overflow-y-auto max-h-[calc(100vh-380px)] md:max-h-[calc(100vh-260px)]">
-        {tasks.length === 0 ? (
+        {tasks.length === 0 || completedTasks.length === tasks.length ? (
           <div className="flex flex-col items-center justify-center text-gray-400 py-8 text-sm">
             <FiClipboard className="mb-2 text-gray-300" size={24} />
-            <p className="text-center">No tasks yet</p>
-            <p className="text-center text-xs mt-1">Click below to add your first task</p>
+            <p className="text-center">{completedTasks.length === tasks.length ? 'All Task Completed' : 'No tasks yet'}</p>
+            <p className="text-center text-xs mt-1">{tasks.length === 0 ? 'Click below to add your first task!' : 'Nice Work!'}</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {tasks.map((task, index) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                index={index}
-                onEditTask={onEditTask}
-                onDeleteTask={onDeleteTask}
-              />
-            ))}
+            {
+              tasks.map((task, index) => {
+                if (!task.completed) {
+                  return (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      index={index}
+                      onEditTask={onEditTask}
+                      onDeleteTask={onDeleteTask}
+                    />
+                  );
+                }
+                return null;
+              })
+            }
           </div>
         )}
 
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700 mt-3 flex items-center text-sm transition-colors font-medium"
+          className="w-full text-left px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-gray-700 mt-3 flex items-center text-sm transition-colors font-medium"
           onClick={() => onAddTask(list.id)}
         >
           <FiPlus className="mr-2" />
           Add a task
         </motion.button>
       </div>
+      {
+        completedTasks.length > 0 && (
+          <div className="p-2 bg-gray-200/70 m-2 rounded-lg">
+            <div className={`w-full flex items-center justify-between cursor-pointer ${showCompletedTasks ? 'mb-4' : 'mb-0'}`} onClick={() => setShowCompletedTasks(!showCompletedTasks)}>
+              <h4 className="text-md font-medium text-gray-800 ml-2">Completed Tasks</h4>
+              <motion.svg
+                animate={{ rotate: showCompletedTasks ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-5 h-5 transform-gpu text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </motion.svg>
+            </div>
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{
+                height: showCompletedTasks ? 'auto' : 0,
+                opacity: showCompletedTasks ? 1 : 0,
+              }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden transform-gpu"
+            >
+              <div className="space-y-2">
+                {completedTasks.map((task, index) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    index={index}
+                    onEditTask={onEditTask}
+                    onDeleteTask={onDeleteTask}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )
+      }
     </motion.div>
   );
 };
