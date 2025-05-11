@@ -206,7 +206,7 @@ const TaskList = ({
       {
         completedTasks.length > 0 && (
           <div className="p-2 bg-gray-200/70 m-2 rounded-lg">
-            <div className={`w-full flex items-center justify-between cursor-pointer ${showCompletedTasks ? 'mb-4' : 'mb-0'}`} onClick={() => setShowCompletedTasks(!showCompletedTasks)}>
+            <div className={`w-full flex items-center justify-between cursor-pointer`} onClick={() => setShowCompletedTasks(!showCompletedTasks)}>
               <h4 className="text-md font-medium text-gray-800 ml-2">Completed Tasks</h4>
               <motion.svg
                 animate={{ rotate: showCompletedTasks ? 180 : 0 }}
@@ -233,7 +233,7 @@ const TaskList = ({
               transition={{ duration: 0.3 }}
               className="overflow-hidden transform-gpu"
             >
-              <div className="space-y-2">
+              <div className="space-y-2 mt-4">
                 {completedTasks.map((task, index) => (
                   <TaskCard
                     key={task.id}

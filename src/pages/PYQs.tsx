@@ -66,6 +66,7 @@ const PYQs: React.FC = () => {
   const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
   // UI states
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+  const [showMoreQuickFilters, setShowMoreQuickFilters] = useState(false);
 
   // Effect to prevent background scrolling when modal is open
   useEffect(() => {
@@ -510,8 +511,8 @@ const PYQs: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4 text-gray-700 flex items-center">
               <FiFilter className="mr-2" /> Quick Filters
             </h2>
-            <div className="flex flex-wrap gap-3">
-              {quickFilters.map((qf, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {quickFilters.slice(0, showMoreQuickFilters ? quickFilters.length : 3).map((qf, idx) => (
                 <motion.div
                   key={qf.id}
                   initial={{ scale: 0.9, opacity: 0 }}
@@ -522,15 +523,14 @@ const PYQs: React.FC = () => {
                   onDragOver={handleQFDragOver}
                   onDrop={(e) => handleQFDrop(e, idx)}
                   className="bg-white shadow-lg rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab transition-all duration-200 hover:shadow-xl border-l-4 border-blue-500"
-                  whileHover={{ y: -5 }}
                 >
                   <div className="flex flex-wrap items-center space-x-2 text-sm text-gray-700">
                     <span className="font-medium">{qf.values.branch}</span>
                     {qf.values.branch !== 'FE' && qf.values.year && <span>- {qf.values.year}</span>}
-                    {qf.values.semester && <span>- Semester {qf.values.semester}</span>}
+                    {qf.values.semester && <span>- Sem {qf.values.semester}</span>}
                     {qf.values.pattern && <span>- {qf.values.pattern} Pattern</span>}
-                    {qf.values.paperType && <span>- {qf.values.paperType}</span>}
-                    {qf.values.subjectName && <span>- {qf.values.subjectCode}</span>}
+                    {qf.values.subjectName && <span className='font-medium'>- {qf.values.subjectCode}</span>}
+                    {qf.values.paperType && <span className='font-medium'>- {qf.values.paperType}</span>}<span> Papers</span>
                   </div>
                   <div className="flex items-center space-x-4">
                     <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.95 }}>
@@ -550,6 +550,26 @@ const PYQs: React.FC = () => {
                 </motion.div>
               ))}
             </div>
+            {quickFilters.length > 3 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-center mt-4"
+              >
+                <motion.button
+                  onClick={() => setShowMoreQuickFilters(!showMoreQuickFilters)}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
+                >
+                  <span>{showMoreQuickFilters ? 'Show Less' : 'Show More'}</span>
+                  <motion.div
+                    animate={{ rotate: showMoreQuickFilters ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <FiChevronsDown size={20} />
+                  </motion.div>
+                </motion.button>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

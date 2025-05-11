@@ -59,6 +59,14 @@ const Tasks = () => {
     // Boards are refreshed automatically via onSnapshot
   };
 
+  const getSortedBoards = (boards: Board[]): Board[] => {
+    const boardWithPosition = boards.map(board => ({
+      ...board,
+      position: typeof board.position === 'number' ? board.position : 0
+    }));
+    return boardWithPosition.sort((a, b) => a.position - b.position);
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -111,7 +119,7 @@ const Tasks = () => {
       ) : (
         <div className="flex-1 overflow-auto bg-gradient-to-b from-gray-50 to-white">
           <BoardsOverview
-            boards={boards}
+            boards={getSortedBoards(boards)}
             onSelectBoard={handleSelectBoard}
             onRefresh={refreshBoards}
           />

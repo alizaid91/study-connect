@@ -115,11 +115,14 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
           updatedAt: new Date().toISOString()
         });
       } else {
+        const position = boards.length > 0
+          ? Math.max(...boards.map(b => b.position)) + 1
+          : 0;
         const newBoard = {
           title,
           userId: user.uid,
           isDefault: boards.length === 0 ? true : false,
-          position: boards.length === 0 ? 0 : boards.length,
+          position: position,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
