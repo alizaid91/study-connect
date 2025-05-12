@@ -18,7 +18,7 @@ import { FcGoogle } from 'react-icons/fc';
 import logo from '../assets/logo.png';
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -31,6 +31,16 @@ const Auth = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+
+    if (hash === 'login') {
+      setIsLogin(true);
+    } else {
+      setIsLogin(false); // default to login if hash is 'login' or missing
+    }
+  }, [location.hash]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
