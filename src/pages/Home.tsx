@@ -57,17 +57,17 @@ const Home = () => {
     {
       title: 'Find Past Papers',
       description: 'Search and filter through our extensive collection of past year papers.',
-      videoId: 'YOUR_LOOM_VIDEO_ID_1'
+      videoId: 'https://www.youtube.com/embed/9WQuTungoHE?si=rlViTbubbYEgypbw'
     },
     {
       title: 'Access Resources',
       description: 'Browse through our curated collection of study materials and resources.',
-      videoId: 'YOUR_LOOM_VIDEO_ID_2'
+      videoId: 'https://www.youtube.com/'
     },
     {
       title: 'Manage Tasks',
       description: 'Create and organize your study tasks with our intuitive task management system.',
-      videoId: 'YOUR_LOOM_VIDEO_ID_3'
+      videoId: 'https://www.youtube.com/'
     }
   ];
 
@@ -168,7 +168,7 @@ const Home = () => {
 
         <div className="relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 max-w-[650px] mx-auto px-4 sm:px-0">
-            {user ? 'Welcome Back!' : 'Ace Your Engineering Semesters with Past Papers, Study Resources, Smart Task Boards.'}
+            {user ? 'Welcome Back!' : 'Ace Engineering with Papers, Resources & Smart Tasks Board.'}
           </h1>
           <p className="text-md md:text-lg text-blue-100 mb-8 max-w-2xl mx-auto px-4 sm:px-0">
             {user
@@ -347,7 +347,7 @@ const Home = () => {
       <div className="bg-blue-50 px-2">
         <section className="space-y-8 container mx-auto px-4 py-16">
           <h2 className="text-3xl font-bold text-center text-gray-900">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {howItWorks.map((step, index) => (
               <div key={index} className="bg-white p-6 rounded-lg shadow-md">
                 <div className="flex items-center justify-center mb-4">
@@ -358,12 +358,7 @@ const Home = () => {
                 <h3 className="text-xl font-semibold mb-3 text-center">{step.title}</h3>
                 <p className="text-gray-600 text-center mb-4">{step.description}</p>
                 <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
-                  <iframe
-                    src={`https://www.loom.com/embed/${step.videoId}`}
-                    frameBorder="0"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
+                  <iframe width="100%" height="315" src={step.videoId} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
                 </div>
               </div>
             ))}
