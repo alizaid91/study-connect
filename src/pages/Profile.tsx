@@ -59,7 +59,9 @@ const getCroppedImg = async (
 const Profile = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [profileUpdated, setProfileUpdated] = useState(false);
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
+  const [oldProfile, setOldProfile] = useState<Partial<UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -82,6 +84,7 @@ const Profile = () => {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           setProfile(userDoc.data() as UserProfile);
+          setOldProfile(userDoc.data() as UserProfile);
         }
       } catch (error: any) {
         setError('Failed to load profile');
@@ -98,9 +101,17 @@ const Profile = () => {
     setProfile(prev => ({
       ...prev,
       [name]: value,
-      ...(name === 'branch' && value === 'FE' ? { year: 'FE' } : {})
     }));
+    setProfileUpdated(true);
   };
+
+  useEffect(() => {
+    if (profileUpdated && JSON.stringify(profile) === JSON.stringify(oldProfile)) {
+      setProfileUpdated(false);
+    }else{
+      setProfileUpdated(true);
+    }
+  }, [profile])
 
   const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -437,7 +448,7 @@ const Profile = () => {
               </select>
             </motion.div>
 
-            {profile.branch !== 'FE' && (
+            {(profile.branch !== 'FE' && profile.branch !== '') && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -523,7 +534,8 @@ const Profile = () => {
                 Updating Profile...
               </button>
             ) : (
-              <motion.button
+              profileUpdated && (
+                <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
@@ -531,6 +543,7 @@ const Profile = () => {
               >
                 <FiSave className="mr-2" /> Update Profile
               </motion.button>
+              )
             )}
           </motion.div>
         </form>
