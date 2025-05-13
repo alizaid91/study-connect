@@ -5,8 +5,10 @@ import { motion } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiMoreVertical } from 'react-icons/fi';
 import { Board } from '../types/content';
 import BoardFormModal from './BoardFormModal';
-import { doc, addDoc, updateDoc, deleteDoc, writeBatch, collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { 
+  saveBoard,
+  deleteBoardWithContent
+} from '../services/TaskServics';
 
 interface BoardsOverviewProps {
   boards: Board[];
@@ -63,36 +65,7 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
     setDeletingBoard(true);
     setDeleteIndex(boardId);
     try {
-      const batch = writeBatch(db);
-
-      // Delete board
-      batch.delete(doc(db, 'boards', boardId));
-
-      // Get all lists in the board
-      const listsQuery = query(
-        collection(db, 'lists'),
-        where('boardId', '==', boardId)
-      );
-      const listsSnapshot = await getDocs(listsQuery);
-
-      // Delete all lists in the board
-      listsSnapshot.forEach(listDoc => {
-        batch.delete(doc(db, 'lists', listDoc.id));
-      });
-
-      // Get all tasks in the board
-      const tasksQuery = query(
-        collection(db, 'tasks'),
-        where('boardId', '==', boardId)
-      );
-      const tasksSnapshot = await getDocs(tasksQuery);
-
-      // Delete all tasks in the board
-      tasksSnapshot.forEach(taskDoc => {
-        batch.delete(doc(db, 'tasks', taskDoc.id));
-      });
-
-      await batch.commit();
+      await deleteBoardWithContent(boardId);
       onRefresh();
     } catch (error) {
       console.error('Error deleting board:', error);
@@ -110,36 +83,9 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
     setIsSubmitting(true);
     try {
       if (editingBoard) {
-        await updateDoc(doc(db, 'boards', editingBoard.id), {
-          title,
-          updatedAt: new Date().toISOString()
-        });
+        await saveBoard(title, user.uid, boards.length, editingBoard);
       } else {
-        const position = boards.length > 0
-          ? Math.max(...boards.map(b => b.position)) + 1
-          : 0;
-        const newBoard = {
-          title,
-          userId: user.uid,
-          isDefault: boards.length === 0 ? true : false,
-          position: position,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        const boardRef = await addDoc(collection(db, 'boards'), newBoard);
-
-        // Create default list in new board
-        const newList = {
-          title: 'To Do',
-          boardId: boardRef.id,
-          userId: user.uid,
-          position: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        await addDoc(collection(db, 'lists'), newList);
+        const boardId = await saveBoard(title, user.uid, boards.length);
       }
 
       onRefresh();

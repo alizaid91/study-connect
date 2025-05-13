@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
 import AddPaperForm from '../components/AddPaperForm';
 import AddResourceForm from '../components/AddResourceForm';
-import { collection, query, getDocs, orderBy, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Paper, Resource } from '../types/content';
 
 const AdminDashboard = () => {
-  const { isAdmin } = useSelector((state: RootState) => state.admin);
   const [activeTab, setActiveTab] = useState<'papers' | 'resources'>('papers');
   const [showAddForm, setShowAddForm] = useState(false);
   const [papers, setPapers] = useState<Paper[]>([]);

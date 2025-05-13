@@ -1,18 +1,44 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { FaFileAlt, FaBook, FaTasks, FaTachometerAlt, FaBookmark, FaChartLine, FaQuoteLeft, FaQuestionCircle, FaPlay } from 'react-icons/fa';
-import { useState } from 'react';
+import { FaFileAlt, FaBook, FaTasks, FaTachometerAlt, FaBookmark, FaQuestionCircle, FaPlay } from 'react-icons/fa';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import heroImage from '../assets/hero-image.svg';
 import featureImage1 from '../assets/feature-1.svg';
 import featureImage2 from '../assets/feature-2.svg';
 import featureImage3 from '../assets/feature-3.svg';
-import Footer from '../components/Footer';
+
+import { db } from '../config/firebase'
+
+import { getFirestore, collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 
 const Home = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // useEffect(() => {
+
+  //   async function deleteMultipleDocuments() {
+  //     // Step 1: Create your query (e.g., delete where status == "done")
+  //     const q = query(collection(db, "lists"), where("userId", "==", "U8pRmedR7BNpKuLtRUyMV70XVfP2"));
+
+  //     // Step 2: Fetch matching documents
+  //     const querySnapshot = await getDocs(q);
+
+  //     // Step 3: Delete each document
+  //     const deletePromises = querySnapshot.docs.map((document) => {
+  //       return deleteDoc(doc(db, "lists", document.id));
+  //     });
+
+  //     // Step 4: Wait for all deletions to complete
+  //     await Promise.all(deletePromises);
+
+  //     console.log("Documents deleted successfully.");
+  //   }
+
+  //   deleteMultipleDocuments()
+  // }, [])
 
   const features = [
     {

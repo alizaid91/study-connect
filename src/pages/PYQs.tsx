@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
-import { Paper, Bookmark, TaskForm, Task, List, Board } from '../types/content';
+import { Paper, Bookmark, TaskForm, Task } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
 import { fetchPapers, setLoading } from '../store/slices/papersSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import TaskModal from '../components/TaskModal';
 import { setBoards, setLists, setTasks } from '../store/slices/taskSlice';
+import { listenToBoards, saveTask, listenToListsAndTasks, createDefaultBoardIfNeeded } from '../services/TaskServics';
 
 interface Subject {
   name: string;
@@ -43,6 +44,7 @@ const PYQs: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [defaultListId, setDefaultListId] = useState<string | null>(null);
+  const [checkingDefaultBoard, setCheckingDefaultBoard] = useState(false);
 
   // Quick filters state and types
   type FilterValues = {
@@ -85,55 +87,65 @@ const PYQs: React.FC = () => {
   }, [isTaskModalOpen]);
 
   useEffect(() => {
-    if (user) {
-      dispatch(fetchPapers());
-    }
+    if (!user?.uid) return;
 
-    const fetchBoards = async () => {
-      if (!user) return;
+    let boardsUnsubscribe: (() => void) | undefined;
+    let listsTasksUnsubscribe: (() => void) | undefined;
 
-      const boardsQuery = query(
-        collection(db, 'boards'),
-        where('userId', '==', user.uid)
-      );
+    // Fetch papers
+    dispatch(fetchPapers());
 
-      const unsubscribe = onSnapshot(
-        boardsQuery,
-        (snapshot) => {
-          const fetchedBoards = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Board[];
+    // Setup function for checking/creating default board
+    const ensureDefaultBoard = async () => {
+      if (checkingDefaultBoard) return;
 
-          dispatch(setBoards(fetchedBoards));
-        },
-        (error) => {
-          console.error('Error fetching boards:', error);
-        }
-      );
-
-      return () => unsubscribe();
-    }
-
-    // fetch task lists
-    const fetchTaskLists = async () => {
-      if (!user) return;
-      const listsQuery = query(
-        collection(db, 'lists'),
-        where('userId', '==', user.uid)
-      );
-      const querySnapshot = await getDocs(listsQuery);
-      const listsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      dispatch(setLists(listsData as List[]));
+      setCheckingDefaultBoard(true);
+      try {
+        // This will create a default board only if needed
+        await createDefaultBoardIfNeeded(user.uid);
+      } catch (error) {
+        console.error("Error creating default board:", error);
+      } finally {
+        setCheckingDefaultBoard(false);
+      }
     };
 
-    fetchBoards();
-    fetchTaskLists();
-  }, [dispatch, user]);
+    // Setup listener for boards
+    boardsUnsubscribe = listenToBoards(
+      user.uid,
+      (fetchedBoards) => {
+        dispatch(setBoards(fetchedBoards));
+
+        // If we have boards but no default board, ensure one exists
+        if (fetchedBoards.length > 0 && !fetchedBoards.some(board => board.isDefault)) {
+          ensureDefaultBoard();
+        }
+
+        // If no boards at all, create a default board
+        if (fetchedBoards.length === 0) {
+          ensureDefaultBoard();
+        }
+
+        // If we have a default board, set up listeners for its lists and tasks
+        const defaultBoard = fetchedBoards.find(board => board.isDefault);
+        if (defaultBoard && !listsTasksUnsubscribe) {
+          listsTasksUnsubscribe = listenToListsAndTasks(
+            defaultBoard.id,
+            (fetchedLists) => dispatch(setLists(fetchedLists)),
+            (fetchedTasks) => dispatch(setTasks(fetchedTasks)),
+            () => console.error("Error fetching lists or tasks")
+          );
+        }
+      },
+      () => console.error("Error fetching boards")
+    );
+
+    // Cleanup function
+    return () => {
+      if (boardsUnsubscribe) boardsUnsubscribe();
+      if (listsTasksUnsubscribe) listsTasksUnsubscribe();
+    };
+  }, [dispatch, user?.uid]);
 
   useEffect(() => {
     if (user) {
@@ -250,56 +262,16 @@ const PYQs: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-
       const boardId = taskData.boardId;
 
-      // Get tasks in the same list to determine position
-      const fetchTasks = async (boardId: string) => {
-        const tasksQuery = query(
-          collection(db, 'tasks'),
-          where('boardId', '==', boardId)
-        );
-
-        onSnapshot(
-          tasksQuery,
-          (snapshot) => {
-            const fetchedTasks = snapshot.docs.map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                ...data,
-                position: typeof data.position === 'number' ? data.position : 0,
-                createdAt: data.createdAt || new Date().toISOString(),
-                updatedAt: data.updatedAt || new Date().toISOString()
-              };
-            }) as Task[];
-
-            dispatch(setTasks(fetchedTasks));
-          },
-          (error) => {
-            dispatch(setLoading(false));
-          }
-        );
-      }
-
-      await fetchTasks(taskData.boardId);
-
-      const listTasks = tasks.filter(task => task.listId === taskData.listId);
-      const position = listTasks.length > 0
-        ? Math.max(...listTasks.map(list => list.position)) + 1
-        : 0;
-
-      const newTask = {
-        ...taskData,
+      // Use the service function to save the task
+      await saveTask(
+        taskData,
+        user.uid,
         boardId,
-        userId: user.uid,
-        position,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      // Add to Firestore only - the listener will update Redux
-      await addDoc(collection(db, 'tasks'), newTask);
+        undefined,
+        tasks
+      );
 
       setIsTaskModalOpen(false);
     } catch (error) {

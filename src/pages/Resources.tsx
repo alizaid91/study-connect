@@ -6,7 +6,7 @@ import { RootState, AppDispatch } from '../store';
 import { Resource, Bookmark } from '../types/content';
 import { addBookmark, removeBookmark } from '../store/slices/bookmarkSlice';
 import { setResources } from '../store/slices/resourceSlice';
-import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBook, FiBookmark } from 'react-icons/fi';
+import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Resources: React.FC = () => {

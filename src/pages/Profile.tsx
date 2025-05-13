@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { auth, db } from '../config/firebase';
+import { useSelector } from 'react-redux';
+import { db } from '../config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { RootState } from '../store';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
@@ -57,7 +57,6 @@ const getCroppedImg = async (
 };
 
 const Profile = () => {
-  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const [profileUpdated, setProfileUpdated] = useState(false);
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
@@ -108,12 +107,12 @@ const Profile = () => {
   useEffect(() => {
     if (profileUpdated && JSON.stringify(profile) === JSON.stringify(oldProfile)) {
       setProfileUpdated(false);
-    }else{
+    } else {
       setProfileUpdated(true);
     }
   }, [profile])
 
-  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+  const onCropComplete = useCallback((croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
@@ -536,13 +535,13 @@ const Profile = () => {
             ) : (
               profileUpdated && (
                 <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-              >
-                <FiSave className="mr-2" /> Update Profile
-              </motion.button>
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                >
+                  <FiSave className="mr-2" /> Update Profile
+                </motion.button>
               )
             )}
           </motion.div>

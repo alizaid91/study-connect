@@ -2,19 +2,17 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { setBoards, setSelectedBoardId } from '../store/slices/taskSlice';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { Board } from '../types/content';
 import TaskBoard from '../components/TaskBoard';
 import BoardsOverview from '../components/BoardsOverview';
 import { IoArrowBackSharp } from "react-icons/io5";
 import { motion } from 'framer-motion';
+import { listenToBoards, createDefaultBoardIfNeeded } from '../services/TaskServics';
 
 const Tasks = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { boards, selectedBoardId, loading } = useSelector((state: RootState) => state.tasks);
-
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch all boards
@@ -22,29 +20,27 @@ const Tasks = () => {
     if (!user?.uid) return;
 
     setIsLoading(true);
-    const boardsQuery = query(
-      collection(db, 'boards'),
-      where('userId', '==', user.uid)
-    );
+    let mounted = true;
 
-    const unsubscribe = onSnapshot(
-      boardsQuery,
-      (snapshot) => {
-        const fetchedBoards = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Board[];
-
-        dispatch(setBoards(fetchedBoards));
-        setIsLoading(false);
+    const unsubscribe = listenToBoards(
+      user.uid,
+      (fetchedBoards) => {
+        if (!mounted) return;
+        createDefaultBoardIfNeeded(user.uid).then((data) => {
+          dispatch(setBoards(fetchedBoards));
+          setIsLoading(false);
+        })
       },
-      (error) => {
-        console.error('Error fetching boards:', error);
+      () => {
+        console.error('Error fetching boards');
         setIsLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [dispatch, user?.uid]);
 
   const handleSelectBoard = (boardId: string) => {
