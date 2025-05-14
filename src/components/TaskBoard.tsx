@@ -98,7 +98,7 @@ const TaskBoard = () => {
         setActiveListenerBoardId(selectedBoardId);
 
         const unsubscribe = listenToListsAndTasks(
-            selectedBoardId,
+            user.uid,
             (fetchedLists) => dispatch(setLists(fetchedLists)),
             (fetchedTasks) => {
                 dispatch(setTasks(fetchedTasks));
@@ -210,7 +210,7 @@ const TaskBoard = () => {
 
     const handleDeleteList = async (listId: string) => {
         try {
-            await deleteListWithTasks(listId, tasks);
+            await deleteListWithTasks(listId);
         } catch (error) {
             console.error('Error deleting list:', error);
         }
@@ -327,7 +327,7 @@ const TaskBoard = () => {
                 {selectedBoardId && (
                     <div className="flex p-4 overflow-x-auto pb-6 h-full">
                         <div className="flex space-x-4 md:space-x-6 pb-4 md:pb-0 snap-x snap-mandatory">
-                            {lists.map(list => (
+                            {lists.filter((list) => list.boardId === selectedBoardId).map(list => (
                                 <div key={list.id} className="snap-start">
                                     <TaskList
                                         list={list}

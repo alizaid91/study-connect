@@ -130,7 +130,7 @@ const PYQs: React.FC = () => {
         const defaultBoard = fetchedBoards.find(board => board.isDefault);
         if (defaultBoard && !listsTasksUnsubscribe) {
           listsTasksUnsubscribe = listenToListsAndTasks(
-            defaultBoard.id,
+            user.uid,
             (fetchedLists) => dispatch(setLists(fetchedLists)),
             (fetchedTasks) => dispatch(setTasks(fetchedTasks)),
             () => console.error("Error fetching lists or tasks")

@@ -54,6 +54,7 @@ const TaskModal = ({
   isSubmitting,
   boardId
 }: TaskModalProps) => {
+  console.log(lists)
   const [form, setForm] = useState<TaskForm>({
     title: '',
     description: '',

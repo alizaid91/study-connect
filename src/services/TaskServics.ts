@@ -68,13 +68,13 @@ export const createDefaultBoardIfNeeded = async (userId: string): Promise<string
 };
 
 export const listenToListsAndTasks = (
-    boardId: string,
+    userId: string,
     onLists: (lists: List[]) => void,
     onTasks: (tasks: Task[]) => void,
     onError: () => void
 ) => {
-    const listsQuery = query(collection(db, 'lists'), where('boardId', '==', boardId));
-    const tasksQuery = query(collection(db, 'tasks'), where('boardId', '==', boardId));
+    const listsQuery = query(collection(db, 'lists'), where('userId', '==', userId));
+    const tasksQuery = query(collection(db, 'tasks'), where('userId', '==', userId));
 
     const unsubscribeLists = onSnapshot(listsQuery, snapshot => {
         const lists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as List[];
@@ -159,11 +159,17 @@ export const updateListTitle = (listId: string, newTitle: string) =>
         updatedAt: new Date().toISOString()
     });
 
-export const deleteListWithTasks = async (listId: string, tasks: Task[]) => {
+export const deleteListWithTasks = async (listId: string) => {
     const batch = writeBatch(db);
     batch.delete(doc(db, 'lists', listId));
 
-    tasks.forEach(task => batch.delete(doc(db, 'tasks', task.id)));
+    // Get all tasks
+    const tasksQuery = query(collection(db, 'tasks'), where('listId', '==', listId));
+    const tasksSnapshot = await getDocs(tasksQuery);
+
+    tasksSnapshot.docs.forEach(taskDoc => {
+        batch.delete(doc(db, 'tasks', taskDoc.id));
+    });
 
     return batch.commit();
 };
@@ -172,27 +178,27 @@ export const deleteBoardWithContent = async (boardId: string) => {
     // Get all lists
     const listsQuery = query(collection(db, 'lists'), where('boardId', '==', boardId));
     const listsSnapshot = await getDocs(listsQuery);
-    
+
     // Get all tasks
     const tasksQuery = query(collection(db, 'tasks'), where('boardId', '==', boardId));
     const tasksSnapshot = await getDocs(tasksQuery);
-    
+
     // Create a batch to delete everything
     const batch = writeBatch(db);
-    
+
     // Delete the board
     batch.delete(doc(db, 'boards', boardId));
-    
+
     // Delete all lists
     listsSnapshot.docs.forEach(listDoc => {
         batch.delete(doc(db, 'lists', listDoc.id));
     });
-    
+
     // Delete all tasks
     tasksSnapshot.docs.forEach(taskDoc => {
         batch.delete(doc(db, 'tasks', taskDoc.id));
     });
-    
+
     // Commit the batch
     return batch.commit();
 };
