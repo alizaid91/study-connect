@@ -6,56 +6,9 @@ import { collection, addDoc } from 'firebase/firestore';
 import { Paper } from '../types/content';
 import { useNavigate } from 'react-router-dom';
 
-const FE_SUBJECTS = [
-  { name: 'Engineering Mathematics I', code: 'EM1' },
-  { name: 'Engineering Physics', code: 'EP' },
-  { name: 'Engineering Chemistry', code: 'EC' },
-  { name: 'Basic Electrical Engineering', code: 'BEE' },
-  { name: 'Basic Electronics Engineering', code: 'BEC' },
-  { name: 'Engineering Mechanics', code: 'EM' },
-  { name: 'Engineering Drawing', code: 'ED' },
-  { name: 'Communication Skills', code: 'CS' },
-  { name: 'Environmental Studies', code: 'ES' },
-  { name: 'Workshop Practice', code: 'WP' }
-];
+import { IT_SUBJECTS, FE_SUBJECTS } from '../types/Subjects';
 
-const IT_SUBJECTS = {
-  SE: [
-    { name: 'Discrete Mathematics', code: 'DM', semester: 3 },
-    { name: 'Logic Design & Computer Organization', code: 'LDCO', semester: 3 },
-    { name: 'Data Structures & Algorithms', code: 'DSA', semester: 3 },
-    { name: 'Objects Oriented Programming', code: 'OOP', semester: 3 },
-    { name: 'Basics of Computer Network', code: 'BCN', semester: 3 },
-    { name: 'Engineering Mathematics-III', code: 'EM3', semester: 4 },
-    { name: 'Processor Architecture', code: 'PA', semester: 4 },
-    { name: 'Database Management System', code: 'DBMS', semester: 4 },
-    { name: 'Computer Graphics', code: 'CG', semester: 4 },
-    { name: 'Software Engineering', code: 'SE', semester: 4 },
-  ],
-  TE: [
-    { name: 'Theory of Computation', code: 'TOC', semester: 5 },
-    { name: 'Operating Systems', code: 'OS', semester: 5 },
-    { name: 'Machine Learning', code: 'ML', semester: 5 },
-    { name: 'Human Computer Interaction', code: 'HCI', semester: 5 },
-    { name: 'Elective-I', code: 'E1', semester: 5 },
-    { name: 'Computer Networks & Security', code: 'CNS', semester: 6 },
-    { name: 'Data Science and Big Data Analytics', code: 'DSBDA', semester: 6 },
-    { name: 'Web Application Development', code: 'WAD', semester: 6 },
-    { name: 'Elective-II', code: 'E2', semester: 6 },
-    { name: 'Internship', code: 'INT', semester: 6 },
-  ],
-  BE: [
-    { name: 'Information Storage and Retrieval', code: 'ISR', semester: 7 },
-    { name: 'Software Project Management', code: 'SPM', semester: 7 },
-    { name: 'Deep Learning', code: 'DL', semester: 7 },
-    { name: 'Elective III', code: 'E3', semester: 7 },
-    { name: 'Elective IV', code: 'E4', semester: 7 },
-    { name: 'Distributed Systems', code: 'DS', semester: 8 },
-    { name: 'Elective V', code: 'E5', semester: 8 },
-    { name: 'Elective VI', code: 'E6', semester: 8 },
-    { name: 'Startup and Entrepreneurship', code: 'SE', semester: 8 },
-  ]
-};
+
 
 interface AddPaperFormProps {
   onSuccess?: () => void;
@@ -110,7 +63,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
   };
 
   const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedSubject = (formData.branch === 'IT' && formData.year !== 'FE' ? IT_SUBJECTS[formData.year] : FE_SUBJECTS)
+    const selectedSubject = (formData.year !== 'FE' ? IT_SUBJECTS['2019Pattern'][formData.year] : FE_SUBJECTS['2019Pattern'])
       .find(subject => subject.name === e.target.value);
     if (selectedSubject) {
       setFormData({
@@ -264,7 +217,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
           required
         >
           <option value="">Select a subject</option>
-          {(formData.branch === 'IT' && formData.year !== 'FE' ? IT_SUBJECTS[formData.year].filter((sub) => sub.semester === formData.semester) : FE_SUBJECTS).map((subject) => (
+          {(formData.year !== 'FE' ? IT_SUBJECTS['2019Pattern'][formData.year].filter((sub) => sub.semester === formData.semester) : FE_SUBJECTS['2019Pattern']).map((subject) => (
             <option key={subject.code} value={subject.name}>
               {subject.name}
             </option>

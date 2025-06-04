@@ -5,57 +5,7 @@ import { db } from '../config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { Resource } from '../types/content';
 import { useNavigate } from 'react-router-dom';
-
-const FE_SUBJECTS = [
-  { name: 'Engineering Mathematics I', code: 'EM1' },
-  { name: 'Engineering Physics', code: 'EP' },
-  { name: 'Engineering Chemistry', code: 'EC' },
-  { name: 'Basic Electrical Engineering', code: 'BEE' },
-  { name: 'Basic Electronics Engineering', code: 'BEC' },
-  { name: 'Engineering Mechanics', code: 'EM' },
-  { name: 'Engineering Drawing', code: 'ED' },
-  { name: 'Communication Skills', code: 'CS' },
-  { name: 'Environmental Studies', code: 'ES' },
-  { name: 'Workshop Practice', code: 'WP' }
-];
-
-const IT_SUBJECTS = {
-  SE: [
-    { name: 'Discrete Mathematics', code: 'DM' },
-    { name: 'Logic Design & Computer Organization', code: 'LDCO' },
-    { name: 'Data Structures & Algorithms', code: 'DSA' },
-    { name: 'Objects Oriented Programming', code: 'OOP' },
-    { name: 'Basics of Computer Network', code: 'BCN' },
-    { name: 'Engineering Mathematics-III', code: 'EM3' },
-    { name: 'Processor Architecture', code: 'PA' },
-    { name: 'Database Management System', code: 'DBMS' },
-    { name: 'Computer Graphics', code: 'CG' },
-    { name: 'Software Engineering', code: 'SE' }
-  ],
-  TE: [
-    { name: 'Theory of Computation', code: 'TOC' },
-    { name: 'Operating Systems', code: 'OS' },
-    { name: 'Machine Learning', code: 'ML' },
-    { name: 'Human Computer Interaction', code: 'HCI' },
-    { name: 'Elective-I', code: 'E1' },
-    { name: 'Computer Networks & Security', code: 'CNS' },
-    { name: 'Data Science and Big Data Analytics', code: 'DSBDA' },
-    { name: 'Web Application Development', code: 'WAD' },
-    { name: 'Elective-II', code: 'E2' },
-    { name: 'Internship', code: 'INT' }
-  ],
-  BE: [
-    { name: 'Information Storage and Retrieval', code: 'ISR' },
-    { name: 'Software Project Management', code: 'SPM' },
-    { name: 'Deep Learning', code: 'DL' },
-    { name: 'Elective III', code: 'E3' },
-    { name: 'Elective IV', code: 'E4' },
-    { name: 'Distributed Systems', code: 'DS' },
-    { name: 'Elective V', code: 'E5' },
-    { name: 'Elective VI', code: 'E6' },
-    { name: 'Startup and Entrepreneurship', code: 'SE' }
-  ]
-};
+import { IT_SUBJECTS, FE_SUBJECTS } from '../types/Subjects';
 
 interface AddResourceFormProps {
   onSuccess?: () => void;
@@ -107,9 +57,9 @@ const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
   };
 
   const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedSubject = formData.branch === 'IT' && formData.year !== 'FE' 
-      ? IT_SUBJECTS[formData.year as 'SE' | 'TE' | 'BE'].find(subject => subject.name === e.target.value)
-      : FE_SUBJECTS.find(subject => subject.name === e.target.value);
+    const selectedSubject = formData.branch === 'IT' && formData.year !== 'FE'
+      ? IT_SUBJECTS['2019Pattern'][formData.year as 'SE' | 'TE' | 'BE'].find(subject => subject.name === e.target.value)
+      : FE_SUBJECTS['2019Pattern'].find(subject => subject.name === e.target.value);
     if (selectedSubject) {
       setFormData({
         ...formData,
@@ -121,7 +71,7 @@ const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isAdmin) {
       setError('You must be logged in as admin to add resources');
       return;
@@ -172,7 +122,7 @@ const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && <div className="text-red-500">{error}</div>}
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700">Branch</label>
         <select
@@ -227,9 +177,9 @@ const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
           required
         >
           <option value="">Select a subject</option>
-          {(formData.branch === 'IT' && formData.year !== 'FE' 
-            ? IT_SUBJECTS[formData.year as 'SE' | 'TE' | 'BE']
-            : FE_SUBJECTS
+          {(formData.branch === 'IT' && formData.year !== 'FE'
+            ? IT_SUBJECTS['2019Pattern'][formData.year as 'SE' | 'TE' | 'BE']
+            : FE_SUBJECTS['2019Pattern']
           ).map((subject: { name: string; code: string }) => (
             <option key={subject.code} value={subject.name}>
               {subject.name} ({subject.code})
