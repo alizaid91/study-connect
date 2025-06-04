@@ -54,9 +54,7 @@ const TaskBoard = () => {
         const unsubscribe = listenToBoards(
             user.uid,
             async (fetchedBoards) => {
-                console.log("hello");
                 if (!mounted) return;
-                console.log("Hi");
 
                 dispatch(setBoards(fetchedBoards));
 
