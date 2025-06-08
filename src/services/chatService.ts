@@ -1,6 +1,16 @@
 import { SendMessageRequest, SendMessageResponse } from '../types/chat';
 
-const API_BASE_URL = 'http://localhost:3000';
+// Detect if we're running on HTTPS and adjust API URL accordingly
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const isHttps = window.location.protocol === 'https:';
+    // If frontend is HTTPS, backend should also be HTTPS to avoid mixed content issues
+    return isHttps ? 'https://localhost:3001' : 'http://localhost:3000';
+  }
+  return 'http://localhost:3000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ChatService {
   private async makeRequest<T>(
@@ -11,7 +21,7 @@ class ChatService {
     
     const config: RequestInit = {
       mode: 'cors',
-      credentials: 'omit', // Don't send credentials for CORS
+      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -34,11 +44,11 @@ class ChatService {
         console.error('Response error text:', errorText);
         
         if (response.status === 0 || response.status === 404) {
-          throw new Error('Backend server is not reachable. Please ensure it\'s running on http://localhost:3000');
+          throw new Error(`Backend server is not reachable at ${API_BASE_URL}. Please ensure your chat backend server is running.`);
         }
         
         if (response.status === 405) {
-          throw new Error('Backend endpoint /ask does not accept POST requests or does not exist');
+          throw new Error(`Backend endpoint ${endpoint} does not accept ${options.method || 'GET'} requests or does not exist`);
         }
         
         throw new Error(
@@ -53,11 +63,30 @@ class ChatService {
       console.error('Fetch error:', error);
       
       if (error instanceof TypeError) {
-        if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
-          throw new Error('Network error: Cannot connect to backend. Check if CORS is enabled on your backend server.');
+        const errorMessage = error.message.toLowerCase();
+        
+        if (errorMessage.includes('failed to fetch') || errorMessage.includes('networkerror')) {
+          // Check if it's a mixed content issue (HTTPS -> HTTP)
+          if (window.location.protocol === 'https:' && API_BASE_URL.startsWith('http:')) {
+            throw new Error(
+              `Mixed content error: Cannot make HTTP requests from HTTPS page. ` +
+              `Please start your backend server with HTTPS support or run the frontend with HTTP. ` +
+              `Backend URL: ${API_BASE_URL}`
+            );
+          }
+          
+          throw new Error(
+            `Cannot connect to backend server at ${API_BASE_URL}. ` +
+            `Please check: 1) Backend server is running, 2) CORS is properly configured, ` +
+            `3) No firewall blocking the connection.`
+          );
         }
-        if (error.message.includes('Failed to fetch')) {
-          throw new Error('CORS error: Backend is not allowing requests from this origin. Configure CORS on your backend.');
+        
+        if (errorMessage.includes('cors')) {
+          throw new Error(
+            `CORS error: Backend server at ${API_BASE_URL} is not allowing requests from ${window.location.origin}. ` +
+            `Please configure CORS on your backend to allow this origin.`
+          );
         }
       }
       
@@ -89,40 +118,96 @@ class ChatService {
       return response.reply;
     } catch (error) {
       console.error('Chat service error:', error);
-      throw error; // Re-throw the original error with its specific message
+      
+      // Provide more helpful error messages to users
+      if (error instanceof Error) {
+        if (error.message.includes('Mixed content error')) {
+          throw new Error(
+            'Connection Error: The chat service requires a secure connection. ' +
+            'Please contact support or try refreshing the page.'
+          );
+        }
+        
+        if (error.message.includes('Cannot connect to backend')) {
+          throw new Error(
+            'Chat service is currently unavailable. Please try again later or contact support.'
+          );
+        }
+        
+        if (error.message.includes('CORS error')) {
+          throw new Error(
+            'Chat service configuration error. Please contact support.'
+          );
+        }
+      }
+      
+      throw error;
     }
   }
 
-  // Health check method
-  async checkHealth(): Promise<boolean> {
+  // Health check method with better error handling
+  async checkHealth(): Promise<{ healthy: boolean; error?: string }> {
     try {
       await this.makeRequest('/health');
-      return true;
-    } catch {
-      return false;
+      return { healthy: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { healthy: false, error: errorMessage };
     }
   }
 
   // Test connection method for debugging
-  async testConnection(): Promise<{ success: boolean; error?: string }> {
+  async testConnection(): Promise<{ success: boolean; error?: string; details?: any }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/ask`, {
-        method: 'OPTIONS', // Preflight request
+      console.log('Testing connection to:', API_BASE_URL);
+      
+      // First try a simple GET request to see if server responds
+      const testResponse = await fetch(`${API_BASE_URL}/health`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+      });
+      
+      console.log('Health check response:', testResponse.status);
+      
+      // Then test OPTIONS for CORS preflight
+      const optionsResponse = await fetch(`${API_BASE_URL}/ask`, {
+        method: 'OPTIONS',
         mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'Content-Type',
         },
       });
       
-      console.log('OPTIONS response:', response.status, response.headers);
-      return { success: true };
+      console.log('OPTIONS response:', optionsResponse.status, optionsResponse.headers);
+      
+      return { 
+        success: true, 
+        details: {
+          healthStatus: testResponse.status,
+          corsStatus: optionsResponse.status,
+          apiUrl: API_BASE_URL
+        }
+      };
     } catch (error) {
       console.error('Connection test failed:', error);
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: {
+          apiUrl: API_BASE_URL,
+          protocol: window.location.protocol,
+          origin: window.location.origin
+        }
       };
     }
+  }
+
+  // Get current API URL for debugging
+  getApiUrl(): string {
+    return API_BASE_URL;
   }
 }
 
