@@ -10,8 +10,10 @@ class ChatService {
     const url = `${API_BASE_URL}${endpoint}`;
     
     const config: RequestInit = {
+      mode: 'cors', // Enable CORS
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...options.headers,
       },
       ...options,
@@ -31,7 +33,7 @@ class ChatService {
       return data;
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Unable to connect to the server. Please check if the backend is running.');
+        throw new Error('Unable to connect to the server. Please check if the backend is running on http://localhost:3000');
       }
       throw error;
     }
@@ -48,19 +50,27 @@ class ChatService {
 
     const requestData: SendMessageRequest = { message: message.trim() };
     
-    const response = await this.makeRequest<SendMessageResponse>('/ask', {
-      method: 'POST',
-      body: JSON.stringify(requestData),
-    });
+    try {
+      const response = await this.makeRequest<SendMessageResponse>('/ask', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      });
 
-    if (!response.reply) {
-      throw new Error('Invalid response from server');
+      if (!response.reply) {
+        throw new Error('Invalid response from server');
+      }
+
+      return response.reply;
+    } catch (error) {
+      // Re-throw with more specific error message
+      if (error instanceof Error) {
+        throw new Error(`Chat service error: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while communicating with the chat service');
     }
-
-    return response.reply;
   }
 
-  // Health check method for future use
+  // Health check method
   async checkHealth(): Promise<boolean> {
     try {
       await this.makeRequest('/health');
