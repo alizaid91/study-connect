@@ -49,7 +49,7 @@ function App() {
                 <Navbar />
                 <main className="w-full flex-grow pt-16">
                   <Routes>
-                    <Route path="/" element={<Home />} />
+                    <Route path="/\" element={<Home />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route
