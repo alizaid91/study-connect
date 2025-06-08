@@ -1,16 +1,7 @@
 import { SendMessageRequest, SendMessageResponse } from '../types/chat';
 
-// Detect if we're running on HTTPS and adjust API URL accordingly
-const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    const isHttps = window.location.protocol === 'https:';
-    // If frontend is HTTPS, backend should also be HTTPS to avoid mixed content issues
-    return isHttps ? 'https://localhost:3001' : 'http://localhost:3000';
-  }
-  return 'http://localhost:3000';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+// Get API base URL from environment variables
+const API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:3000';
 
 class ChatService {
   private async makeRequest<T>(
@@ -67,7 +58,7 @@ class ChatService {
         
         if (errorMessage.includes('failed to fetch') || errorMessage.includes('networkerror')) {
           // Check if it's a mixed content issue (HTTPS -> HTTP)
-          if (window.location.protocol === 'https:' && API_BASE_URL.startsWith('http:')) {
+          if (typeof window !== 'undefined' && window.location.protocol === 'https:' && API_BASE_URL.startsWith('http:')) {
             throw new Error(
               `Mixed content error: Cannot make HTTP requests from HTTPS page. ` +
               `Please start your backend server with HTTPS support or run the frontend with HTTP. ` +
@@ -84,7 +75,7 @@ class ChatService {
         
         if (errorMessage.includes('cors')) {
           throw new Error(
-            `CORS error: Backend server at ${API_BASE_URL} is not allowing requests from ${window.location.origin}. ` +
+            `CORS error: Backend server at ${API_BASE_URL} is not allowing requests from ${typeof window !== 'undefined' ? window.location.origin : 'unknown origin'}. ` +
             `Please configure CORS on your backend to allow this origin.`
           );
         }
@@ -198,8 +189,8 @@ class ChatService {
         error: error instanceof Error ? error.message : 'Unknown error',
         details: {
           apiUrl: API_BASE_URL,
-          protocol: window.location.protocol,
-          origin: window.location.origin
+          protocol: typeof window !== 'undefined' ? window.location.protocol : 'unknown',
+          origin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
         }
       };
     }
