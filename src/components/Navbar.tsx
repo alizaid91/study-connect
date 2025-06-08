@@ -19,7 +19,8 @@ import {
   FiLogOut,
   FiSettings,
   FiShield,
-  FiFileText
+  FiFileText,
+  FiMessageCircle
 } from 'react-icons/fi';
 
 const Navbar = () => {
@@ -140,6 +141,13 @@ const Navbar = () => {
             >
               <FiBookmark className="h-4 w-4" />
               <span>Bookmarks</span>
+            </Link>
+            <Link
+              to="/chat"
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/chat') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              <FiMessageCircle className="h-4 w-4" />
+              <span>Chat</span>
             </Link>
             {isAdmin && (
               <Link
@@ -336,6 +344,17 @@ const Navbar = () => {
                 <FiBookmark className="h-5 w-5" />
                 <span>Bookmarks</span>
               </Link>
+              <Link
+                to="/chat"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/chat')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+              >
+                <FiMessageCircle className="h-5 w-5" />
+                <span>Chat</span>
+              </Link>
               {isAdmin && (
                 <Link
                   to="/admin/dashboard"
@@ -370,4 +389,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;
