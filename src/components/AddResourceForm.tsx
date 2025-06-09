@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { db } from '../config/firebase';
-import { collection, addDoc } from 'firebase/firestore';
 import { Resource } from '../types/content';
 import { useNavigate } from 'react-router-dom';
 import { IT_SUBJECTS, FE_SUBJECTS } from '../types/Subjects';
+import { resourcesService } from '../services/resourcesService';
 
 interface AddResourceFormProps {
   onSuccess?: () => void;
 }
 
 const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAdmin } = useSelector((state: RootState) => state.admin);
   const [formData, setFormData] = useState({
@@ -105,7 +103,7 @@ const AddResourceForm = ({ onSuccess }: AddResourceFormProps) => {
         uploadedBy: 'admin',
       };
 
-      await addDoc(collection(db, 'resources'), resourceData);
+      await resourcesService.addResource(resourceData);
       onSuccess?.();
     } catch (err) {
       setError('Error adding resource. Please try again.');

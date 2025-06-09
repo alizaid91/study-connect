@@ -4,11 +4,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { logoutAdmin } from '../store/slices/adminSlice';
 import { logout } from '../store/slices/authSlice';
-import { auth, db } from '../config/firebase';
-import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_AVATAR } from '../types/user';
+import { authService } from '../services/authService';
 import logo from '../assets/logo.png';
 import {
   FiBook,
@@ -21,6 +19,7 @@ import {
   FiShield,
   FiFileText
 } from 'react-icons/fi';
+import { setSelectedBoardId } from '../store/slices/taskSlice';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,9 +39,9 @@ const Navbar = () => {
     const fetchUserProfile = async () => {
       if (user) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setUserProfile(userDoc.data() as { avatarUrl: string });
+          const profile = await authService.getUserProfile(user.uid);
+          if (profile) {
+            setUserProfile({ avatarUrl: profile.avatarUrl });
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -82,8 +81,9 @@ const Navbar = () => {
 
   const handleUserLogout = async () => {
     try {
-      await signOut(auth);
+      await authService.signOut();
       dispatch(logout());
+      dispatch(setSelectedBoardId(null));
       navigate('/');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -274,8 +274,8 @@ const Navbar = () => {
                 to="/"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 <FiHome className="h-5 w-5" />
@@ -285,8 +285,8 @@ const Navbar = () => {
                 to="/pyqs"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 <FiFileText className="h-5 w-5" />
@@ -296,8 +296,8 @@ const Navbar = () => {
                 to="/resources"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/resources')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 <FiBook className="h-5 w-5" />
@@ -307,8 +307,8 @@ const Navbar = () => {
                 to="/tasks"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/tasks')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 <FiClipboard className="h-5 w-5" />
@@ -318,8 +318,8 @@ const Navbar = () => {
                 to="/dashboard"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 <FiGrid className="h-5 w-5" />
@@ -329,8 +329,8 @@ const Navbar = () => {
                 to="/bookmarks"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/bookmarks')
-                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
               >
                 <FiBookmark className="h-5 w-5" />
@@ -341,8 +341,8 @@ const Navbar = () => {
                   to="/admin/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/admin/dashboard')
-                      ? 'bg-primary-50 border-primary-500 text-primary-700'
-                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                 >
                   <FiShield className="h-5 w-5" />
@@ -353,8 +353,8 @@ const Navbar = () => {
                 <Link
                   to="/profile"
                   className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile')
-                      ? 'bg-primary-50 border-primary-500 text-primary-700'
-                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

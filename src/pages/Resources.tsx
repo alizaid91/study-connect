@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { collection, query, where, getDocs, orderBy, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
 import { Resource, Bookmark } from '../types/content';
 import { addBookmark, removeBookmark } from '../store/slices/bookmarkSlice';
 import { setResources } from '../store/slices/resourceSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { resourcesService, QuickFilter } from '../services/resourcesService';
 
 const Resources: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -24,42 +23,20 @@ const Resources: React.FC = () => {
     type: '',
     subjectName: ''
   });
-  // Quick filters state and types for resources
-  type ResourceFilterValues = {
-    branch: string;
-    year: string;
-    pattern: string;
-    type: string;
-    subjectName: string;
-  };
-  interface QuickFilter {
-    id: string;
-    values: ResourceFilterValues;
-  }
   const [resourceQuickFilters, setResourceQuickFilters] = useState<QuickFilter[]>([]);
-  // State for drag-and-drop ordering of quick filters
   const [draggedQF, setDraggedQF] = useState<QuickFilter | null>(null);
   const [draggedQFIndex, setDraggedQFIndex] = useState<number | null>(null);
-  // Loading states for quick filters
   const [savingQF, setSavingQF] = useState(false);
   const [isDeletingQF, setIsDeletingQF] = useState(false);
   const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
-
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
-  // UI states
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
 
   useEffect(() => {
     const fetchResources = async () => {
       try {
-        const resourcesRef = collection(db, 'resources');
-        const q = query(resourcesRef, orderBy('uploadedAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const resourcesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Resource[];
+        const resourcesData = await resourcesService.getResources();
         dispatch(setResources(resourcesData));
         setFilteredResources(resourcesData);
       } catch (err) {
@@ -73,51 +50,18 @@ const Resources: React.FC = () => {
     fetchResources();
   }, []);
 
-  // Fetch saved quick filters for resources
   useEffect(() => {
     if (user) {
       const fetchResourceQuickFilters = async () => {
-        const q = query(collection(db, 'resourceQuickFilters'), where('userId', '==', user.uid));
-        const snap = await getDocs(q);
-        const data = snap.docs.map(d => ({
-          id: d.id,
-          values: {
-            branch: d.data().branch,
-            year: d.data().year,
-            pattern: d.data().pattern,
-            type: d.data().type,
-            subjectName: d.data().subjectName
-          }
-        }));
-        setResourceQuickFilters(data);
+        const filters = await resourcesService.getQuickFilters(user.uid);
+        setResourceQuickFilters(filters);
       };
       fetchResourceQuickFilters();
     }
   }, [user]);
 
   useEffect(() => {
-    let filtered = [...resources];
-
-    if (filters.branch) {
-      filtered = filtered.filter(resource => resource.branch === filters.branch);
-    }
-
-    if (filters.year) {
-      filtered = filtered.filter(resource => resource.year === filters.year);
-    }
-
-    if (filters.pattern) {
-      filtered = filtered.filter(resource => resource.pattern === filters.pattern);
-    }
-
-    if (filters.type) {
-      filtered = filtered.filter(resource => resource.type === filters.type);
-    }
-
-    if (filters.subjectName) {
-      filtered = filtered.filter(resource => resource.subjectName === filters.subjectName);
-    }
-
+    const filtered = resourcesService.filterResources(resources, filters);
     setFilteredResources(filtered);
   }, [filters, resources]);
 
@@ -126,7 +70,6 @@ const Resources: React.FC = () => {
     setFilters(prev => ({
       ...prev,
       [name]: value,
-      // Reset subject when branch or year changes
       ...(name === 'branch' || name === 'year' ? { subjectName: '' } : {})
     }));
   };
@@ -142,13 +85,7 @@ const Resources: React.FC = () => {
   };
 
   const getAvailableSubjects = () => {
-    let list = resources;
-    if (filters.branch) list = list.filter(r => r.branch === filters.branch);
-    if (filters.branch !== 'FE' && filters.year) list = list.filter(r => r.year === filters.year);
-    if (filters.pattern) list = list.filter(r => r.pattern === filters.pattern);
-    if (filters.type) list = list.filter(r => r.type.toLowerCase() === filters.type.toLowerCase());
-    const subjects = list.map(r => ({ name: r.subjectName, code: r.subjectCode }));
-    return Array.from(new Set(subjects.map(s => JSON.stringify(s)))).map(s => JSON.parse(s));
+    return resourcesService.getAvailableSubjects(resources, filters);
   };
 
   const handleBookmark = async (resource: Resource) => {
@@ -182,10 +119,8 @@ const Resources: React.FC = () => {
     return bookmarks.some((bookmark: Bookmark) => bookmark.contentId === resourceId && bookmark.type === 'Resource');
   };
 
-  // Handlers for resource quick filters
   const handleSaveQuickFilter = async () => {
     if (!user) return;
-    // prevent duplicates
     if (resourceQuickFilters.some(q =>
       q.values.branch === filters.branch &&
       q.values.year === filters.year &&
@@ -197,8 +132,7 @@ const Resources: React.FC = () => {
     }
     try {
       setSavingQF(true);
-      const payload = { ...filters, userId: user.uid };
-      const docRef = await addDoc(collection(db, 'resourceQuickFilters'), payload);
+      const docRef = await resourcesService.saveQuickFilter({ ...filters, userId: user.uid });
       setResourceQuickFilters(prev => [...prev, { id: docRef.id, values: { ...filters } }]);
     } catch (err) {
       console.error('Error saving quick filter', err);
@@ -215,7 +149,7 @@ const Resources: React.FC = () => {
     try {
       setIsDeletingQF(true);
       setDeletingQFId(id);
-      await deleteDoc(doc(db, 'resourceQuickFilters', id));
+      await resourcesService.deleteQuickFilter(id);
       setResourceQuickFilters(prev => prev.filter(q => q.id !== id));
     } catch (err) {
       console.error('Error deleting quick filter', err);
@@ -225,7 +159,6 @@ const Resources: React.FC = () => {
     }
   };
 
-  // Drag-and-drop handlers for quick filters
   const handleQFDragStart = (qf: QuickFilter, index: number) => {
     setDraggedQF(qf);
     setDraggedQFIndex(index);
@@ -247,7 +180,6 @@ const Resources: React.FC = () => {
     setDraggedQFIndex(null);
   };
 
-  // Function to get resource type icon
   const getResourceTypeIcon = (type: string) => {
     const typeLC = type.toLowerCase();
     if (typeLC === 'book') return '📚';

@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { User } from 'firebase/auth';
+import { setSelectedBoardId } from './taskSlice';
 
 interface AuthState {
   user: {

@@ -7,12 +7,12 @@ import TaskBoard from '../components/TaskBoard';
 import BoardsOverview from '../components/BoardsOverview';
 import { IoArrowBackSharp } from "react-icons/io5";
 import { motion } from 'framer-motion';
-import { listenToBoards, createDefaultBoardIfNeeded } from '../services/TaskServics';
+import { listenToBoards, createDefaultBoardIfNeeded } from '../services/taskServics';
 
 const Tasks = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { boards, selectedBoardId, loading } = useSelector((state: RootState) => state.tasks);
+  const { boards, selectedBoardId } = useSelector((state: RootState) => state.tasks);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch all boards
@@ -49,10 +49,6 @@ const Tasks = () => {
 
   const handleBackToOverview = () => {
     dispatch(setSelectedBoardId(null));
-  };
-
-  const refreshBoards = () => {
-    // Boards are refreshed automatically via onSnapshot
   };
 
   const getSortedBoards = (boards: Board[]): Board[] => {
@@ -108,7 +104,7 @@ const Tasks = () => {
           </div>
           <div className="flex-1 overflow-hidden relative">
             <div>
-              <TaskBoard />
+              <TaskBoard boards={getSortedBoards(boards)} />
             </div>
           </div>
         </div>
@@ -117,7 +113,6 @@ const Tasks = () => {
           <BoardsOverview
             boards={getSortedBoards(boards)}
             onSelectBoard={handleSelectBoard}
-            onRefresh={refreshBoards}
           />
         </div>
       )}

@@ -14,7 +14,7 @@ const initialState: TaskState = {
   tasks: [],
   lists: [],
   boards: [],
-  selectedBoardId: null,
+  selectedBoardId: localStorage.getItem('selectedBoardId') || null,
   loading: false,
   error: null
 };
@@ -30,112 +30,34 @@ const taskSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    
+
     // Board actions
     setBoards: (state, action: PayloadAction<Board[]>) => {
       state.boards = action.payload;
     },
-    addBoard: (state, action: PayloadAction<Board>) => {
-      state.boards.push(action.payload);
-    },
-    updateBoard: (state, action: PayloadAction<Board>) => {
-      const index = state.boards.findIndex(board => board.id === action.payload.id);
-      if (index !== -1) {
-        state.boards[index] = action.payload;
-      }
-    },
-    deleteBoard: (state, action: PayloadAction<string>) => {
-      state.boards = state.boards.filter(board => board.id !== action.payload);
-    },
     setSelectedBoardId: (state, action: PayloadAction<string | null>) => {
       state.selectedBoardId = action.payload;
+      localStorage.setItem('selectedBoardId', action.payload || '');
     },
-    
+
     // List actions
     setLists: (state, action: PayloadAction<List[]>) => {
       // Sort lists by position
       state.lists = action.payload.sort((a, b) => a.position - b.position);
     },
-    addList: (state, action: PayloadAction<List>) => {
-      state.lists.push(action.payload);
-      // Re-sort lists by position
-      state.lists.sort((a, b) => a.position - b.position);
-    },
-    updateList: (state, action: PayloadAction<List>) => {
-      const index = state.lists.findIndex(list => list.id === action.payload.id);
-      if (index !== -1) {
-        state.lists[index] = action.payload;
-        // Re-sort lists by position
-        state.lists.sort((a, b) => a.position - b.position);
-      }
-    },
-    deleteList: (state, action: PayloadAction<string>) => {
-      state.lists = state.lists.filter(list => list.id !== action.payload);
-    },
-    reorderLists: (state, action: PayloadAction<List[]>) => {
-      state.lists = action.payload.sort((a, b) => a.position - b.position);
-    },
-    
+
     // Task actions
     setTasks: (state, action: PayloadAction<Task[]>) => {
       state.tasks = action.payload;
     },
-    addTask: (state, action: PayloadAction<Task>) => {
-      state.tasks.push(action.payload);
-    },
-    updateTask: (state, action: PayloadAction<Task>) => {
-      const index = state.tasks.findIndex(task => task.id === action.payload.id);
-      if (index !== -1) {
-        state.tasks[index] = action.payload;
-      }
-    },
-    deleteTask: (state, action: PayloadAction<string>) => {
-      state.tasks = state.tasks.filter(task => task.id !== action.payload);
-    },
-    
-    // Move task between lists
-    moveTask: (state, action: PayloadAction<{
-      taskId: string;
-      sourceListId: string;
-      destinationListId: string;
-      destinationIndex: number;
-    }>) => {
-      const { taskId, sourceListId, destinationListId, destinationIndex } = action.payload;
-      
-      // Get the task to move
-      const taskIndex = state.tasks.findIndex(task => task.id === taskId);
-      if (taskIndex === -1) return;
-      
-      // Create updated task with new listId
-      const updatedTask = {
-        ...state.tasks[taskIndex],
-        listId: destinationListId,
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Update the task in the state
-      state.tasks[taskIndex] = updatedTask;
-    },
-    
-    // Clear state (e.g., on logout)
-    clearTaskState: (state) => {
-      state.tasks = [];
-      state.lists = [];
-      state.boards = [];
-      state.selectedBoardId = null;
-      state.loading = false;
-      state.error = null;
-    }
   }
 });
 
 export const {
   setLoading, setError,
-  setBoards, addBoard, updateBoard, deleteBoard, setSelectedBoardId,
-  setLists, addList, updateList, deleteList, reorderLists,
-  setTasks, addTask, updateTask, deleteTask,
-  moveTask,
-  clearTaskState
+  setBoards, setSelectedBoardId,
+  setLists,
+  setTasks,
 } = taskSlice.actions;
 
 export default taskSlice.reducer; 

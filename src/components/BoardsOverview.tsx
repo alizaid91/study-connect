@@ -1,23 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { motion } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiMoreVertical } from 'react-icons/fi';
 import { Board } from '../types/content';
 import BoardFormModal from './BoardFormModal';
-import { 
+import {
   saveBoard,
   deleteBoardWithContent
-} from '../services/TaskServics';
+} from '../services/taskServics';
 
 interface BoardsOverviewProps {
   boards: Board[];
   onSelectBoard: (boardId: string) => void;
-  onRefresh: () => void;
 }
 
-const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProps) => {
-  const dispatch = useDispatch();
+const BoardsOverview = ({ boards, onSelectBoard }: BoardsOverviewProps) => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
@@ -66,7 +64,6 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
     setDeleteIndex(boardId);
     try {
       await deleteBoardWithContent(boardId);
-      onRefresh();
     } catch (error) {
       console.error('Error deleting board:', error);
     } finally {
@@ -85,10 +82,9 @@ const BoardsOverview = ({ boards, onSelectBoard, onRefresh }: BoardsOverviewProp
       if (editingBoard) {
         await saveBoard(title, user.uid, boards.length, editingBoard);
       } else {
-        const boardId = await saveBoard(title, user.uid, boards.length);
+        await saveBoard(title, user.uid, boards.length);
       }
 
-      onRefresh();
     } catch (error) {
       console.error('Error saving board:', error);
     } finally {

@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task, Priority } from '../types/content';
 import { FiClock, FiMoreHorizontal, FiEdit2, FiTrash2, FiPaperclip, FiExternalLink, FiCheck, FiSquare } from 'react-icons/fi';
-import { db } from '../config/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { toggleTaskCompletion } from '../services/taskServics';
 
 interface TaskCardProps {
   task: Task;
@@ -58,20 +57,17 @@ const TaskCard = ({ task, index, onEditTask, onDeleteTask }: TaskCardProps) => {
   };
 
   // Function to toggle task completion
-  const toggleTaskCompletion = async (e: React.MouseEvent) => {
+  const handleToggleCompletion = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the card's onClick from firing
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
     
     try {
-      const taskRef = doc(db, 'tasks', task.id);
-      await updateDoc(taskRef, {
-        completed: newCompletedState,
-        updatedAt: new Date().toISOString()
-      });
+      await toggleTaskCompletion(task.id, newCompletedState);
     } catch (error) {
       // Revert state on error
       setIsCompleted(isCompleted);
+      console.error('Error toggling task completion:', error);
     }
   };
 
@@ -95,7 +91,7 @@ const TaskCard = ({ task, index, onEditTask, onDeleteTask }: TaskCardProps) => {
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={toggleTaskCompletion}
+              onClick={handleToggleCompletion}
               className={`w-5 h-5 flex items-center justify-center rounded-md border ${
                 isCompleted 
                   ? 'bg-blue-500 border-blue-500 text-white' 

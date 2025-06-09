@@ -1,21 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { db } from '../config/firebase';
-import { collection, addDoc } from 'firebase/firestore';
 import { Paper } from '../types/content';
 import { useNavigate } from 'react-router-dom';
-
+import { papersService } from '../services/papersService';
 import { IT_SUBJECTS, FE_SUBJECTS } from '../types/Subjects';
-
-
 
 interface AddPaperFormProps {
   onSuccess?: () => void;
 }
 
 const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAdmin } = useSelector((state: RootState) => state.admin);
   const [formData, setFormData] = useState({
@@ -96,7 +91,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
     setError(null);
 
     try {
-      // Add paper data to Firestore
+      // Add paper data using the service
       const paperData: Omit<Paper, 'id'> = {
         subjectId: formData.subjectId,
         subjectName: formData.subjectName,
@@ -111,7 +106,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
         uploadedBy: 'admin',
       };
 
-      await addDoc(collection(db, 'papers'), paperData);
+      await papersService.addPaper(paperData);
       onSuccess?.();
     } catch (err) {
       setError('Error adding paper. Please try again.');
