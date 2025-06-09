@@ -17,7 +17,6 @@ import Profile from './pages/Profile';
 import Bookmarks from './pages/Bookmarks';
 import Footer from './components/Footer';
 import NotFound from './pages/NotFound.tsx';
-import Chat from './pages/Chat.tsx';
 
 // Separate component for scroll to top functionality
 const ScrollToTop = () => {
@@ -39,82 +38,72 @@ function App() {
       <Router>
         <ScrollToTop />
         <div className="min-h-screen bg-gray-50 flex flex-col">
-          <Routes>
-            {/* Chat route without navbar and footer */}
-            <Route path="/chat" element={<Chat />} />
-            
-            {/* All other routes with navbar and footer */}
-            <Route path="*" element={
-              <>
-                <Navbar />
-                <main className="w-full flex-grow pt-16">
-                  <Routes>
-                    <Route path="/\" element={<Home />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/admin/login" element={<AdminLogin />} />
-                    <Route
-                      path="/admin/dashboard"
-                      element={
-                        <AdminRoute>
-                          <AdminDashboard />
-                        </AdminRoute>
-                      }
-                    />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <PrivateRoute>
-                          <Dashboard />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/tasks"
-                      element={
-                        <PrivateRoute>
-                          <Tasks />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/resources"
-                      element={
-                        <PrivateRoute>
-                          <Resources />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/pyqs"
-                      element={
-                        <PrivateRoute>
-                          <PYQs />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/bookmarks"
-                      element={
-                        <PrivateRoute>
-                          <Bookmarks />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/profile"
-                      element={
-                        <PrivateRoute>
-                          <Profile />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-                <Footer />
-              </>
-            } />
-          </Routes>
+          <Navbar />
+          <main className="w-full flex-grow pt-16">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <PrivateRoute>
+                    <Tasks />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/resources"
+                element={
+                  <PrivateRoute>
+                    <Resources />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/pyqs"
+                element={
+                  <PrivateRoute>
+                    <PYQs />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/bookmarks"
+                element={
+                  <PrivateRoute>
+                    <Bookmarks />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <Profile />
+                  </PrivateRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          <Footer />
         </div>
       </Router>
     </Provider>
