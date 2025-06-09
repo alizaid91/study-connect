@@ -16,7 +16,6 @@ import BoardFormModal from './BoardFormModal';
 import { FiPlus, FiChevronDown } from 'react-icons/fi';
 import {
     listenToBoards,
-    createDefaultBoardIfNeeded,
     listenToListsAndTasks,
     saveTask,
     deleteTask,
@@ -24,12 +23,16 @@ import {
     updateListTitle,
     deleteListWithTasks,
     saveBoard
-} from '../services/TaskServics';
+} from '../services/taskServics';
 
-const TaskBoard = () => {
+interface TaskBoardProps {
+    boards: Board[];
+}
+
+const TaskBoard = ({ boards }: TaskBoardProps) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state: RootState) => state.auth);
-    const { tasks, lists, boards, selectedBoardId, loading } = useSelector((state: RootState) => state.tasks);
+    const { tasks, lists, selectedBoardId, loading } = useSelector((state: RootState) => state.tasks);
 
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [isListModalOpen, setIsListModalOpen] = useState(false);
@@ -39,7 +42,6 @@ const TaskBoard = () => {
     const [editingBoard, setEditingBoard] = useState<Board | null>(null);
     const [selectedListId, setSelectedListId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [defaultBoardId, setDefaultBoardId] = useState<string | null>(null);
     const [activeListenerBoardId, setActiveListenerBoardId] = useState<string | null>(null);
     const boardSelectorRef = useRef<HTMLDivElement | null>(null);
     const [isBoardChanging, setIsBoardChanging] = useState(false);
@@ -57,21 +59,6 @@ const TaskBoard = () => {
                 if (!mounted) return;
 
                 dispatch(setBoards(fetchedBoards));
-
-                const defaultBoard = fetchedBoards.find(board => board.isDefault);
-                if (defaultBoard) {
-                    setDefaultBoardId(defaultBoard.id);
-                    if (!selectedBoardId) {
-                        dispatch(setSelectedBoardId(defaultBoard.id));
-                    }
-                } else if (fetchedBoards.length > 0 && !selectedBoardId) {
-                    dispatch(setSelectedBoardId(fetchedBoards[0].id));
-                }
-
-                const defaultId = await createDefaultBoardIfNeeded(user.uid);
-                if (defaultId) {
-                    setDefaultBoardId(defaultId);
-                }
             },
             () => dispatch(setLoading(false))
         );

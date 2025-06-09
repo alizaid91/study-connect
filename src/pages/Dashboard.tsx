@@ -1,19 +1,12 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { fetchBookmarks } from '../store/slices/bookmarkSlice';
+import { useEffect, useState } from 'react';
 import { formatDate } from '../utils/dateUtils';
-import { db } from '../config/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { setTasks, setLists } from '../store/slices/taskSlice';
-import { setResources } from '../store/slices/resourceSlice';
-import { Resource, Task, List } from '../types/content';
-import { fetchPapers } from '../store/slices/papersSlice';
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa';
 import { FiClock, FiPaperclip, FiExternalLink } from 'react-icons/fi';
+import { dashboardService, DashboardData } from '../services/dashboardService';
 
 const loader = (<div className="flex flex-row gap-2 ml-1 mt-4">
   <div className="w-3 h-3 rounded-full bg-primary-600 animate-bounce"></div>
@@ -24,108 +17,34 @@ const loader = (<div className="flex flex-row gap-2 ml-1 mt-4">
 const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { tasks, lists } = useSelector((state: RootState) => state.tasks);
-  const { resources, loading: resourcesLoading } = useSelector((state: RootState) => state.resources);
-  const { papers, loading: papersLoading } = useSelector((state: RootState) => state.papers);
-  const { bookmarks, loading: bookmarksLoading } = useSelector((state: RootState) => state.bookmarks);
-  const [loading, setLoading] = useState({
-    tasks: false,
-    resources: false,
-    lists: false,
-  });
-
-  // Get task priorities for styling
-  const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-700';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'low':
-        return 'bg-green-100 text-green-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       if (user) {
-        // fetch user-specific tasks
-        const fetchUserTasks = async () => {
-          setLoading(prev => ({ ...prev, tasks: true }));
-          const tasksQuery = query(
-            collection(db, 'tasks'),
-            where('userId', '==', user.uid)
-          );
-          const querySnapshot = await getDocs(tasksQuery);
-          const tasksData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          dispatch(setTasks(tasksData as Task[]));
-          setLoading(prev => ({ ...prev, tasks: false }));
-        };
-
-        // fetch task lists
-        const fetchTaskLists = async () => {
-          setLoading(prev => ({ ...prev, lists: true }));
-          const listsQuery = query(
-            collection(db, 'lists'),
-            where('userId', '==', user.uid)
-          );
-          const querySnapshot = await getDocs(listsQuery);
-          const listsData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          dispatch(setLists(listsData as List[]));
-          setLoading(prev => ({ ...prev, lists: false }));
-        };
-
-        // fetch all resources
-        const fetchAllResources = async () => {
-          setLoading(prev => ({ ...prev, resources: true }));
-          const resourcesQuery = query(
-            collection(db, 'resources'),
-            orderBy('uploadedAt', 'desc')
-          );
-          const snapshot = await getDocs(resourcesQuery);
-          const resourcesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          dispatch(setResources(resourcesData as Resource[]));
-          setLoading(prev => ({ ...prev, resources: false }));
-        };
-
-        dispatch(fetchBookmarks(user.uid));
-        dispatch(fetchPapers());
-        
-        await fetchUserTasks();
-        await fetchTaskLists();
-        await fetchAllResources();
+        setLoading(true);
+        try {
+          const data = await dashboardService.getDashboardData(user.uid);
+          setDashboardData(data);
+        } catch (error) {
+          console.error('Error fetching dashboard data:', error);
+        } finally {
+          setLoading(false);
+        }
       }
     };
     fetchData();
   }, [user, dispatch]);
 
-  // Get tasks by list
-  const getTasksByList = (listId: string) => {
-    return tasks.filter(task => task.listId === listId);
-  };
+  // Helper functions from dashboardService
+  const getPriorityColor = dashboardService.getPriorityColor;
 
-  // Get the default list (position 0)
-  const defaultList = lists.find(list => list.position === 0);
-  
-  // Get tasks for stats display
-  const totalTasks = tasks.length;
-  const defaultListTasks = defaultList ? getTasksByList(defaultList.id).length : 0;
-  const highPriorityTasks = tasks.filter(task => task.priority === 'high').length;
-
-  const recentTasks = tasks.slice(0, 5);
-  const recentResources = resources.slice(0, 5);
-  const recentBookmarks = bookmarks.slice(0, 5);
+  // Extract data from dashboardData
+  const tasks = dashboardData?.recentTasks || [];
+  const resources = dashboardData?.recentResources || [];
+  const recentBookmarks = dashboardData?.recentBookmarks.slice(0, 5) || [];
+  const stats = dashboardData?.stats;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -184,11 +103,11 @@ const Dashboard = () => {
         >
           <Link to="/tasks" className="block">
             <h3 className="text-lg font-semibold text-gray-700">Total Tasks</h3>
-            {loading.tasks ? (
+            {loading ? (
               loader
             ) : (
               <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-primary-600">{totalTasks}</p>
+                <p className="text-3xl font-bold text-primary-600">{stats?.totalTasks ?? 0}</p>
                 <FaArrowRight className="text-primary-600 text-xl" />
               </div>
             )}
@@ -202,11 +121,11 @@ const Dashboard = () => {
         >
           <Link to="/tasks" className="block">
             <h3 className="text-lg font-semibold text-gray-700">Default List Tasks</h3>
-            {loading.tasks || loading.lists ? (
+            {loading ? (
               loader
             ) : (
               <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-blue-600">{defaultListTasks}</p>
+                <p className="text-3xl font-bold text-blue-600">{stats?.defaultListTasks ?? 0}</p>
                 <FaArrowRight className="text-blue-600 text-xl" />
               </div>
             )}
@@ -220,11 +139,11 @@ const Dashboard = () => {
         >
           <Link to="/tasks" className="block">
             <h3 className="text-lg font-semibold text-gray-700">High Priority Tasks</h3>
-            {loading.tasks ? (
+            {loading ? (
               loader
             ) : (
               <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-red-600">{highPriorityTasks}</p>
+                <p className="text-3xl font-bold text-red-600">{stats?.highPriorityTasks ?? 0}</p>
                 <FaArrowRight className="text-red-600 text-xl" />
               </div>
             )}
@@ -238,11 +157,11 @@ const Dashboard = () => {
         >
           <Link to="/pyqs" className="block">
             <h3 className="text-lg font-semibold text-gray-700">Available Papers</h3>
-            {papersLoading ? (
+            {loading ? (
               loader
             ) : (
               <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-blue-600">{papers.length}</p>
+                <p className="text-3xl font-bold text-blue-600">{stats?.availablePapers ?? 0}</p>
                 <FaArrowRight className="text-blue-600 text-xl" />
               </div>
             )}
@@ -256,11 +175,11 @@ const Dashboard = () => {
         >
           <Link to="/resources" className="block">
             <h3 className="text-lg font-semibold text-gray-700">Available Resources</h3>
-            {resourcesLoading ? (
+            {loading ? (
               loader
             ) : (
               <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
+                <p className="text-3xl font-bold text-primary-600">{stats?.availableResources ?? 0}</p>
                 <FaArrowRight className="text-primary-600 text-xl" />
               </div>
             )}
@@ -274,11 +193,11 @@ const Dashboard = () => {
         >
           <Link to="/bookmarks" className="block">
             <h3 className="text-lg font-semibold text-gray-700">Bookmarks</h3>
-            {bookmarksLoading ? (
+            {loading ? (
               loader
             ) : (
               <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-purple-600">{bookmarks.length}</p>
+                <p className="text-3xl font-bold text-purple-600">{stats?.bookmarks ?? 0}</p>
                 <FaArrowRight className="text-purple-600 text-xl" />
               </div>
             )}
@@ -341,8 +260,8 @@ const Dashboard = () => {
           </Link>
         </div>
         <div className="space-y-3">
-          {recentTasks.length > 0 ? (
-            recentTasks.map(task => (
+          {tasks.length > 0 ? (
+            tasks.map(task => (
               <motion.div
                 key={task.id}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-300"
@@ -400,8 +319,8 @@ const Dashboard = () => {
           </Link>
         </div>
         <div className="space-y-3">
-          {recentResources.length > 0 ? (
-            recentResources.map(resource => (
+          {resources.length > 0 ? (
+            resources.map(resource => (
               <motion.div
                 key={resource.id}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-300"

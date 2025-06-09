@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { db } from '../config/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { RootState } from '../store';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
 import { motion, AnimatePresence } from 'framer-motion';
 import Cropper from 'react-easy-crop';
 import { FiUser, FiEdit, FiSave, FiX, FiCheck } from 'react-icons/fi';
+import { authService } from '../services/authService';
 
 // Function to create image from canvas for cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -80,10 +79,10 @@ const Profile = () => {
       if (!user) return;
 
       try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setProfile(userDoc.data() as UserProfile);
-          setOldProfile(userDoc.data() as UserProfile);
+        const userProfile = await authService.getUserProfile(user.uid);
+        if (userProfile) {
+          setProfile(userProfile);
+          setOldProfile(userProfile);
         }
       } catch (error: any) {
         setError('Failed to load profile');
@@ -185,14 +184,8 @@ const Profile = () => {
       const imageUrl = data.secure_url;
 
       // Update profile with new avatar URL
-      const updatedProfile = {
-        ...profile,
-        avatarUrl: imageUrl,
-        updatedAt: new Date().toISOString(),
-      };
-
-      await updateDoc(doc(db, 'users', user.uid), updatedProfile);
-      setProfile(updatedProfile);
+      await authService.updateUserAvatar(user.uid, imageUrl);
+      setProfile(prev => ({ ...prev, avatarUrl: imageUrl }));
       setSuccess('Avatar updated successfully');
       setShowCropper(false);
       setImageSrc(null);
@@ -211,12 +204,7 @@ const Profile = () => {
     if (!user) return;
     setUpdating(true);
     try {
-      const updatedProfile = {
-        ...profile,
-        updatedAt: new Date().toISOString(),
-      };
-
-      await updateDoc(doc(db, 'users', user.uid), updatedProfile);
+      await authService.updateUserProfile(user.uid, profile);
       setSuccess('Profile updated successfully');
     } catch (error: any) {
       setError('Failed to update profile');

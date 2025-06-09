@@ -1,26 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { auth, db } from '../config/firebase';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-  onAuthStateChanged,
-} from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { useDispatch } from 'react-redux';
 import { setUser, logout } from '../store/slices/authSlice';
-import { RootState } from '../store';
-import { UserProfile, DEFAULT_AVATAR } from '../types/user';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import logo from '../assets/logo.png';
+import { authService, AuthFormData } from '../services/authService';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AuthFormData>({
     email: '',
     password: '',
     confirmPassword: '',
@@ -30,7 +20,6 @@ const Auth = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const hash = location.hash.replace('#', '');
@@ -43,7 +32,7 @@ const Auth = () => {
   }, [location.hash]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = authService.onAuthStateChange((user) => {
       if (user) {
         dispatch(setUser(user));
         navigate('/');
@@ -60,8 +49,6 @@ const Auth = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      // Reset year to FE if branch is FE
-      ...(name === 'branch' && value === 'FE' ? { year: 'FE' } : {})
     }));
   };
 
@@ -72,31 +59,9 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        await authService.signInWithEmail(formData.email, formData.password);
       } else {
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
-          return;
-        }
-
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        const user = userCredential.user;
-
-        // Create user profile in Firestore
-        const userProfile: Omit<UserProfile, 'uid'> = {
-          email: formData.email,
-          fullName: formData.fullName,
-          avatarUrl: DEFAULT_AVATAR.male,
-          username: '',
-          gender: '',
-          branch: '',
-          year: '',
-          collegeName: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        await setDoc(doc(db, 'users', user.uid), userProfile);
+        await authService.signUpWithEmail(formData);
       }
     } catch (error: any) {
       setError(error.message);
@@ -107,27 +72,7 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Check if user profile exists
-      const userDoc = await doc(db, 'users', user.uid);
-      const userData = await getDoc(userDoc);
-
-      if (!userData.exists()) {
-        // Create user profile for Google sign-in
-        const userProfile: Omit<UserProfile, 'uid'> = {
-          email: user.email || '',
-          fullName: user.displayName || '',
-          username: user.email?.split('@')[0] || '',
-          avatarUrl: user.photoURL || DEFAULT_AVATAR.male,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        await setDoc(doc(db, 'users', user.uid), userProfile);
-      }
+      await authService.signInWithGoogle();
     } catch (error: any) {
       setError(error.message);
     }

@@ -1,4 +1,3 @@
-// services/BoardService.ts
 import {
     collection, query, where, onSnapshot, getDocs, addDoc, doc,
     updateDoc, deleteDoc, writeBatch
@@ -101,6 +100,7 @@ export const listenToListsAndTasks = (
     };
 };
 
+// Task Services
 export const saveTask = async (
     taskData: TaskForm,
     userId: string,
@@ -140,6 +140,15 @@ export const saveTask = async (
 
 export const deleteTask = (taskId: string) => deleteDoc(doc(db, 'tasks', taskId));
 
+export const toggleTaskCompletion = async (taskId: string, completed: boolean) => {
+    const taskRef = doc(db, 'tasks', taskId);
+    return updateDoc(taskRef, {
+        completed,
+        updatedAt: new Date().toISOString()
+    });
+};
+
+// List Services
 export const createList = (title: string, boardId: string, userId: string, position: number) => {
     const newList = {
         title,
@@ -174,6 +183,7 @@ export const deleteListWithTasks = async (listId: string) => {
     return batch.commit();
 };
 
+// Board Services
 export const deleteBoardWithContent = async (boardId: string) => {
     // Get all lists
     const listsQuery = query(collection(db, 'lists'), where('boardId', '==', boardId));
@@ -229,4 +239,18 @@ export const saveBoard = async (title: string, userId: string, boardsLength: num
 
         return boardRef.id;
     }
+};
+
+// Fetch all tasks for a user
+export const getUserTasks = async (userId: string): Promise<Task[]> => {
+    const tasksQuery = query(collection(db, 'tasks'), where('userId', '==', userId));
+    const snapshot = await getDocs(tasksQuery);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
+};
+
+// Fetch all lists for a user
+export const getUserLists = async (userId: string): Promise<List[]> => {
+    const listsQuery = query(collection(db, 'lists'), where('userId', '==', userId));
+    const snapshot = await getDocs(listsQuery);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as List[];
 };

@@ -1,21 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { RootState, AppDispatch } from '../store';
 import { Paper, Bookmark, TaskForm, Task } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
-import { fetchPapers, setLoading } from '../store/slices/papersSlice';
+import { fetchPapers } from '../store/slices/papersSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import TaskModal from '../components/TaskModal';
 import { setBoards, setLists, setTasks } from '../store/slices/taskSlice';
-import { listenToBoards, saveTask, listenToListsAndTasks, createDefaultBoardIfNeeded } from '../services/TaskServics';
-
-interface Subject {
-  name: string;
-  code: string;
-}
+import { listenToBoards, saveTask, listenToListsAndTasks, createDefaultBoardIfNeeded } from '../services/taskServics';
+import { papersService, QuickFilter } from '../services/papersService';
 
 const PYQs: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -46,41 +40,22 @@ const PYQs: React.FC = () => {
   const [defaultListId, setDefaultListId] = useState<string | null>(null);
   const [checkingDefaultBoard, setCheckingDefaultBoard] = useState(false);
 
-  // Quick filters state and types
-  type FilterValues = {
-    branch: string;
-    year: string;
-    semester: number;
-    pattern: string;
-    paperType: string;
-    subjectName: string;
-    subjectCode: string;
-  };
-  interface QuickFilter {
-    id: string;
-    values: FilterValues;
-  }
+  // Quick filters state
   const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
-  // Drag-and-drop state for quick filters ordering
   const [draggedQF, setDraggedQF] = useState<QuickFilter | null>(null);
   const [draggedQFIndex, setDraggedQFIndex] = useState<number | null>(null);
-  // ID of the quick filter currently being deleted
   const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
-  // UI states
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
   const [showMoreQuickFilters, setShowMoreQuickFilters] = useState(false);
 
   // Effect to prevent background scrolling when modal is open
   useEffect(() => {
     if (isTaskModalOpen) {
-      // Disable scrolling on body
       document.body.style.overflow = 'hidden';
     } else {
-      // Re-enable scrolling when modal closes
       document.body.style.overflow = 'auto';
     }
 
-    // Cleanup function to ensure scrolling is re-enabled when component unmounts
     return () => {
       document.body.style.overflow = 'auto';
     };
@@ -101,7 +76,6 @@ const PYQs: React.FC = () => {
 
       setCheckingDefaultBoard(true);
       try {
-        // This will create a default board only if needed
         await createDefaultBoardIfNeeded(user.uid);
       } catch (error) {
         console.error("Error creating default board:", error);
@@ -116,17 +90,14 @@ const PYQs: React.FC = () => {
       (fetchedBoards) => {
         dispatch(setBoards(fetchedBoards));
 
-        // If we have boards but no default board, ensure one exists
         if (fetchedBoards.length > 0 && !fetchedBoards.some(board => board.isDefault)) {
           ensureDefaultBoard();
         }
 
-        // If no boards at all, create a default board
         if (fetchedBoards.length === 0) {
           ensureDefaultBoard();
         }
 
-        // If we have a default board, set up listeners for its lists and tasks
         const defaultBoard = fetchedBoards.find(board => board.isDefault);
         if (defaultBoard && !listsTasksUnsubscribe) {
           listsTasksUnsubscribe = listenToListsAndTasks(
@@ -140,7 +111,6 @@ const PYQs: React.FC = () => {
       () => console.error("Error fetching boards")
     );
 
-    // Cleanup function
     return () => {
       if (boardsUnsubscribe) boardsUnsubscribe();
       if (listsTasksUnsubscribe) listsTasksUnsubscribe();
@@ -155,61 +125,23 @@ const PYQs: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      const fetchQuick = async () => {
-        const q = query(collection(db, 'quickFilters'), where('userId', '==', user.uid));
-        const snap = await getDocs(q);
-        const data = snap.docs.map(d => ({
-          id: d.id,
-          values: {
-            branch: d.data().branch,
-            year: d.data().year,
-            semester: d.data().semester,
-            pattern: d.data().pattern,
-            paperType: d.data().paperType,
-            subjectName: d.data().subjectName,
-            subjectCode: d.data().subjectCode
-          }
-        }));
-        setQuickFilters(data);
+      const fetchQuickFilters = async () => {
+        const filters = await papersService.getQuickFilters(user.uid);
+        setQuickFilters(filters);
       };
-      fetchQuick();
+      fetchQuickFilters();
     }
   }, [user]);
 
   useEffect(() => {
-    let filtered = [...papers];
-
-    if (filters.branch) {
-      filtered = filtered.filter(paper => paper.branch === filters.branch);
-    }
-
-    if (filters.year) {
-      filtered = filtered.filter(paper => paper.year === filters.year);
-    }
-
-    if (filters.semester) {
-      filtered = filtered.filter(paper => paper.semester === filters.semester);
-    }
-
-    if (filters.pattern) {
-      filtered = filtered.filter(paper => paper.pattern === filters.pattern);
-    }
-
-    if (filters.paperType) {
-      filtered = filtered.filter(paper => paper.paperType === filters.paperType);
-    }
-
-    if (filters.subjectName) {
-      filtered = filtered.filter(paper => paper.subjectName === filters.subjectName);
-    }
-
+    const filtered = papersService.filterPapers(papers, filters);
     setFilteredPapers(filtered);
   }, [filters, papers]);
 
   useEffect(() => {
-    // Find the default list (position 0) when lists are loaded
     if (lists.length > 0) {
-      const defaultList = lists.find(list => list.position === 0);
+      const defaultBoardId = boards.find(board => board.isDefault)?.id || '';
+      const defaultList = lists.find(list => list.boardId === defaultBoardId && list.position === 0);
       if (defaultList) {
         setDefaultListId(defaultList.id);
       }
@@ -218,10 +150,7 @@ const PYQs: React.FC = () => {
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    console.log('Filter changed:', name, value);
-    console.log(filters)
     setFilters(prev => {
-      // Reset subject filters when branch or year changes
       if (name === 'branch' || name === 'year') {
         return {
           ...prev,
@@ -230,9 +159,8 @@ const PYQs: React.FC = () => {
           subjectCode: ''
         };
       }
-      // When selecting subjectName, also capture its code
       if (name === 'subjectName') {
-        const subj = getAvailableSubjects().find(s => s.name === value);
+        const subj = papersService.getAvailableSubjects(papers, filters).find(s => s.name === value);
         return {
           ...prev,
           subjectName: value,
@@ -263,8 +191,6 @@ const PYQs: React.FC = () => {
     setIsSubmitting(true);
     try {
       const boardId = taskData.boardId;
-
-      // Use the service function to save the task
       await saveTask(
         taskData,
         user.uid,
@@ -272,7 +198,6 @@ const PYQs: React.FC = () => {
         undefined,
         tasks
       );
-
       setIsTaskModalOpen(false);
     } catch (error) {
       console.error('Error saving task:', error);
@@ -297,7 +222,6 @@ const PYQs: React.FC = () => {
   // Quick filter handlers
   const handleSaveQuickFilter = async () => {
     if (!user) return;
-    // Prevent saving duplicate quick filters
     if (quickFilters.some(q =>
       q.values.branch === filters.branch &&
       q.values.year === filters.year &&
@@ -309,8 +233,7 @@ const PYQs: React.FC = () => {
     }
     try {
       setSaving(true);
-      const payload = { ...filters, userId: user.uid };
-      const docRef = await addDoc(collection(db, 'quickFilters'), payload);
+      const docRef = await papersService.saveQuickFilter({ ...filters, userId: user.uid });
       setQuickFilters(prev => [...prev, { id: docRef.id, values: { ...filters } }]);
     } catch (err) {
       console.error('Error saving quick filter', err);
@@ -318,14 +241,16 @@ const PYQs: React.FC = () => {
       setSaving(false);
     }
   };
+
   const handleApplyQuickFilter = (qf: QuickFilter) => {
     setFilters(qf.values);
   };
+
   const handleDeleteQuickFilter = async (id: string) => {
     try {
       setIsDeleting(true);
       setDeletingQFId(id);
-      await deleteDoc(doc(db, 'quickFilters', id));
+      await papersService.deleteQuickFilter(id);
       setQuickFilters(prev => prev.filter(q => q.id !== id));
     } catch (err) {
       console.error('Error deleting quick filter', err);
@@ -366,30 +291,20 @@ const PYQs: React.FC = () => {
     return bookmarks.some((bookmark: Bookmark) => bookmark.contentId === paperId && bookmark.type === 'Paper');
   };
 
-  const getAvailableSubjects = (): Subject[] => {
-    const subjects = papers
-      .filter(paper =>
-        (!filters.branch || paper.branch === filters.branch) &&
-        (!filters.year || paper.year === filters.year)
-        && (!filters.semester || paper.semester === filters.semester)
-      )
-      .map(paper => ({
-        name: paper.subjectName,
-        code: paper.subjectId
-      }));
-
-    return Array.from(new Set(subjects.map(s => JSON.stringify(s))))
-      .map(s => JSON.parse(s) as Subject);
+  const getAvailableSubjects = () => {
+    return papersService.getAvailableSubjects(papers, filters);
   };
 
-  // add drag handlers
+  // Drag handlers
   const handleQFDragStart = (qf: QuickFilter, index: number) => {
     setDraggedQF(qf);
     setDraggedQFIndex(index);
   };
+
   const handleQFDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
+
   const handleQFDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
     e.preventDefault();
     if (draggedQF && draggedQFIndex !== null) {
@@ -409,7 +324,6 @@ const PYQs: React.FC = () => {
     const defaultList = lists.find(list => list.id === defaultListId);
     if (!defaultList) return null;
 
-    // Create title based on paper information
     const title = 'Solve ' +
       (selectedPaper.year !== 'FE' ? selectedPaper.year : '') +
       '-' + selectedPaper.branch + ' ' +
@@ -417,9 +331,8 @@ const PYQs: React.FC = () => {
       selectedPaper.paperType + ' Paper of ' +
       selectedPaper.paperName;
 
-    // Create a mock task with the paper information
     return {
-      id: 'temp-id', // Temporary ID, will be replaced when saved
+      id: 'temp-id',
       title,
       description: '',
       listId: defaultListId,

@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
 import { Bookmark } from '../../types/content';
+import { bookmarkService } from '../../services/bookmarkService';
 
 export interface BookmarkState {
   bookmarks: Bookmark[];
@@ -18,29 +17,33 @@ const initialState: BookmarkState = {
 export const fetchBookmarks = createAsyncThunk(
   'bookmarks/fetchBookmarks',
   async (userId: string) => {
-    const bookmarksRef = collection(db, 'bookmarks');
-    const q = query(bookmarksRef, where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Bookmark[];
+    return await bookmarkService.getBookmarks(userId);
   }
 );
 
 export const addBookmark = createAsyncThunk(
   'bookmarks/addBookmark',
   async (bookmark: Omit<Bookmark, 'id'>) => {
-    const docRef = await addDoc(collection(db, 'bookmarks'), bookmark);
-    return { id: docRef.id, ...bookmark };
+    return await bookmarkService.addBookmark(bookmark);
   }
 );
 
 export const removeBookmark = createAsyncThunk(
   'bookmarks/removeBookmark',
   async (bookmarkId: string) => {
-    await deleteDoc(doc(db, 'bookmarks', bookmarkId));
-    return bookmarkId;
+    return await bookmarkService.removeBookmark(bookmarkId);
+  }
+);
+
+export const toggleBookmark = createAsyncThunk(
+  'bookmarks/toggleBookmark',
+  async ({ userId, contentId, type, bookmarkData }: {
+    userId: string;
+    contentId: string;
+    type: 'Paper' | 'Resource';
+    bookmarkData: Omit<Bookmark, 'id' | 'userId' | 'contentId' | 'type'>;
+  }) => {
+    return await bookmarkService.toggleBookmark(userId, contentId, type, bookmarkData);
   }
 );
 
@@ -70,6 +73,15 @@ const bookmarkSlice = createSlice({
       // Remove Bookmark
       .addCase(removeBookmark.fulfilled, (state, action) => {
         state.bookmarks = state.bookmarks.filter(bookmark => bookmark.id !== action.payload);
+      })
+      // Toggle Bookmark
+      .addCase(toggleBookmark.fulfilled, (state, action) => {
+        if (action.payload) {
+          state.bookmarks.push(action.payload);
+        } else {
+          // If action.payload is null, it means the bookmark was removed
+          // The UI will handle this by checking if the bookmark exists
+        }
       });
   }
 });

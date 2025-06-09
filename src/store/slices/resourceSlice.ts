@@ -44,4 +44,4 @@ export const {
   setError,
 } = resourceSlice.actions;
 
-export default resourceSlice.reducer; 
+export default resourceSlice.reducer;

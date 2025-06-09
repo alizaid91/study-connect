@@ -2,10 +2,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { useState, useEffect } from 'react';
 import { fetchBookmarks, removeBookmark } from '../store/slices/bookmarkSlice';
-import { formatDate } from '../utils/dateUtils';
 import { Bookmark } from '../types/content';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiBook, FiFileText, FiTrash2, FiBookmark } from 'react-icons/fi';
+import { FiBook, FiFileText, FiTrash2 } from 'react-icons/fi';
+import { bookmarkService } from '../services/bookmarkService';
 
 const Bookmarks = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -24,8 +24,14 @@ const Bookmarks = () => {
   const handleRemoveBookmark = async (bookmarkId: string) => {
     setBookmarkToDelete(bookmarkId)
     setDeletingBookmark(true)
-    await dispatch(removeBookmark(bookmarkId));
+    try {
+      await bookmarkService.removeBookmark(bookmarkId);
+      dispatch(removeBookmark(bookmarkId));
+    } catch (error) {
+      console.error('Error removing bookmark:', error);
+    } finally {
     setDeletingBookmark(false)
+    }
   };
 
   // derive per-tab bookmark lists
