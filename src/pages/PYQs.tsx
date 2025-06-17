@@ -6,7 +6,7 @@ import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/boo
 import { fetchPapers } from '../store/slices/papersSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import TaskModal from '../components/TaskModal';
+import TaskModal from '../components/Task-Board/TaskModal';
 import { setBoards, setLists, setTasks } from '../store/slices/taskSlice';
 import { listenToBoards, saveTask, listenToListsAndTasks, createDefaultBoardIfNeeded } from '../services/taskServics';
 import { papersService, QuickFilter } from '../services/papersService';

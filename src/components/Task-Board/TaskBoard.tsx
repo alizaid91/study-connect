@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store';
+import { RootState } from '../../store';
 import {
     setLoading,
     setTasks,
     setLists,
     setBoards,
     setSelectedBoardId,
-} from '../store/slices/taskSlice';
-import { Task, List, TaskForm, Board } from '../types/content';
+} from '../../store/slices/taskSlice';
+import { Task, List, TaskForm, Board } from '../../types/content';
 import TaskList from './TaskList';
 import TaskModal from './TaskModal';
 import ListFormModal from './ListFormModal';
@@ -23,7 +23,7 @@ import {
     updateListTitle,
     deleteListWithTasks,
     saveBoard
-} from '../services/taskServics';
+} from '../../services/taskServics';
 
 interface TaskBoardProps {
     boards: Board[];

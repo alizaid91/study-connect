@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Task, Priority } from '../types/content';
+import { Task, Priority } from '../../types/content';
 import { FiClock, FiMoreHorizontal, FiEdit2, FiTrash2, FiPaperclip, FiExternalLink, FiCheck, FiSquare } from 'react-icons/fi';
-import { toggleTaskCompletion } from '../services/taskServics';
+import { toggleTaskCompletion } from '../../services/taskServics';
 
 interface TaskCardProps {
   task: Task;
