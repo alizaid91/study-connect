@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { Resource } from '../types/content';
+import { RootState } from '../../store';
+import { Resource } from '../../types/content';
 import { useNavigate } from 'react-router-dom';
-import { IT_SUBJECTS, FE_SUBJECTS } from '../types/Subjects';
-import { resourcesService } from '../services/resourcesService';
+import { IT_SUBJECTS, FE_SUBJECTS } from '../../types/Subjects';
+import { resourcesService } from '../../services/resourcesService';
 
 interface AddResourceFormProps {
   onSuccess?: () => void;

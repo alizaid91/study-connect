@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from '../store';
+import { RootState } from '../../store';
 import { motion } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiMoreVertical } from 'react-icons/fi';
-import { Board } from '../types/content';
+import { Board } from '../../types/content';
 import BoardFormModal from './BoardFormModal';
 import {
   saveBoard,
   deleteBoardWithContent
-} from '../services/taskServics';
+} from '../../services/taskServics';
 
 interface BoardsOverviewProps {
   boards: Board[];

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Task, List } from '../types/content';
+import { Task, List } from '../../types/content';
 import TaskCard from './TaskCard';
 import { FiPlus, FiMoreHorizontal, FiEdit2, FiTrash2, FiLock, FiCheckCircle, FiClipboard } from 'react-icons/fi';
 

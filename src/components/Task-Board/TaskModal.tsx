@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Task, List, TaskForm, Board } from '../types/content';
+import { Task, List, TaskForm, Board } from '../../types/content';
 import { FiX, FiPaperclip, FiExternalLink } from 'react-icons/fi';
 
 // Helper function to format date to YYYY-MM-DD for input value

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import AddPaperForm from '../components/AddPaperForm';
-import AddResourceForm from '../components/AddResourceForm';
+import AddPaperForm from '../components/admin/AddPaperForm';
+import AddResourceForm from '../components/admin/AddResourceForm';
 import { collection, query, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Paper, Resource } from '../types/content';

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { Paper } from '../types/content';
+import { RootState } from '../../store';
+import { Paper } from '../../types/content';
 import { useNavigate } from 'react-router-dom';
-import { papersService } from '../services/papersService';
-import { IT_SUBJECTS, FE_SUBJECTS } from '../types/Subjects';
+import { papersService } from '../../services/papersService';
+import { IT_SUBJECTS, FE_SUBJECTS } from '../../types/Subjects';
 
 interface AddPaperFormProps {
   onSuccess?: () => void;
