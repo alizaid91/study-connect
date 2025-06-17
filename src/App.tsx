@@ -17,7 +17,7 @@ import Profile from './pages/Profile';
 import Bookmarks from './pages/Bookmarks';
 import Footer from './components/Footer';
 import NotFound from './pages/NotFound.tsx';
-import AiAssistant from './pages/AiAssitant.tsx';
+// import AiAssistant from './pages/AiAssitant.tsx';
 
 // Separate component for scroll to top functionality
 const ScrollToTop = () => {
@@ -101,11 +101,11 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              <Route path="/ai-assistant" element={
+              {/* <Route path="/ai-assistant" element={
                 <PrivateRoute>
                   <AiAssistant />
                 </PrivateRoute>
-              }/>
+              }/> */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
