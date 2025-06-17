@@ -12,11 +12,12 @@ import PYQs from './pages/PYQs.tsx';
 import AdminLogin from './pages/AdminLogin.tsx';
 import AdminDashboard from './pages/AdminDashboard.tsx';
 import PrivateRoute from './components/PrivateRoute.tsx';
-import AdminRoute from './components/AdminRoute.tsx';
+import AdminRoute from './components/admin/AdminRoute.tsx';
 import Profile from './pages/Profile';
 import Bookmarks from './pages/Bookmarks';
 import Footer from './components/Footer';
 import NotFound from './pages/NotFound.tsx';
+import AiAssistant from './pages/AiAssitant.tsx';
 
 // Separate component for scroll to top functionality
 const ScrollToTop = () => {
@@ -100,6 +101,11 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route path="/ai-assistant" element={
+                <PrivateRoute>
+                  <AiAssistant />
+                </PrivateRoute>
+              }/>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
