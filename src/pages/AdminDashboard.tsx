@@ -1,21 +1,38 @@
 import { useState, useEffect } from 'react';
 import AddPaperForm from '../components/admin/AddPaperForm';
 import AddResourceForm from '../components/admin/AddResourceForm';
-import { collection, query, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { Paper, Resource } from '../types/content';
+import { papersService } from '../services/papersService';
+import { resourcesService } from '../services/resourcesService';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store/index';
+import { setPapers } from '../store/slices/papersSlice';
+import { setResources } from '../store/slices/resourceSlice';
+import { adminService } from '../services/adminService';
+import { RiArrowRightSLine, RiArrowLeftSLine } from "react-icons/ri";
+
+type AdminSection = 'papers' | 'resources' | 'dashboard';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'papers' | 'resources'>('papers');
+  const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [papers, setPapers] = useState<Paper[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
+  const dispatch = useDispatch();
+  const { papers } = useSelector((state: RootState) => state.papers);
+  const { resources } = useSelector((state: RootState) => state.resources);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSidebarOpen(window.innerWidth > 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchData = async () => {
@@ -24,24 +41,12 @@ const AdminDashboard = () => {
       setError(null);
 
       // Fetch papers
-      const papersRef = collection(db, 'papers');
-      const papersQuery = query(papersRef, orderBy('uploadedAt', 'desc'));
-      const papersSnapshot = await getDocs(papersQuery);
-      const papersData = papersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Paper[];
-      setPapers(papersData);
+      const papers = await papersService.getPapers();
+      dispatch(setPapers(papers));
 
       // Fetch resources
-      const resourcesRef = collection(db, 'resources');
-      const resourcesQuery = query(resourcesRef, orderBy('uploadedAt', 'desc'));
-      const resourcesSnapshot = await getDocs(resourcesQuery);
-      const resourcesData = resourcesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Resource[];
-      setResources(resourcesData);
+      const resources = await resourcesService.getResources();
+      dispatch(setResources(resources));
     } catch (err) {
       setError('Failed to fetch data');
       console.error('Error fetching data:', err);
@@ -55,16 +60,9 @@ const AdminDashboard = () => {
       return;
     }
 
-    try {
-      setDeletingId(paperId);
-      await deleteDoc(doc(db, 'papers', paperId));
-      setPapers(papers.filter(paper => paper.id !== paperId));
-    } catch (err) {
-      setError('Failed to delete paper');
-      console.error('Error deleting paper:', err);
-    } finally {
-      setDeletingId(null);
-    }
+    setDeletingId(paperId);
+    await adminService.deletePapaper(paperId, papers);
+    setDeletingId(null);
   };
 
   const handleDeleteResource = async (resourceId: string) => {
@@ -72,38 +70,18 @@ const AdminDashboard = () => {
       return;
     }
 
-    try {
-      setDeletingId(resourceId);
-      await deleteDoc(doc(db, 'resources', resourceId));
-      setResources(resources.filter(resource => resource.id !== resourceId));
-    } catch (err) {
-      setError('Failed to delete resource');
-      console.error('Error deleting resource:', err);
-    } finally {
-      setDeletingId(null);
-    }
+    setDeletingId(resourceId);
+    await adminService.deleteResource(resourceId, resources);
+    setDeletingId(null);
   };
-
-  // useEffect(() => {
-  //   const colRef = collection(db, 'papers');
-
-  //   const updateAllDocs = async () => {
-  //     const snapshot = await getDocs(colRef);
-
-  //     snapshot.forEach(async (docSnap) => {
-  //       await updateDoc(doc(db, "papers", docSnap.id), {
-  //         semester: 4,
-  //       });
-  //     });
-  //   };
-  //   updateAllDocs()
-  // }, [])
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      <div className="flex justify-center items-center w-full min-h-screen bg-gray-50">
+        <div className="relative w-24 h-24">
+          <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
+          <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
+          <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
         </div>
       </div>
     );
@@ -119,157 +97,245 @@ const AdminDashboard = () => {
     );
   }
 
-  return (
-    <div className="container px-4 py-8 mx-4">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <div className="flex flex-wrap gap-2 sm:gap-4">
-          <button
-            onClick={() => setActiveTab('papers')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm sm:text-base ${activeTab === 'papers'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-200 text-gray-700'
-              }`}
-          >
-            Manage Papers
-          </button>
-          <button
-            onClick={() => setActiveTab('resources')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm sm:text-base ${activeTab === 'resources'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-200 text-gray-700'
-              }`}
-          >
-            Manage Resources
-          </button>
-        </div>
-      </div>
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'papers':
+        return (
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+              <h2 className="text-xl sm:text-2xl font-semibold">Manage Previous Year Papers</h2>
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="btn btn-primary w-full sm:w-auto"
+              >
+                {showAddForm ? 'Cancel' : 'Add New Paper'}
+              </button>
+            </div>
 
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <h2 className="text-xl sm:text-2xl font-semibold">
-            {activeTab === 'papers' ? 'Manage Previous Year Papers' : 'Manage Study Resources'}
-          </h2>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="btn btn-primary w-full sm:w-auto"
-          >
-            {showAddForm ? 'Cancel' : `Add New ${activeTab === 'papers' ? 'Paper' : 'Resource'}`}
-          </button>
-        </div>
-
-        {showAddForm ? (
-          activeTab === 'papers' ? (
-            <AddPaperForm onSuccess={() => {
-              setShowAddForm(false);
-              fetchData();
-            }} />
-          ) : (
-            <AddResourceForm onSuccess={() => {
-              setShowAddForm(false);
-              fetchData();
-            }} />
-          )
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {activeTab === 'papers' ? (
-                    <>
+            {showAddForm ? (
+              <AddPaperForm onSuccess={() => {
+                setShowAddForm(false);
+                fetchData();
+              }} />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pattern</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </>
-                  ) : (
-                    <>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {papers.length > 0 ? (
+                      papers.map((paper) => (
+                        <tr key={paper.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.subjectName}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.branch}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.year}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.pattern}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.paperType}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <a
+                              href={paper.driveLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-600 hover:text-primary-900 mr-4"
+                            >
+                              View
+                            </a>
+                            <button
+                              onClick={() => handleDeletePaper(paper.id)}
+                              disabled={deletingId === paper.id}
+                              className={`text-red-600 hover:text-red-900 ${deletingId === paper.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              {deletingId === paper.id ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                          No papers added yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'resources':
+        return (
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+              <h2 className="text-xl sm:text-2xl font-semibold">Manage Study Resources</h2>
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="btn btn-primary w-full sm:w-auto"
+              >
+                {showAddForm ? 'Cancel' : 'Add New Resource'}
+              </button>
+            </div>
+
+            {showAddForm ? (
+              <AddResourceForm onSuccess={() => {
+                setShowAddForm(false);
+                fetchData();
+              }} />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {activeTab === 'papers' ? (
-                  papers.length > 0 ? (
-                    papers.map((paper) => (
-                      <tr key={paper.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.subjectName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.branch}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.year}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.pattern}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{paper.paperType}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <a
-                            href={paper.driveLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-600 hover:text-primary-900 mr-4"
-                          >
-                            View
-                          </a>
-                          <button
-                            onClick={() => handleDeletePaper(paper.id)}
-                            disabled={deletingId === paper.id}
-                            className={`text-red-600 hover:text-red-900 ${deletingId === paper.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            {deletingId === paper.id ? 'Deleting...' : 'Delete'}
-                          </button>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {resources.length > 0 ? (
+                      resources.map((resource) => (
+                        <tr key={resource.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.title}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.type}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.subjectName}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.branch}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <a
+                              href={resource.driveLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-600 hover:text-primary-900 mr-4"
+                            >
+                              View
+                            </a>
+                            <button
+                              onClick={() => handleDeleteResource(resource.id)}
+                              disabled={deletingId === resource.id}
+                              className={`text-red-600 hover:text-red-900 ${deletingId === resource.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              {deletingId === resource.id ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                          No resources added yet.
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                        No papers added yet.
-                      </td>
-                    </tr>
-                  )
-                ) : (
-                  resources.length > 0 ? (
-                    resources.map((resource) => (
-                      <tr key={resource.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.title}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.subjectName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.branch}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <a
-                            href={resource.driveLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-600 hover:text-primary-900 mr-4"
-                          >
-                            View
-                          </a>
-                          <button
-                            onClick={() => handleDeleteResource(resource.id)}
-                            disabled={deletingId === resource.id}
-                            className={`text-red-600 hover:text-red-900 ${deletingId === resource.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            {deletingId === resource.id ? 'Deleting...' : 'Delete'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                        No resources added yet.
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
+        );
+
+      case 'dashboard':
+      default:
+        return (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-semibold mb-4">Welcome to Admin Dashboard</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-primary-50 p-6 rounded-lg">
+                <h3 className="text-lg font-medium mb-2">Papers</h3>
+                <p className="text-3xl font-bold text-primary-600">{papers.length}</p>
+                <p className="text-sm text-gray-600 mt-2">Total papers in the system</p>
+              </div>
+              <div className="bg-primary-50 p-6 rounded-lg">
+                <h3 className="text-lg font-medium mb-2">Resources</h3>
+                <p className="text-3xl font-bold text-primary-600">{resources.length}</p>
+                <p className="text-sm text-gray-600 mt-2">Total resources in the system</p>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="relative flex h-screen bg-gray-100">
+      {
+        !isSidebarOpen && (
+          <div className='absolute top-1/2 -translate-y-1/2 left-3 cursor-pointer bg-white rounded-full p-1 shadow-md flex justify-center items-center' onClick={() => setIsSidebarOpen(true)}>
+            <RiArrowRightSLine size={26} />
+          </div>
+        )
+      }
+
+      {/* Sidebar */}
+      <div className={`absolute top-0 left-0 bottom-0 w-64 bg-white shadow-md transition-all duration-300 md:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
+        <div className="p-4 border-b flex w-full justify-between items-center">
+          <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
+          <div onClick={() => setIsSidebarOpen(false)} className='flex justify-center items-centre cursor-pointer bg-white rounded-full p-1 shadow-md'>
+            <RiArrowLeftSLine size={26} />
+          </div>
+        </div>
+        <nav className="p-4">
+          <ul className="space-y-2">
+            <li>
+              <button
+                onClick={() => {
+                  setActiveSection('dashboard');
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 rounded-md ${activeSection === 'dashboard'
+                  ? 'bg-primary-100 text-primary-600'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+              >
+                Dashboard
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => {
+                  setActiveSection('papers');
+                  setIsSidebarOpen(window.innerWidth > 768);
+                }}
+                className={`w-full text-left px-4 py-2 rounded-md ${activeSection === 'papers'
+                  ? 'bg-primary-100 text-primary-600'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+              >
+                Papers
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => {
+                  setActiveSection('resources');
+                  setIsSidebarOpen(window.innerWidth > 768);
+                }}
+                className={`w-full text-left px-4 py-2 rounded-md ${activeSection === 'resources'
+                  ? 'bg-primary-100 text-primary-600'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+              >
+                Resources
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

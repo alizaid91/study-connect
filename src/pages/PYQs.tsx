@@ -3,15 +3,17 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { Paper, Bookmark, TaskForm, Task } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
-import { fetchPapers } from '../store/slices/papersSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import TaskModal from '../components/Task-Board/TaskModal';
 import { setBoards, setLists, setTasks } from '../store/slices/taskSlice';
 import { listenToBoards, saveTask, listenToListsAndTasks, createDefaultBoardIfNeeded } from '../services/taskServics';
+import { setPapers, setLoading } from '../store/slices/papersSlice';
 import { papersService, QuickFilter } from '../services/papersService';
+import { useNavigate } from 'react-router-dom';
 
 const PYQs: React.FC = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
@@ -62,13 +64,23 @@ const PYQs: React.FC = () => {
   }, [isTaskModalOpen]);
 
   useEffect(() => {
+    const fetchPapers = async () => {
+      try {
+        dispatch(setLoading(true));
+        const papers = await papersService.getPapers();
+        dispatch(setPapers(papers));
+      } catch (error) {
+        console.error("Error fetching papers:", error);
+      } finally {
+        dispatch(setLoading(false));
+      }
+    };
+    fetchPapers();
+
     if (!user?.uid) return;
 
     let boardsUnsubscribe: (() => void) | undefined;
     let listsTasksUnsubscribe: (() => void) | undefined;
-
-    // Fetch papers
-    dispatch(fetchPapers());
 
     // Setup function for checking/creating default board
     const ensureDefaultBoard = async () => {
@@ -118,22 +130,21 @@ const PYQs: React.FC = () => {
   }, [dispatch, user?.uid]);
 
   useEffect(() => {
-    if (user) {
-      dispatch(fetchBookmarks(user.uid));
-    }
+    if (!user) return;
+    dispatch(fetchBookmarks(user.uid));
   }, [dispatch, user]);
 
   useEffect(() => {
-    if (user) {
-      const fetchQuickFilters = async () => {
-        const filters = await papersService.getQuickFilters(user.uid);
-        setQuickFilters(filters);
-      };
-      fetchQuickFilters();
-    }
+    if (!user) return;
+    const fetchQuickFilters = async () => {
+      const filters = await papersService.getQuickFilters(user.uid);
+      setQuickFilters(filters);
+    };
+    fetchQuickFilters();
   }, [user]);
 
   useEffect(() => {
+    if (!papers.length) return;
     const filtered = papersService.filterPapers(papers, filters);
     setFilteredPapers(filtered);
   }, [filters, papers]);
@@ -651,10 +662,10 @@ const PYQs: React.FC = () => {
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                       type="button"
-                      onClick={handleSaveQuickFilter}
+                      onClick={!user ? () => navigate('/auth#login') : handleSaveQuickFilter}
                       className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-md font-medium transition-all duration-200 flex items-center justify-center"
                     >
-                      Save Quick Filter
+                      {!user ? 'Login to save quick filters' : 'Save Quick Filter'}
                     </motion.button>
                 )}
               </div>
@@ -664,7 +675,7 @@ const PYQs: React.FC = () => {
       </motion.div>
 
       <AnimatePresence initial={false}>
-        {filteredPapers.length === 0 ? (
+        {papers.length && filteredPapers.length === 0 && !loading ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -717,7 +728,7 @@ const PYQs: React.FC = () => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => setDefaultTaskInfo(paper)}
+                      onClick={!user ? () => navigate('/auth#login') : () => setDefaultTaskInfo(paper)}
                       className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
                     >
                       Add to Tasks
@@ -734,7 +745,7 @@ const PYQs: React.FC = () => {
                       : <motion.button
                         whileHover={{ scale: 1.2 }}
                         whileTap={{ scale: 0.8 }}
-                        onClick={() => handleBookmark(paper)}
+                        onClick={!user ? () => navigate('/auth#login') : () => handleBookmark(paper)}
                         className={`rounded-full p-2 ${isBookmarked(paper.id)
                           ? 'text-yellow-500 bg-yellow-50'
                           : 'text-gray-400 bg-gray-50'

@@ -6,6 +6,7 @@ import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import logo from '../assets/logo.png';
 import { authService, AuthFormData } from '../services/authService';
+import { setAdmin } from '../store/slices/adminSlice';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(false);
@@ -27,13 +28,17 @@ const Auth = () => {
     if (hash === 'login') {
       setIsLogin(true);
     } else {
-      setIsLogin(false); // default to login if hash is 'login' or missing
+      setIsLogin(false);
     }
   }, [location.hash]);
 
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange((user) => {
+    const unsubscribe = authService.onAuthStateChange(async (user) => {
       if (user) {
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.role === 'admin') {
+          dispatch(setAdmin(true));
+        }
         dispatch(setUser(user));
         navigate('/');
       } else {

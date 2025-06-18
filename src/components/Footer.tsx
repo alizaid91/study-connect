@@ -13,9 +13,12 @@ import {
 } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import logo from '../assets/logo.png';
+import { RootState } from '../store';
+import { useSelector } from 'react-redux';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
+    const isAdmin = useSelector((state: RootState) => state.admin.isAdmin);
 
     const socialLinks = [
         {
@@ -70,16 +73,16 @@ const Footer = () => {
             icon: FiBookmark,
             path: '/bookmarks'
         },
-        {
+        ...(isAdmin ? [{
             name: 'Admin',
             icon: FiShield,
             path: '/admin/dashboard'
-        }
+        }] : [])
     ];
 
     return (
-        <footer className="bg-gray-900 text-gray-300">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <footer className="bg-gray-900 text-gray-300 w-full overflow-x-hidden">
+            <div className="px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Brand Section */}
                     <div className="col-span-1 md:col-span-2">

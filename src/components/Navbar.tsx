@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { logoutAdmin } from '../store/slices/adminSlice';
 import { logout } from '../store/slices/authSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_AVATAR } from '../types/user';
@@ -17,9 +16,11 @@ import {
   FiLogOut,
   FiSettings,
   FiShield,
-  FiFileText
+  FiFileText,
+  FiMessageSquare
 } from 'react-icons/fi';
 import { setSelectedBoardId } from '../store/slices/taskSlice';
+import { logoutAdmin, setAdmin } from '../store/slices/adminSlice';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -74,16 +75,26 @@ const Navbar = () => {
     setIsAvatarMenuOpen(false);
   }, [location]);
 
-  const handleAdminLogout = () => {
-    dispatch(logoutAdmin());
-    navigate('/');
-  };
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChange(async (user) => {
+      if (user) {
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.role === 'admin') {
+          dispatch(setAdmin(true));
+        }
+      } else {
+        dispatch(logout());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleUserLogout = async () => {
     try {
       await authService.signOut();
       dispatch(logout());
       dispatch(setSelectedBoardId(null));
+      dispatch(logoutAdmin());
       navigate('/');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -107,6 +118,13 @@ const Navbar = () => {
           {/* Desktop Nav */}
           <div className="hidden lg:flex lg:items-center lg:space-x-6">
             <Link
+              to="/dashboard"
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              <FiGrid className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+            <Link
               to="/pyqs"
               className={`text-sm font-medium flex items-center space-x-1 ${isActive('/pyqs') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
             >
@@ -127,13 +145,14 @@ const Navbar = () => {
               <FiClipboard className="h-4 w-4" />
               <span>Tasks</span>
             </Link>
-            <Link
-              to="/dashboard"
-              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/dashboard') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+            {/* <Link
+              to="/ai-assistant"
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/ai-assistant') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+              title="AI Assistant"
             >
-              <FiGrid className="h-4 w-4" />
-              <span>Dashboard</span>
-            </Link>
+              <FiMessageSquare className="h-5 w-5" />
+              <span>AI Assistant</span>
+            </Link> */}
             <Link
               to="/bookmarks"
               className={`text-sm font-medium flex items-center space-x-1 ${isActive('/bookmarks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
@@ -225,18 +244,6 @@ const Navbar = () => {
                         <FiSettings className="h-4 w-4" />
                         <span>Settings</span>
                       </Link>
-                      {isAdmin && (
-                        <button
-                          onClick={() => {
-                            handleAdminLogout();
-                            setIsAvatarMenuOpen(false);
-                          }}
-                          className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                        >
-                          <FiLogOut className="h-4 w-4" />
-                          <span>Admin Logout</span>
-                        </button>
-                      )}
                       {user && (
                         <button
                           onClick={() => {
@@ -282,6 +289,17 @@ const Navbar = () => {
                 <span>Home</span>
               </Link>
               <Link
+                to="/dashboard"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+              >
+                <FiGrid className="h-5 w-5" />
+                <span>Dashboard</span>
+              </Link>
+              <Link
                 to="/pyqs"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
@@ -314,17 +332,17 @@ const Navbar = () => {
                 <FiClipboard className="h-5 w-5" />
                 <span>Tasks</span>
               </Link>
-              <Link
-                to="/dashboard"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
+              {/* <Link
+                to="/ai-assistant"
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/ai-assistant')
                   ? 'bg-primary-50 border-primary-500 text-primary-700'
                   : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                   }`}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
-                <FiGrid className="h-5 w-5" />
-                <span>Dashboard</span>
-              </Link>
+                <FiMessageSquare className="h-5 w-5" />
+                <span>AI Assistant</span>
+              </Link> */}
               <Link
                 to="/bookmarks"
                 onClick={() => setIsMobileMenuOpen(false)}

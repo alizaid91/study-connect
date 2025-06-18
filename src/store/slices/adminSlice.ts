@@ -5,7 +5,7 @@ interface AdminState {
 }
 
 const initialState: AdminState = {
-  isAdmin: localStorage.getItem('isAdmin') === 'true',
+  isAdmin: false,
 };
 
 const adminSlice = createSlice({
@@ -14,11 +14,9 @@ const adminSlice = createSlice({
   reducers: {
     setAdmin: (state, action: PayloadAction<boolean>) => {
       state.isAdmin = action.payload;
-      localStorage.setItem('isAdmin', action.payload.toString());
     },
     logoutAdmin: (state) => {
       state.isAdmin = false;
-      localStorage.removeItem('isAdmin');
     },
   },
 });

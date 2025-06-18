@@ -16,10 +16,6 @@ export interface QuickFilter {
 }
 
 class PapersService {
-    async addPaper(paperData: Omit<Paper, 'id'>) {
-        return await addDoc(collection(db, 'papers'), paperData);
-    }
-
     async getPapers() {
         const papersSnapshot = await getDocs(collection(db, 'papers'));
         return papersSnapshot.docs.map(doc => ({

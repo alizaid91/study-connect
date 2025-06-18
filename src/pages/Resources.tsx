@@ -7,13 +7,15 @@ import { setResources } from '../store/slices/resourceSlice';
 import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { resourcesService, QuickFilter } from '../services/resourcesService';
+import { useNavigate } from 'react-router-dom';
+import { setLoading } from '../store/slices/resourceSlice';
 
 const Resources: React.FC = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
-  const { resources } = useSelector((state: RootState) => state.resources);
-  const [loading, setLoading] = useState(true);
+  const { resources, loading } = useSelector((state: RootState) => state.resources);
   const [error, setError] = useState<string | null>(null);
   const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
   const [filters, setFilters] = useState({
@@ -33,38 +35,41 @@ const Resources: React.FC = () => {
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
 
+  // Fetch resources
   useEffect(() => {
     const fetchResources = async () => {
       try {
+        dispatch(setLoading(true));
         const resourcesData = await resourcesService.getResources();
         dispatch(setResources(resourcesData));
-        setFilteredResources(resourcesData);
       } catch (err) {
         setError('Failed to fetch resources');
         console.error('Error fetching resources:', err);
       } finally {
-        setLoading(false);
+        dispatch(setLoading(false));
       }
     };
 
     fetchResources();
-  }, []);
+  }, [dispatch, user?.uid]);
+
+  // Fetch resource quick filters
+  useEffect(() => {
+    if (!user) return;
+    const fetchResourceQuickFilters = async () => {
+      const filters = await resourcesService.getQuickFilters(user.uid);
+      setResourceQuickFilters(filters);
+    };
+    fetchResourceQuickFilters();
+  }, [resources, filters]);
 
   useEffect(() => {
-    if (user) {
-      const fetchResourceQuickFilters = async () => {
-        const filters = await resourcesService.getQuickFilters(user.uid);
-        setResourceQuickFilters(filters);
-      };
-      fetchResourceQuickFilters();
-    }
-  }, [user]);
-
-  useEffect(() => {
+    if (!resources.length) return;
     const filtered = resourcesService.filterResources(resources, filters);
     setFilteredResources(filtered);
   }, [filters, resources]);
 
+  // Handle filter change
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({
@@ -74,6 +79,7 @@ const Resources: React.FC = () => {
     }));
   };
 
+  // Clear filters
   const clearFilters = () => {
     setFilters({
       branch: '',
@@ -84,10 +90,12 @@ const Resources: React.FC = () => {
     });
   };
 
+  // Get available subjects
   const getAvailableSubjects = () => {
     return resourcesService.getAvailableSubjects(resources, filters);
   };
 
+  // Handle bookmark
   const handleBookmark = async (resource: Resource) => {
     if (!user) return;
 
@@ -115,10 +123,12 @@ const Resources: React.FC = () => {
     setChangingBookmarkState(false)
   };
 
+  // Check if resource is bookmarked
   const isBookmarked = (resourceId: string) => {
     return bookmarks.some((bookmark: Bookmark) => bookmark.contentId === resourceId && bookmark.type === 'Resource');
   };
 
+  // Handle save quick filter
   const handleSaveQuickFilter = async () => {
     if (!user) return;
     if (resourceQuickFilters.some(q =>
@@ -141,10 +151,12 @@ const Resources: React.FC = () => {
     }
   };
 
+  // Handle apply quick filter
   const handleApplyQuickFilter = (qf: QuickFilter) => {
     setFilters(qf.values);
   };
 
+  // Handle delete quick filter
   const handleDeleteQuickFilter = async (id: string) => {
     try {
       setIsDeletingQF(true);
@@ -159,15 +171,18 @@ const Resources: React.FC = () => {
     }
   };
 
+  // Handle quick filter drag start
   const handleQFDragStart = (qf: QuickFilter, index: number) => {
     setDraggedQF(qf);
     setDraggedQFIndex(index);
   };
 
+  // Handle quick filter drag over
   const handleQFDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
+  // Handle quick filter drop
   const handleQFDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
     e.preventDefault();
     if (draggedQF && draggedQFIndex !== null) {
@@ -180,6 +195,7 @@ const Resources: React.FC = () => {
     setDraggedQFIndex(null);
   };
 
+  // Get resource type icon
   const getResourceTypeIcon = (type: string) => {
     const typeLC = type.toLowerCase();
     if (typeLC === 'book') return '📚';
@@ -189,6 +205,7 @@ const Resources: React.FC = () => {
     return '📄';
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -201,6 +218,7 @@ const Resources: React.FC = () => {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <motion.div
@@ -216,6 +234,7 @@ const Resources: React.FC = () => {
     );
   }
 
+  // Main content
   return (
     <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
       <motion.h1
@@ -437,10 +456,10 @@ const Resources: React.FC = () => {
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                       type="button"
-                      onClick={handleSaveQuickFilter}
+                      onClick={!user ? () => navigate('/auth#login') : handleSaveQuickFilter}
                       className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-medium transition-all duration-200 flex items-center justify-center"
                     >
-                      Save Quick Filter
+                      {!user ? 'Login to save quick filters' : 'Save Quick Filter'}
                     </motion.button>
                   )
                 )}
@@ -520,7 +539,7 @@ const Resources: React.FC = () => {
                         : <motion.button
                           whileHover={{ scale: 1.2 }}
                           whileTap={{ scale: 0.8 }}
-                          onClick={() => handleBookmark(resource)}
+                          onClick={!user ? () => navigate('/auth#login') : () => handleBookmark(resource)}
                           className={`rounded-full p-2 ${isBookmarked(resource.id)
                             ? 'text-yellow-500 bg-yellow-100'
                             : 'text-gray-400 bg-gray-100'
