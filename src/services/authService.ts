@@ -6,9 +6,13 @@ import {
     signInWithPopup,
     onAuthStateChanged,
     User,
-    signOut
+    signOut,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword,
+    sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, getDocs, collection } from 'firebase/firestore';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
 
 export interface AuthFormData {
@@ -107,6 +111,53 @@ class AuthService {
         };
         await updateDoc(doc(db, 'users', userId), updatedProfile);
         return updatedProfile;
+    }
+
+    async addFieldToCollection(collectionName: string, newFieldName: string, defaultValue: any) {
+        const colRef = collection(db, collectionName);
+
+        try {
+            const querySnapshot = await getDocs(colRef);
+
+            const updatePromises = querySnapshot.docs.map(async (document) => {
+                const docRef = doc(db, collectionName, document.id);
+                await updateDoc(docRef, {
+                    [newFieldName]: defaultValue
+                });
+            });
+
+            await Promise.all(updatePromises);
+            console.log(`Field '${newFieldName}' added to all documents in collection '${collectionName}'.`);
+        } catch (error) {
+            console.error('Error adding field to collection:', error);
+        }
+    }
+
+    async updateUserPassword(email: string, oldPassword: string, newPassword: string) {
+        if (!auth.currentUser) {
+            throw new Error('No authenticated user.');
+        }
+        const credential = EmailAuthProvider.credential(email, oldPassword);
+        try {
+            await reauthenticateWithCredential(auth.currentUser, credential);
+            await updatePassword(auth.currentUser, newPassword);
+        } catch (error: any) {
+            if (error.code === 'auth/wrong-password') {
+                throw new Error('Old password is incorrect.');
+            }
+            if (error.code === 'auth/weak-password') {
+                throw new Error('New password is too weak.');
+            }
+            throw new Error(error.message || 'Failed to update password.');
+        }
+    }
+
+    async sendPasswordResetEmail(email: string) {
+        try {
+            await firebaseSendPasswordResetEmail(auth, email);
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to send password reset email.');
+        }
     }
 }
 

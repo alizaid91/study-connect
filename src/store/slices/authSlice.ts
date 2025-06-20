@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { User } from 'firebase/auth';
+import { UserProfile } from '../../types/user';
 
 interface AuthState {
   user: {
@@ -7,6 +8,7 @@ interface AuthState {
     email: string | null;
     displayName: string | null;
   } | null;
+  userProfile: Partial<UserProfile>;
   loading: boolean;
   error: string | null;
 }
@@ -19,6 +21,7 @@ const loadInitialState = (): AuthState => {
   }
   return {
     user: null,
+    userProfile: {},
     loading: false,
     error: null,
   };
@@ -43,9 +46,12 @@ const authSlice = createSlice({
       // Save to localStorage
       localStorage.setItem('authState', JSON.stringify(state));
     },
+    setUserProfile: (state, action: PayloadAction<Partial<UserProfile>>) => {
+      state.userProfile = action.payload;
+      localStorage.setItem('authState', JSON.stringify(state));
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
-      localStorage.setItem('authState', JSON.stringify(state));
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
@@ -59,5 +65,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, setLoading, setError, logout } = authSlice.actions;
+export const { setUser, setUserProfile, setLoading, setError, logout } = authSlice.actions;
 export default authSlice.reducer; 

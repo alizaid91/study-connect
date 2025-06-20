@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { Paper, Bookmark, TaskForm, Task } from '../types/content';
 import { addBookmark, removeBookmark, fetchBookmarks } from '../store/slices/bookmarkSlice';
-import { FiTrash2, FiCheckSquare, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
+import { FiTrash2, FiFilter, FiChevronsDown, FiBookmark } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import TaskModal from '../components/Task-Board/TaskModal';
 import { setBoards, setLists, setTasks } from '../store/slices/taskSlice';
@@ -11,11 +11,32 @@ import { listenToBoards, saveTask, listenToListsAndTasks, createDefaultBoardIfNe
 import { setPapers, setLoading } from '../store/slices/papersSlice';
 import { papersService, QuickFilter } from '../services/papersService';
 import { useNavigate } from 'react-router-dom';
+import { MdArrowForward } from "react-icons/md";
+
+const sortQuickFilters = (qf: QuickFilter[]) => {
+  return qf.sort((a, b) => {
+    const typeA = a.values.paperType?.trim();
+    const typeB = b.values.paperType?.trim();
+
+    const isAEmpty = !typeA;
+    const isBEmpty = !typeB;
+
+    if (isAEmpty && !isBEmpty) return 1;   // a goes after b
+    if (!isAEmpty && isBEmpty) return -1;  // b goes after a
+    if (isAEmpty && isBEmpty) return 0;    // both empty, equal
+
+    if (typeA === 'Insem' && typeB === 'Endsem') return -1;
+    if (typeA === 'Endsem' && typeB === 'Insem') return 1;
+
+    return 0;
+  });
+};
+
 
 const PYQs: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, userProfile } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
   const { papers, loading, error } = useSelector((state: RootState) => state.papers);
   const { boards, lists, tasks } = useSelector((state: RootState) => state.tasks);
@@ -32,7 +53,8 @@ const PYQs: React.FC = () => {
     pattern: '',
     paperType: '',
     subjectName: '',
-    subjectCode: ''
+    subjectCode: '',
+    isReadyMade: false
   });
 
   // Task Modal state
@@ -44,11 +66,11 @@ const PYQs: React.FC = () => {
 
   // Quick filters state
   const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
-  const [draggedQF, setDraggedQF] = useState<QuickFilter | null>(null);
-  const [draggedQFIndex, setDraggedQFIndex] = useState<number | null>(null);
   const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
   const [showMoreQuickFilters, setShowMoreQuickFilters] = useState(false);
+
+  const pyqsRef = useRef<HTMLDivElement>(null);
 
   // Effect to prevent background scrolling when modal is open
   useEffect(() => {
@@ -63,7 +85,79 @@ const PYQs: React.FC = () => {
     };
   }, [isTaskModalOpen]);
 
+  interface ReadyMadeFilters {
+    filters: QuickFilter['values'][];
+  }
+
   useEffect(() => {
+    const ReadyMadeFilters: ReadyMadeFilters[] = [
+      {
+        filters: [
+          {
+            branch: 'IT',
+            year: 'TE',
+            semester: 5,
+            pattern: '2019',
+            paperType: 'Insem',
+            subjectName: 'Theory of Computation',
+            subjectCode: 'TOC',
+            isReadyMade: true
+          }
+        ]
+      },
+      {
+        filters: [
+          {
+            branch: 'IT',
+            year: 'TE',
+            semester: 5,
+            pattern: '2019',
+            paperType: 'Insem',
+            subjectName: 'Operating Systems',
+            subjectCode: 'OS',
+            isReadyMade: true
+          },
+        ]
+      },
+      {
+        filters: [
+          {
+            branch: 'IT',
+            year: 'TE',
+            semester: 5,
+            pattern: '2019',
+            paperType: 'Insem',
+            subjectName: 'Machine Learning',
+            subjectCode: 'ML',
+            isReadyMade: true
+          }
+        ]
+      },
+      {
+        filters: [
+          {
+            branch: 'IT',
+            year: 'TE',
+            semester: 5,
+            pattern: '2019',
+            paperType: 'Insem',
+            subjectName: 'Human Computer Interaction',
+            subjectCode: 'HCI',
+            isReadyMade: true
+          }
+        ]
+      }
+    ]
+
+    const saveReadyMadeFilters = async () => {
+      if (!user?.uid) return;
+      ReadyMadeFilters.forEach(async (filter) => {
+        await papersService.saveReadyMadeFilters({ ...filter.filters[0] });
+        console.log(`Saved ${filter.filters[0].subjectName} filter`);
+      });
+    }
+    // saveReadyMadeFilters();
+
     const fetchPapers = async () => {
       try {
         dispatch(setLoading(true));
@@ -138,7 +232,13 @@ const PYQs: React.FC = () => {
     if (!user) return;
     const fetchQuickFilters = async () => {
       const filters = await papersService.getQuickFilters(user.uid);
-      setQuickFilters(filters);
+      if (user && userProfile?.semester != 0) {
+        const readyMadeFilters = await papersService.getReadyMadeFilters(userProfile?.branch as string, userProfile?.year as string, userProfile?.semester as number);
+
+        setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
+      } else {
+        setQuickFilters(filters);
+      }
     };
     fetchQuickFilters();
   }, [user]);
@@ -226,7 +326,8 @@ const PYQs: React.FC = () => {
       pattern: '',
       paperType: '',
       subjectName: '',
-      subjectCode: ''
+      subjectCode: '',
+      isReadyMade: false
     });
   };
 
@@ -238,7 +339,8 @@ const PYQs: React.FC = () => {
       q.values.year === filters.year &&
       q.values.pattern === filters.pattern &&
       q.values.paperType === filters.paperType &&
-      q.values.subjectName === filters.subjectName
+      q.values.subjectName === filters.subjectName &&
+      q.values.isReadyMade === filters.isReadyMade
     )) {
       return;
     }
@@ -304,28 +406,6 @@ const PYQs: React.FC = () => {
 
   const getAvailableSubjects = () => {
     return papersService.getAvailableSubjects(papers, filters);
-  };
-
-  // Drag handlers
-  const handleQFDragStart = (qf: QuickFilter, index: number) => {
-    setDraggedQF(qf);
-    setDraggedQFIndex(index);
-  };
-
-  const handleQFDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-
-  const handleQFDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    e.preventDefault();
-    if (draggedQF && draggedQFIndex !== null) {
-      const updated = [...quickFilters];
-      updated.splice(draggedQFIndex, 1);
-      updated.splice(index, 0, draggedQF);
-      setQuickFilters(updated);
-    }
-    setDraggedQF(null);
-    setDraggedQFIndex(null);
   };
 
   // Create a mock task for the modal when a paper is selected
@@ -397,77 +477,112 @@ const PYQs: React.FC = () => {
       </motion.h1>
 
       <AnimatePresence initial={false}>
-        {quickFilters.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-8 overflow-hidden"
-          >
-            <h2 className="text-xl font-semibold mb-4 text-gray-700 flex items-center">
-              <FiFilter className="mr-2" /> Quick Filters
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quickFilters.slice(0, showMoreQuickFilters ? quickFilters.length : 3).map((qf, idx) => (
-                <motion.div
-                  key={qf.id}
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.2, delay: idx * 0.05 }}
-                  draggable
-                  onDragStart={() => handleQFDragStart(qf, idx)}
-                  onDragOver={handleQFDragOver}
-                  onDrop={(e) => handleQFDrop(e, idx)}
-                  className="bg-white shadow-lg rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab transition-all duration-200 hover:shadow-xl border-l-4 border-blue-500"
-                >
-                  <div className="flex flex-wrap items-center space-x-2 text-sm text-gray-700">
-                    <span className="font-medium">{qf.values.branch}</span>
-                    {qf.values.branch !== 'FE' && qf.values.year && <span>- {qf.values.year}</span>}
-                    {qf.values.semester && <span>- Sem {qf.values.semester}</span>}
-                    {qf.values.pattern && <span>- {qf.values.pattern} Pattern</span>}
-                    {qf.values.subjectName && <span className='font-medium'>- {qf.values.subjectCode}</span>}
-                    {qf.values.paperType && <span className='font-medium'>- {qf.values.paperType}</span>}<span> Papers</span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.95 }}>
-                      <FiCheckSquare onClick={() => handleApplyQuickFilter(qf)} className="text-primary-600 hover:text-primary-700 cursor-pointer" size={20} />
-                    </motion.div>
-                    {isDeleting && deletingQFId === qf.id ? (
-                      <div role="status" className="inline-flex items-center">
-                        <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-2"></div>
-                        <span className="sr-only">Deleting...</span>
-                      </div>
-                    ) : (
-                      <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.95 }}>
-                        <FiTrash2 onClick={() => handleDeleteQuickFilter(qf.id)} className="text-red-500 hover:text-red-600 cursor-pointer" size={20} />
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            {quickFilters.length > 3 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex justify-center mt-4"
-              >
-                <motion.button
-                  onClick={() => setShowMoreQuickFilters(!showMoreQuickFilters)}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
-                >
-                  <span>{showMoreQuickFilters ? 'Show Less' : 'Show More'}</span>
-                  <motion.div
-                    animate={{ rotate: showMoreQuickFilters ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <FiChevronsDown size={20} />
-                  </motion.div>
-                </motion.button>
-              </motion.div>
-            )}
-          </motion.div>
+        {!user && (
+          <div className={`flex flex-col items-center justify-center h-full mb-8 bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow-md`}>
+            <h2 className='text-md sm:text-xl font-semibold mb-4 text-gray-700'>Signup and complete your profile to access ready-made quick filters.</h2>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/auth#signup')}
+              className='bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-md font-medium transition-all duration-200 flex items-center justify-center'
+            >
+              Signup
+            </motion.button>
+          </div>
         )}
+        {
+          user && userProfile?.semester == 0 && (
+            <div className={`flex items-center justify-between w-full h-full mb-8 bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow-md`}>
+              <h2 className='text-md sm:text-xl font-semibold text-gray-700'>Complete your profile to access ready-made quick filters.</h2>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/profile')}
+                className='bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md font-medium transition-all duration-200 flex items-center justify-center'
+              >
+                <MdArrowForward size={24} />
+              </motion.button>
+            </div>
+          )
+        }
+        {
+          user && quickFilters.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-8 overflow-hidden"
+            >
+              <h2 className="text-xl font-semibold mb-4 text-gray-700 flex flex-col justify-center sm:flex-row sm:items-center sm:justify-start">
+                <div className='flex items-center'><FiFilter className="mr-2" /> <span>Quick Filters</span></div> <span className='text-xs text-gray-500 ml-2 mt-1'>(Click to apply and drag to reorder)</span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+                {quickFilters.slice(0, showMoreQuickFilters ? quickFilters.length : window.innerWidth < 768 ? 2 : 4).map((qf, idx) => (
+                  <motion.div
+                    key={qf.id}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.2, delay: idx * 0.05 }}
+                    onClick={() => {
+                      handleApplyQuickFilter(qf);
+                      pyqsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="bg-white shadow-lg rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-pointer transition-all duration-200 hover:shadow-xl border-l-4 border-blue-500"
+                  >
+                    <div
+                      className="flex flex-col gap-1 text-sm text-gray-700"
+                    >
+                      <div>
+                        <span className="font-medium">{qf.values.branch}</span>
+                        {qf.values.pattern && <span> - {qf.values.pattern} Pattern</span>}
+                      </div>
+                      {qf.values.subjectName && <span className='font-medium text-red-500'>{qf.values.subjectName}</span>}
+                      {qf.values.paperType && <span className={`font-medium ${qf.values.paperType === 'Insem' ? 'text-blue-500' : 'text-green-500'}`}>{qf.values.paperType} Papers</span>}
+                    </div>
+                    {
+                      !qf.values.isReadyMade && (
+                        <div className="flex items-center space-x-4">
+                          {isDeleting && deletingQFId === qf.id ? (
+                            <div role="status" className="inline-flex items-center">
+                              <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-2"></div>
+                              <span className="sr-only">Deleting...</span>
+                            </div>
+                          ) : (
+                            <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.95 }}>
+                              <FiTrash2 onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteQuickFilter(qf.id);
+                              }} className="text-red-500 hover:text-red-600 cursor-pointer" size={20} />
+                            </motion.div>
+                          )}
+                        </div>
+                      )
+                    }
+                  </motion.div>
+                ))}
+              </div>
+              {quickFilters.length > (window.innerWidth < 768 ? 2 : 4) && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex justify-center mt-4"
+                >
+                  <motion.button
+                    onClick={() => setShowMoreQuickFilters(!showMoreQuickFilters)}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
+                  >
+                    <span>{showMoreQuickFilters ? 'Show Less' : 'Show More'}</span>
+                    <motion.div
+                      animate={{ rotate: showMoreQuickFilters ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <FiChevronsDown size={20} />
+                    </motion.div>
+                  </motion.button>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
       </AnimatePresence>
 
       <motion.div
@@ -694,71 +809,73 @@ const PYQs: React.FC = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {filteredPapers.map((paper, index) => (
-              <motion.div
-                key={paper.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="bg-white rounded-lg shadow-md overflow-hidden relative group"
-              >
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-                <div className="p-6">
-                  <h3 className="text-md md:text-lg font-semibold mb-2 text-gray-800 pr-4">{paper.subjectName}</h3>
-                  <p className="text-sm md:text-md text-gray-600 mb-2">
-                    {paper.branch} - {paper.year !== 'FE' ? paper.year : ''} {paper.pattern} Pattern
-                  </p>
-                  <p className="text-sm md:text-md text-gray-700 mb-6">
-                    <span className="font-medium">{paper.paperType} </span> <span> Paper </span> <span className="font-medium">{paper.paperName} </span>
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 text-center">
-                    <motion.a
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      href={paper.driveLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
-                    >
-                      View Paper
-                    </motion.a>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={!user ? () => navigate('/auth#login') : () => setDefaultTaskInfo(paper)}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
-                    >
-                      Add to Tasks
-                    </motion.button>
-                  </div>
-                </div>
-                <div className='absolute top-3 right-3 p-1 flex justify-center items-center'>
-                  {
-                    changingBookmarkState && paper.id === itemToChangeBookmarkState
-                      ? <div role="status" className="inline-flex items-center justify-center p-2">
-                        <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                        <span className="sr-only">Changing...</span>
-                      </div>
-                      : <motion.button
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.8 }}
-                        onClick={!user ? () => navigate('/auth#login') : () => handleBookmark(paper)}
-                        className={`rounded-full p-2 ${isBookmarked(paper.id)
-                          ? 'text-yellow-500 bg-yellow-50'
-                          : 'text-gray-400 bg-gray-50'
-                          } transition-all duration-200`}
+            <div ref={pyqsRef}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPapers.map((paper, index) => (
+                <motion.div
+                  key={paper.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                  className="bg-white rounded-lg shadow-md overflow-hidden relative group"
+                >
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                  <div className="p-6">
+                    <h3 className="text-md md:text-lg font-semibold mb-2 text-gray-800 pr-4">{paper.subjectName}</h3>
+                    <p className="text-sm md:text-md text-gray-600 mb-2">
+                      {paper.branch} - {paper.year !== 'FE' ? paper.year : ''} {paper.pattern} Pattern
+                    </p>
+                    <p className="text-sm md:text-md text-gray-700 mb-6">
+                      <span className="font-medium">{paper.paperType} </span> <span> Paper </span> <span className="font-medium">{paper.paperName} </span>
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 text-center">
+                      <motion.a
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        href={paper.driveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
                       >
-                        <FiBookmark
-                          className={`w-5 h-5 ${isBookmarked(paper.id) ? 'fill-current' : ''}`}
-                        />
+                        View Paper
+                      </motion.a>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={!user ? () => navigate('/auth#login') : () => setDefaultTaskInfo(paper)}
+                        className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
+                      >
+                        Add to Tasks
                       </motion.button>
-                  }
-                </div>
-              </motion.div>
-            ))}
+                    </div>
+                  </div>
+                  <div className='absolute top-3 right-3 p-1 flex justify-center items-center'>
+                    {
+                      changingBookmarkState && paper.id === itemToChangeBookmarkState
+                        ? <div role="status" className="inline-flex items-center justify-center p-2">
+                          <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                          <span className="sr-only">Changing...</span>
+                        </div>
+                        : <motion.button
+                          whileHover={{ scale: 1.2 }}
+                          whileTap={{ scale: 0.8 }}
+                          onClick={!user ? () => navigate('/auth#login') : () => handleBookmark(paper)}
+                          className={`rounded-full p-2 ${isBookmarked(paper.id)
+                            ? 'text-yellow-500 bg-yellow-50'
+                            : 'text-gray-400 bg-gray-50'
+                            } transition-all duration-200`}
+                        >
+                          <FiBookmark
+                            className={`w-5 h-5 ${isBookmarked(paper.id) ? 'fill-current' : ''}`}
+                          />
+                        </motion.button>
+                    }
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

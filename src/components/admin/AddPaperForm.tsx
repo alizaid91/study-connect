@@ -3,8 +3,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Paper } from '../../types/content';
 import { useNavigate } from 'react-router-dom';
-import { papersService } from '../../services/papersService';
 import { IT_SUBJECTS, FE_SUBJECTS } from '../../types/Subjects';
+import { adminService } from '../../services/adminService';
 
 interface AddPaperFormProps {
   onSuccess?: () => void;
@@ -51,7 +51,7 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
     setFormData({
       ...formData,
       year: e.target.value as Paper['year'],
-      semester: formData.year === 'SE' ? 3 : formData.year === 'TE' ? 5 : 7,
+      semester: e.target.value === 'SE' ? 3 : e.target.value === 'TE' ? 5 : 7,
       subjectId: '',
       subjectName: '',
     });
@@ -106,8 +106,8 @@ const AddPaperForm = ({ onSuccess }: AddPaperFormProps) => {
         uploadedBy: 'admin',
       };
 
-      await papersService.addPaper(paperData);
-      onSuccess?.();
+      await adminService.addPaper(paperData);
+      // onSuccess?.();
     } catch (err) {
       setError('Error adding paper. Please try again.');
       console.error('Error:', err);

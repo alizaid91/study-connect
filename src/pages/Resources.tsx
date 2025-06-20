@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { Resource, Bookmark } from '../types/content';
@@ -34,6 +34,8 @@ const Resources: React.FC = () => {
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] = useState<string>('');
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+
+  const resourcesRef = useRef<HTMLDivElement>(null);
 
   // Fetch resources
   useEffect(() => {
@@ -254,8 +256,8 @@ const Resources: React.FC = () => {
             exit={{ opacity: 0, height: 0 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-semibold mb-4 text-gray-700 flex items-center">
-              <FiFilter className="mr-2" /> Quick Filters
+            <h2 className="text-xl font-semibold mb-4 text-gray-700 flex flex-col justify-center sm:flex-row sm:items-center sm:justify-start">
+              <div className='flex items-center'><FiFilter className="mr-2" /> <span>Quick Filters</span></div> <span className='text-xs text-gray-500 ml-2 mt-1'>(Click to apply and drag to reorder)</span>
             </h2>
             <div className="flex flex-wrap gap-3">
               {resourceQuickFilters.map((qf, idx) => (
@@ -268,20 +270,22 @@ const Resources: React.FC = () => {
                   onDragStart={() => handleQFDragStart(qf, idx)}
                   onDragOver={handleQFDragOver}
                   onDrop={(e) => handleQFDrop(e, idx)}
+                  onClick={() => {
+                    handleApplyQuickFilter(qf);
+                    resourcesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                   className="bg-white shadow-lg rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab transition-all duration-200 hover:shadow-xl border-l-4 border-indigo-500"
                   whileHover={{ y: -5 }}
                 >
-                  <div className="flex flex-wrap items-center space-x-2 text-sm text-gray-700">
-                    <span className="font-medium">{qf.values.branch}</span>
-                    {qf.values.branch !== 'FE' && qf.values.year && <span>- {qf.values.year}</span>}
-                    {qf.values.pattern && <span>- {qf.values.pattern} Pattern</span>}
-                    {qf.values.type && <span>- {qf.values.type}</span>}
-                    {qf.values.subjectName && <span>- {qf.values.subjectName}</span>}
+                  <div className="flex flex-col gap-1 text-sm text-gray-700">
+                    <div>
+                      <span className="font-medium">{qf.values.branch}</span>
+                      {qf.values.pattern && <span> - {qf.values.pattern} Pattern</span>}
+                    </div>
+                    {qf.values.subjectName && <span className='font-medium'>{qf.values.subjectName}</span>}
+                    {qf.values.type && <span className='font-medium'>{qf.values.type === 'book' ? 'Text Book' : qf.values.type === 'notes' ? 'Notes' : qf.values.type === 'video' ? 'Videos' : qf.values.type === 'decodes' ? 'Decodes' : 'Other'}</span>}
                   </div>
                   <div className="flex items-center space-x-4">
-                    <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.95 }}>
-                      <FiCheckSquare onClick={() => handleApplyQuickFilter(qf)} className="text-primary-600 hover:text-primary-700 cursor-pointer" size={20} />
-                    </motion.div>
                     {isDeletingQF && deletingQFId === qf.id ? (
                       <div role="status" className="inline-flex items-center">
                         <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-2"></div>
@@ -489,71 +493,72 @@ const Resources: React.FC = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {filteredResources.map((resource, index) => (
-              <motion.div
-                key={resource.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="bg-white rounded-lg shadow-md overflow-hidden relative group"
-              >
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-purple-600"></div>
-                <div className="p-6 h-full flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center mb-3">
-                      <span className="text-2xl mr-2">{getResourceTypeIcon(resource.type)}</span>
-                      <h3 className="text-xl font-semibold text-gray-800">{resource.title}</h3>
+            <div ref={resourcesRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredResources.map((resource, index) => (
+                <motion.div
+                  key={resource.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                  className="bg-white rounded-lg shadow-md overflow-hidden relative group"
+                >
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-purple-600"></div>
+                  <div className="p-6 h-full flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center mb-3">
+                        <span className="text-2xl mr-2">{getResourceTypeIcon(resource.type)}</span>
+                        <h3 className="text-xl font-semibold text-gray-800">{resource.title}</h3>
+                      </div>
+                      <p className="text-gray-600 mb-2">
+                        {resource.branch} - {resource.year !== 'FE' ? resource.year : ''} {resource.pattern}
+                      </p>
+                      <div className="bg-gray-50 p-2 rounded-md mb-4">
+                        <p className="text-gray-700 mb-1">
+                          <span className="font-medium">Subject:</span> {resource.subjectName}
+                        </p>
+                        <p className="text-gray-700">
+                          <span className="font-medium">Type:</span> <span className="capitalize">{resource.type}</span>
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-gray-600 mb-2">
-                      {resource.branch} - {resource.year !== 'FE' ? resource.year : ''} {resource.pattern}
-                    </p>
-                    <div className="bg-gray-50 p-2 rounded-md mb-4">
-                      <p className="text-gray-700 mb-1">
-                        <span className="font-medium">Subject:</span> {resource.subjectName}
-                      </p>
-                      <p className="text-gray-700">
-                        <span className="font-medium">Type:</span> <span className="capitalize">{resource.type}</span>
-                      </p>
+                    <div className="flex justify-between items-center">
+                      <motion.a
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        href={resource.driveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-md inline-block transition-all duration-200 shadow-md"
+                      >
+                        View Resource
+                      </motion.a>
+                      {
+                        changingBookmarkState && resource.id === itemToChangeBookmarkState
+                          ? <div role="status" className="inline-flex items-center justify-center p-2">
+                            <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                            <span className="sr-only">Changing...</span>
+                          </div>
+                          : <motion.button
+                            whileHover={{ scale: 1.2 }}
+                            whileTap={{ scale: 0.8 }}
+                            onClick={!user ? () => navigate('/auth#login') : () => handleBookmark(resource)}
+                            className={`rounded-full p-2 ${isBookmarked(resource.id)
+                              ? 'text-yellow-500 bg-yellow-100'
+                              : 'text-gray-400 bg-gray-100'
+                              } transition-all duration-200`}
+                          >
+                            <FiBookmark
+                              className={`w-5 h-5 ${isBookmarked(resource.id) ? 'fill-current' : ''}`}
+                            />
+                          </motion.button>
+                      }
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <motion.a
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      href={resource.driveLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-md inline-block transition-all duration-200 shadow-md"
-                    >
-                      View Resource
-                    </motion.a>
-                    {
-                      changingBookmarkState && resource.id === itemToChangeBookmarkState
-                        ? <div role="status" className="inline-flex items-center justify-center p-2">
-                          <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                          <span className="sr-only">Changing...</span>
-                        </div>
-                        : <motion.button
-                          whileHover={{ scale: 1.2 }}
-                          whileTap={{ scale: 0.8 }}
-                          onClick={!user ? () => navigate('/auth#login') : () => handleBookmark(resource)}
-                          className={`rounded-full p-2 ${isBookmarked(resource.id)
-                            ? 'text-yellow-500 bg-yellow-100'
-                            : 'text-gray-400 bg-gray-100'
-                            } transition-all duration-200`}
-                        >
-                          <FiBookmark
-                            className={`w-5 h-5 ${isBookmarked(resource.id) ? 'fill-current' : ''}`}
-                          />
-                        </motion.button>
-                    }
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -6,6 +6,7 @@ export interface UserProfile {
   avatarUrl: string;
   gender?: 'male' | 'female' | 'other' | 'prefer not to say' | '';
   branch?: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical' | '';
+  semester?: number;
   year?: 'SE' | 'TE' | 'BE' | '';
   collegeName?: string | '';
   createdAt: string;

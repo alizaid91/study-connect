@@ -12,6 +12,7 @@ export interface QuickFilter {
         paperType: string;
         subjectName: string;
         subjectCode: string;
+        isReadyMade: boolean;
     };
 }
 
@@ -36,13 +37,36 @@ class PapersService {
                 pattern: d.data().pattern,
                 paperType: d.data().paperType,
                 subjectName: d.data().subjectName,
-                subjectCode: d.data().subjectCode
+                subjectCode: d.data().subjectCode,
+                isReadyMade: d.data().isReadyMade
             }
         })) as QuickFilter[];
     }
 
     async saveQuickFilter(filterData: Omit<QuickFilter['values'], 'id'> & { userId: string }) {
         return await addDoc(collection(db, 'quickFilters'), filterData);
+    }
+
+    async saveReadyMadeFilters(filterData: Omit<QuickFilter['values'], 'id'>) {
+        return await addDoc(collection(db, 'readyMadeFilters'), filterData);
+    }
+
+    async getReadyMadeFilters(branch: string, year: string, semester: number) {
+        const q = query(collection(db, 'readyMadeFilters'), where('branch', '==', branch), where('year', '==', year), where('semester', '==', parseInt(semester.toString())));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({
+            id: d.id,
+            values: {
+                branch: d.data().branch,
+                year: d.data().year,
+                semester: d.data().semester,
+                pattern: d.data().pattern,
+                paperType: d.data().paperType,
+                subjectName: d.data().subjectName,
+                subjectCode: d.data().subjectCode,
+                isReadyMade: d.data().isReadyMade
+            }
+        })) as QuickFilter[];
     }
 
     async deleteQuickFilter(filterId: string) {
