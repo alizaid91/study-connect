@@ -5,10 +5,8 @@ import { UserProfile } from '../../types/user';
 interface AuthState {
   user: {
     uid: string;
-    email: string | null;
-    displayName: string | null;
   } | null;
-  userProfile: Partial<UserProfile>;
+  profile: UserProfile | null;
   loading: boolean;
   error: string | null;
 }
@@ -17,11 +15,16 @@ interface AuthState {
 const loadInitialState = (): AuthState => {
   const savedState = localStorage.getItem('authState');
   if (savedState) {
-    return JSON.parse(savedState);
+    return {
+      user: JSON.parse(savedState),
+      profile: null,
+      loading: false,
+      error: null,
+    };
   }
   return {
     user: null,
-    userProfile: {},
+    profile: null,
     loading: false,
     error: null,
   };
@@ -37,18 +40,15 @@ const authSlice = createSlice({
       if (action.payload) {
         state.user = {
           uid: action.payload.uid,
-          email: action.payload.email,
-          displayName: action.payload.displayName,
         };
       } else {
         state.user = null;
       }
       // Save to localStorage
-      localStorage.setItem('authState', JSON.stringify(state));
+      localStorage.setItem('authState', JSON.stringify(state.user));
     },
-    setUserProfile: (state, action: PayloadAction<Partial<UserProfile>>) => {
-      state.userProfile = action.payload;
-      localStorage.setItem('authState', JSON.stringify(state));
+    setProfile: (state, action: PayloadAction<UserProfile>) => {
+      state.profile = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -60,10 +60,13 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.error = null;
+      state.profile = null;
       localStorage.removeItem('authState');
+      localStorage.removeItem('activeSessionId');
+      localStorage.removeItem('selectedBoardId');
     },
   },
 });
 
-export const { setUser, setUserProfile, setLoading, setError, logout } = authSlice.actions;
+export const { setUser, setProfile, setLoading, setError, logout } = authSlice.actions;
 export default authSlice.reducer; 

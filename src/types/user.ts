@@ -11,6 +11,14 @@ export interface UserProfile {
   collegeName?: string | '';
   createdAt: string;
   updatedAt: string;
+  role: 'free' | 'premium';
+  aiCredits: number;
+  aiPromptUsage: {
+    date: string;
+    count: number;
+  };
+  boardCount: number;
+  chatSessionCount: number;
 }
 
 export const DEFAULT_AVATAR = {

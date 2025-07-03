@@ -256,10 +256,10 @@ const Resources: React.FC = () => {
             exit={{ opacity: 0, height: 0 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-semibold mb-4 text-gray-700 flex flex-col justify-center sm:flex-row sm:items-center sm:justify-start">
+            <h2 className="text-xl font-semibold mb-4 text-gray-700 flex flex-col justify-center sm:flex-row sm:items-center sm:justify-start ml-4">
               <div className='flex items-center'><FiFilter className="mr-2" /> <span>Quick Filters</span></div> <span className='text-xs text-gray-500 ml-2 mt-1'>(Click to apply and drag to reorder)</span>
             </h2>
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
               {resourceQuickFilters.map((qf, idx) => (
                 <motion.div
                   key={qf.id}
@@ -274,7 +274,7 @@ const Resources: React.FC = () => {
                     handleApplyQuickFilter(qf);
                     resourcesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  className="bg-white shadow-lg rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab transition-all duration-200 hover:shadow-xl border-l-4 border-indigo-500"
+                  className="bg-white shadow-lg rounded-l-md rounded-r-3xl p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-grab transition-all duration-200 hover:shadow-xl border-l-4 border-indigo-500"
                   whileHover={{ y: -5 }}
                 >
                   <div className="flex flex-col gap-1 text-sm text-gray-700">
@@ -308,7 +308,7 @@ const Resources: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
-        className="bg-white rounded-lg shadow-lg p-6 mb-8 border border-gray-100"
+        className="bg-white rounded-3xl shadow-lg p-6 mb-8 border border-gray-100"
       >
         <div className={`flex justify-between items-center ${isFilterExpanded && 'mb-4'}`}>
           <h2 className="text-xl font-semibold text-gray-700 flex items-center">
@@ -502,7 +502,7 @@ const Resources: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                  className="bg-white rounded-lg shadow-md overflow-hidden relative group"
+                  className="bg-white rounded-b-3xl shadow-md overflow-hidden relative group"
                 >
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-purple-600"></div>
                   <div className="p-6 h-full flex flex-col justify-between">

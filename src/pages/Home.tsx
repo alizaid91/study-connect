@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { FaFileAlt, FaBook, FaTasks, FaTachometerAlt, FaBookmark, FaQuestionCircle, FaPlay } from 'react-icons/fa';
+import { FaFileAlt, FaBook, FaTasks, FaTachometerAlt, FaBookmark, FaQuestionCircle, FaPlay, FaRobot } from 'react-icons/fa';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import heroImage from '../assets/hero-image.svg';
 import featureImage1 from '../assets/feature-1.svg';
 import featureImage2 from '../assets/feature-2.svg';
 import featureImage3 from '../assets/feature-3.svg';
+import comingSoonImage from '../assets/Demo_banner.png';
 
 const Home = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -27,6 +28,12 @@ const Home = () => {
       icon: FaBook
     },
     {
+      title: 'AI Assistant',
+      description: 'AI Assistant built for students — trained on academic content to give accurate, up-to-date answers for your study questions.',
+      path: '/ai-assistant',
+      icon: FaRobot
+    },
+    {
       title: 'Task Management',
       description: 'Stay organized with our smart task management system for better time management.',
       path: '/tasks',
@@ -43,7 +50,7 @@ const Home = () => {
       description: 'Save and organize your favorite papers and resources for quick access.',
       path: '/bookmarks',
       icon: FaBookmark
-    }
+    },
   ];
 
   const statistics = [
@@ -61,12 +68,17 @@ const Home = () => {
     {
       title: 'Access Resources',
       description: 'Browse through our curated collection of study materials and resources.',
-      videoId: 'https://www.youtube.com/'
+      videoId: ''
     },
     {
       title: 'Manage Tasks',
       description: 'Create and organize your study tasks with our intuitive task management system.',
-      videoId: 'https://www.youtube.com/'
+      videoId: ''
+    },
+    {
+      title: 'AI Assistant',
+      description: 'Get personalized study recommendations and AI-powered study tips to help you stay on track.',
+      videoId: ''
     }
   ];
 
@@ -92,6 +104,14 @@ const Home = () => {
       answer: "Yes! On the PYQs page, each paper card has an 'Add to Tasks' button. Clicking it opens a modal where you can set details like priority and due date before adding it to your task board."
     },
     {
+      question: 'What is Study Connect AI Assistant?',
+      answer: 'Study Connect AI Assistant is built especially for students. It is trained on academic content and your syllabus, so it can give you accurate and up-to-date answers to your study questions. Just ask anything — and get clear explanations, instantly.'
+    },
+    {
+      question: 'What type of questions can I ask?',
+      answer: 'You can ask about any academic topic — including concepts from your syllabus, exam-related questions, coding, science, and more.'
+    },
+    {
       question: "Can I create multiple task lists on Task Borad?",
       answer: "Yes, you can create any number of task lists and organize your task efficeintly."
     },
@@ -99,10 +119,6 @@ const Home = () => {
       question: "How are the resources organized?",
       answer: "The Resources page groups study materials by category and type. You can use the filter panel to narrow down your search by branch, year, and subject. Each resource card shows key information and provides direct access to the material."
     },
-    {
-      question: "What features does the Dashboard provide?",
-      answer: "The Dashboard gives you a complete overview of your academic progress with quick access to recent papers, pending tasks, and saved resources. You can track your study progress, see upcoming deadlines, and get personalized recommendations based on your study patterns."
-    }
   ];
 
   const toggleFaq = (index: number) => {
@@ -116,7 +132,7 @@ const Home = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="mx-4 rounded-lg text-center py-20 relative overflow-hidden"
+        className="mx-4 rounded-3xl text-center py-16 relative overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%)',
         }}
@@ -165,6 +181,23 @@ const Home = () => {
           <img src={heroImage} alt="Hero Illustration" className="w-full h-full object-contain" />
         </motion.div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mb-4"
+        >
+          <Link
+            to="/ai-assistant"
+            className="inline-flex items-center bg-gray-900/40 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mx-3 sm:mx-0 text-white hover:bg-gray-800/60 transition-colors shadow-lg"
+          >
+            <span className="bg-rose-500 text-white rounded-full px-3 py-1 text-xs font-bold mr-2 sm:mr-3 shadow-md">
+              NEW
+            </span>
+            <span className="font-bold text-xs">AI Assistant - Your Superhuman tutor</span>
+          </Link>
+        </motion.div>
+
         <div className="relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 max-w-[650px] mx-auto px-4 sm:px-0">
             {user ? 'Welcome Back!' : 'Ace Engineering with Papers, Resources & Smart Tasks Board.'}
@@ -176,14 +209,14 @@ const Home = () => {
           </p>
           {!user ? (
             <motion.div
-              className='flex items-center justify-center space-x-4 md:space-x-6 mb-8'
+              className='flex flex-col mx-6 gap-2 sm:gap-6 sm:flex-row sm:items-center sm:justify-center sm:mx-0'
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}>
                 <Link
                   to="/auth#login"
-                  className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-lg relative overflow-hidden"
+                  className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-3xl relative overflow-hidden w-full"
                   style={{
                     background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -223,7 +256,7 @@ const Home = () => {
                 whileTap={{ scale: 0.95 }}>
                 <Link
                   to="/auth#signup"
-                  className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-lg relative overflow-hidden"
+                  className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-3xl relative overflow-hidden w-full"
                   style={{
                     background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -266,7 +299,7 @@ const Home = () => {
             >
               <Link
                 to="/dashboard"
-                className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-lg relative overflow-hidden"
+                className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-3xl relative overflow-hidden"
                 style={{
                   background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -330,7 +363,7 @@ const Home = () => {
               >
                 <Link
                   to={path}
-                  className="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex flex-col items-center relative overflow-hidden group"
+                  className="h-full p-6 bg-white rounded-3xl shadow-xl hover:shadow-lg transition-all duration-300 flex flex-col items-center relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-primary-100 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                   <div className="bg-primary-50 p-4 rounded-full mb-4">
@@ -391,7 +424,7 @@ const Home = () => {
           <h2 className="text-3xl font-bold text-center text-gray-900">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {howItWorks.map((step, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-md">
+              <div key={index} className="bg-white p-6 rounded-3xl shadow-md">
                 <div className="flex items-center justify-center mb-4">
                   <div className="bg-primary-50 p-4 rounded-full">
                     <FaPlay className="text-primary-500" size={24} />
@@ -399,8 +432,12 @@ const Home = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-3 text-center">{step.title}</h3>
                 <p className="text-gray-600 text-center mb-4">{step.description}</p>
-                <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
-                  <iframe width="100%" height="315" src={step.videoId} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+                <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden border-2 border-gary-200">
+                  {step.videoId ? (
+                    <iframe width="100%" height="315" src={step.videoId} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+                  ) : (
+                    <img src={comingSoonImage} alt="Feature 1" className="h-[315px] w-full object-cover" />
+                  )}
                 </div>
               </div>
             ))}
@@ -480,7 +517,7 @@ const Home = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="mx-4 text-center py-16 bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg relative overflow-hidden"
+          className="mx-4 text-center py-16 bg-gradient-to-r from-primary-50 to-primary-100 rounded-3xl relative overflow-hidden"
         >
           {/* Lighter Lightning Border Animation */}
           <motion.div
@@ -525,7 +562,7 @@ const Home = () => {
             >
               <Link
                 to="/auth"
-                className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-lg relative overflow-hidden"
+                className="inline-block px-8 py-3 text-lg font-semibold text-white rounded-3xl relative overflow-hidden"
                 style={{
                   background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',

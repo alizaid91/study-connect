@@ -80,15 +80,10 @@ const Dashboard = () => {
       variants={containerVariants}
     >
       <motion.div
-        className="px-2 flex justify-between items-center"
+        className="text-center"
         variants={itemVariants}
       >
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="flex space-x-4">
-          <Link to="/tasks" className="btn btn-primary">
-            Add Task
-          </Link>
-        </div>
       </motion.div>
 
       {/* Quick Stats */}
@@ -97,7 +92,7 @@ const Dashboard = () => {
         variants={containerVariants}
       >
         <motion.div
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
         >
@@ -115,7 +110,7 @@ const Dashboard = () => {
         </motion.div>
 
         <motion.div
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
         >
@@ -133,7 +128,7 @@ const Dashboard = () => {
         </motion.div>
 
         <motion.div
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
         >
@@ -151,7 +146,7 @@ const Dashboard = () => {
         </motion.div>
 
         <motion.div
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
         >
@@ -169,7 +164,7 @@ const Dashboard = () => {
         </motion.div>
 
         <motion.div
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
         >
@@ -187,7 +182,7 @@ const Dashboard = () => {
         </motion.div>
 
         <motion.div
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
           variants={itemVariants}
           whileHover={{ y: -5 }}
         >
@@ -207,7 +202,7 @@ const Dashboard = () => {
 
       {/* Bookmarks */}
       <motion.div
-        className="bg-white rounded-lg shadow-md p-6"
+        className="bg-white rounded-3xl shadow-md p-6"
         variants={itemVariants}
         whileHover={{ y: -5 }}
       >
@@ -249,7 +244,7 @@ const Dashboard = () => {
 
       {/* Recent Tasks */}
       <motion.div
-        className="bg-white rounded-lg shadow-md p-6"
+        className="bg-white rounded-3xl shadow-md p-6"
         variants={itemVariants}
         whileHover={{ y: -5 }}
       >
@@ -308,7 +303,7 @@ const Dashboard = () => {
 
       {/* Recent Resources */}
       <motion.div
-        className="bg-white rounded-lg shadow-md p-6"
+        className="bg-white rounded-3xl shadow-md p-6"
         variants={itemVariants}
         whileHover={{ y: -5 }}
       >

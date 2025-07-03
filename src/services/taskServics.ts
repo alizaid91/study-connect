@@ -4,6 +4,16 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Board, List, Task, TaskForm } from '../types/content';
+import { authService } from './authService';
+import { store } from '../store/index';
+import { UserProfile } from '../types/user';
+
+let profile: UserProfile | null = null;
+
+store.subscribe(() => {
+    profile = store.getState().auth.profile as UserProfile;
+});
+
 
 export const listenToBoards = (userId: string, onChange: (boards: Board[]) => void, onError: () => void) => {
     const q = query(collection(db, 'boards'), where('userId', '==', userId));
@@ -43,6 +53,13 @@ export const createDefaultBoardIfNeeded = async (userId: string): Promise<string
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         });
+
+        if (profile) {
+            await authService.updateUserProfile(userId, {
+                ...profile,
+                boardCount: profile.boardCount + 1
+            });
+        }
 
         return boardRef.id;
     } else {
@@ -87,8 +104,8 @@ export const listenToListsAndTasks = (
                 id: doc.id,
                 ...data,
                 position: typeof data.position === 'number' ? data.position : 0,
-                createdAt: data.createdAt || new Date().toISOString(),
-                updatedAt: data.updatedAt || new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
         }) as Task[];
         onTasks(tasks);
@@ -184,7 +201,7 @@ export const deleteListWithTasks = async (listId: string) => {
 };
 
 // Board Services
-export const deleteBoardWithContent = async (boardId: string) => {
+export const deleteBoardWithContent = async (boardId: string, userId: string) => {
     // Get all lists
     const listsQuery = query(collection(db, 'lists'), where('boardId', '==', boardId));
     const listsSnapshot = await getDocs(listsQuery);
@@ -198,6 +215,13 @@ export const deleteBoardWithContent = async (boardId: string) => {
 
     // Delete the board
     batch.delete(doc(db, 'boards', boardId));
+
+    if (profile) {
+        await authService.updateUserProfile(userId, {
+            ...profile,
+            boardCount: profile.boardCount - 1
+        });
+    }
 
     // Delete all lists
     listsSnapshot.docs.forEach(listDoc => {
@@ -214,18 +238,17 @@ export const deleteBoardWithContent = async (boardId: string) => {
 };
 
 export const saveBoard = async (title: string, userId: string, boardsLength: number, editingBoard?: Board) => {
-    const timestamp = new Date().toISOString();
 
     if (editingBoard) {
-        return updateDoc(doc(db, 'boards', editingBoard.id), { title, updatedAt: timestamp });
+        return updateDoc(doc(db, 'boards', editingBoard.id), { title });
     } else {
         const boardRef = await addDoc(collection(db, 'boards'), {
             title,
             userId,
             isDefault: false,
             position: boardsLength + 1,
-            createdAt: timestamp,
-            updatedAt: timestamp
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         });
 
         await addDoc(collection(db, 'lists'), {
@@ -233,9 +256,16 @@ export const saveBoard = async (title: string, userId: string, boardsLength: num
             boardId: boardRef.id,
             userId,
             position: 0,
-            createdAt: timestamp,
-            updatedAt: timestamp
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         });
+
+        if (profile) {
+            await authService.updateUserProfile(userId, {
+                ...profile,
+                boardCount: profile.boardCount + 1
+            });
+        }
 
         return boardRef.id;
     }

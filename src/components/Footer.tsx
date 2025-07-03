@@ -9,8 +9,9 @@ import {
     FiClipboard,
     FiGrid,
     FiBookmark,
-    FiShield
+    FiShield,
 } from 'react-icons/fi';
+import { FaRobot } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import logo from '../assets/logo.png';
 import { RootState } from '../store';
@@ -62,6 +63,11 @@ const Footer = () => {
             name: 'Tasks',
             icon: FiClipboard,
             path: '/tasks'
+        },
+        {
+            name: 'AI Assistant',
+            icon: FaRobot,
+            path: '/ai-assistant'
         },
         {
             name: 'Dashboard',

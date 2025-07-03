@@ -16,7 +16,7 @@ interface BoardsOverviewProps {
 }
 
 const BoardsOverview = ({ boards, onSelectBoard }: BoardsOverviewProps) => {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, profile } = useSelector((state: RootState) => state.auth);
 
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
@@ -63,7 +63,7 @@ const BoardsOverview = ({ boards, onSelectBoard }: BoardsOverviewProps) => {
     setDeletingBoard(true);
     setDeleteIndex(boardId);
     try {
-      await deleteBoardWithContent(boardId);
+      await deleteBoardWithContent(boardId, user.uid);
     } catch (error) {
       console.error('Error deleting board:', error);
     } finally {
@@ -150,11 +150,11 @@ const BoardsOverview = ({ boards, onSelectBoard }: BoardsOverviewProps) => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {boards.map((board, index) => (
-            <div key={board.id} className="relative group">
+            <div key={board.id} className="relative group  rounded-xl overflow-hidden">
               <div className={`absolute z-50 inset-0 bg-white/70 ${deletingBoard && deleteIndex === board.id ? 'flex' : 'hidden'} items-center justify-center text-red-600 text-md font-bold`}>Deleting...</div>
               <motion.div
                 whileHover={{ y: -5 }}
-                className={`bg-gradient-to-br ${getRandomGradient(index)} h-48 rounded-lg shadow-md flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer`}
+                className={`bg-gradient-to-br ${getRandomGradient(index)} h-48 shadow-md flex flex-col overflow-hiddentransition-all duration-300 cursor-pointer`}
                 onClick={() => handleBoardSelection(board.id)}
               >
                 <div className="flex-1 p-6 flex flex-col justify-between">
@@ -218,7 +218,7 @@ const BoardsOverview = ({ boards, onSelectBoard }: BoardsOverviewProps) => {
 
           <motion.div
             whileHover={{ y: -5 }}
-            className="border-2 border-dashed border-gray-300 h-48 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors duration-300 bg-white"
+            className={`${deletingBoard ? 'pointer-events-none' : ''} border-2 border-dashed border-gray-300 h-48 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors duration-300 bg-white`}
             onClick={handleCreateBoard}
           >
             <div className="bg-gray-100 p-3 rounded-full mb-3">

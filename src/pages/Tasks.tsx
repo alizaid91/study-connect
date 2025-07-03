@@ -26,7 +26,7 @@ const Tasks = () => {
       user.uid,
       (fetchedBoards) => {
         if (!mounted) return;
-        createDefaultBoardIfNeeded(user.uid).then((data) => {
+        createDefaultBoardIfNeeded(user.uid).then(() => {
           dispatch(setBoards(fetchedBoards));
           setIsLoading(false);
         })

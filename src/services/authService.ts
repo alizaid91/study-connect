@@ -12,8 +12,10 @@ import {
     updatePassword,
     sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
+import { setProfile } from '../store/slices/authSlice';
+import { store } from '../store/index';
 
 export interface AuthFormData {
     email: string;
@@ -21,6 +23,8 @@ export interface AuthFormData {
     confirmPassword?: string;
     fullName?: string;
 }
+
+const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
 class AuthService {
     async signInWithEmail(email: string, password: string) {
@@ -45,6 +49,14 @@ class AuthService {
             branch: '',
             year: '',
             collegeName: '',
+            role: 'free',
+            aiCredits: 0,
+            aiPromptUsage: {
+                date: '',
+                count: 0,
+            },
+            boardCount: 0,
+            chatSessionCount: 0,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -69,6 +81,14 @@ class AuthService {
                 fullName: user.displayName || '',
                 username: user.email?.split('@')[0] || '',
                 avatarUrl: user.photoURL || DEFAULT_AVATAR.male,
+                role: 'free',
+                aiCredits: 0,
+                aiPromptUsage: {
+                    date: '',
+                    count: 0,
+                },
+                boardCount: 0,
+                chatSessionCount: 0,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
@@ -95,22 +115,77 @@ class AuthService {
         return null;
     }
 
-    async updateUserProfile(userId: string, profileData: Partial<UserProfile>) {
+    async handleSubscribe(userId: string, email: string, fullName: string) {
+        const res = await fetch(`https://91fb-27-59-102-2.ngrok-free.app/api/razorpay/create-subscription`, {
+            method: 'POST',
+            body: JSON.stringify({ userId: userId }),
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        const { subscriptionId, razorpayKey } = await res.json();
+
+        const options = {
+            key: razorpayKey,
+            subscription_id: subscriptionId,
+            name: 'Study Connect',
+            description: 'Premium Plan',
+            handler: function (response: any) {
+                alert('Payment success! You will be upgraded shortly.');
+            },
+            prefill: {
+                email: email,
+                name: fullName,
+            },
+            notes: {
+                userId: userId,
+            },
+            theme: {
+                color: '#6366f1',
+            },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+    };
+
+
+    listenUserProfile(userId: string) {
+        const userDocRef = doc(db, 'users', userId);
+        return onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const profile = docSnap.data() as UserProfile;
+                store.dispatch(setProfile(profile));
+            } else {
+                console.warn(`Profile not found for userId: ${userId}`);
+            }
+        });
+    }
+
+    async updateUserProfile(userId: string, profileData: UserProfile) {
         const updatedProfile = {
             ...profileData,
             updatedAt: new Date().toISOString(),
         };
-        await updateDoc(doc(db, 'users', userId), updatedProfile);
-        return updatedProfile;
+        updateDoc(doc(db, 'users', userId), updatedProfile);
     }
 
-    async updateUserAvatar(userId: string, imageUrl: string) {
-        const updatedProfile = {
-            avatarUrl: imageUrl,
-            updatedAt: new Date().toISOString(),
-        };
-        await updateDoc(doc(db, 'users', userId), updatedProfile);
-        return updatedProfile;
+    async updateUserPassword(email: string, oldPassword: string, newPassword: string) {
+        if (!auth.currentUser) {
+            throw new Error('No authenticated user.');
+        }
+        const credential = EmailAuthProvider.credential(email, oldPassword);
+        try {
+            await reauthenticateWithCredential(auth.currentUser, credential);
+            await updatePassword(auth.currentUser, newPassword);
+        } catch (error: any) {
+            if (error.code === 'auth/wrong-password') {
+                throw new Error('Old password is incorrect.');
+            }
+            if (error.code === 'auth/weak-password') {
+                throw new Error('New password is too weak.');
+            }
+            throw new Error(error.message || 'Failed to update password.');
+        }
     }
 
     async addFieldToCollection(collectionName: string, newFieldName: string, defaultValue: any) {
@@ -133,30 +208,35 @@ class AuthService {
         }
     }
 
-    async updateUserPassword(email: string, oldPassword: string, newPassword: string) {
-        if (!auth.currentUser) {
-            throw new Error('No authenticated user.');
-        }
-        const credential = EmailAuthProvider.credential(email, oldPassword);
-        try {
-            await reauthenticateWithCredential(auth.currentUser, credential);
-            await updatePassword(auth.currentUser, newPassword);
-        } catch (error: any) {
-            if (error.code === 'auth/wrong-password') {
-                throw new Error('Old password is incorrect.');
-            }
-            if (error.code === 'auth/weak-password') {
-                throw new Error('New password is too weak.');
-            }
-            throw new Error(error.message || 'Failed to update password.');
-        }
-    }
-
     async sendPasswordResetEmail(email: string) {
         try {
             await firebaseSendPasswordResetEmail(auth, email);
         } catch (error: any) {
             throw new Error(error.message || 'Failed to send password reset email.');
+        }
+    }
+
+    async updateExistingUsersWithNewFields() {
+        const usersCollection = collection(db, 'users');
+        const snapshot = await getDocs(usersCollection);
+
+        for (const userDoc of snapshot.docs) {
+            const userRef = doc(db, 'users', userDoc.id);
+            try {
+                await updateDoc(userRef, {
+                    role: 'free',               // default role for existing users
+                    aiCredits: 0,               // no extra credits initially
+                    aiPromptUsage: {
+                        date: '',                 // will be set when first AI prompt is used
+                        count: 0,
+                    },
+                    boardCount: 0,              // you can adjust based on existing data if needed
+                    chatSessionCount: 0,        // you can adjust based on existing data if needed
+                });
+                console.log(`Updated user: ${userDoc.id}`);
+            } catch (err) {
+                console.error(`Failed to update user ${userDoc.id}:`, err);
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_AVATAR } from '../types/user';
 import { authService } from '../services/authService';
 import logo from '../assets/logo.png';
+import proBadge from '../assets/Pro_logo.png'
 import {
   FiBook,
   FiBookmark,
@@ -17,40 +18,22 @@ import {
   FiSettings,
   FiShield,
   FiFileText,
-  FiMessageSquare
+  FiMessageSquare,
+  FiCreditCard
 } from 'react-icons/fi';
-import { setSelectedBoardId } from '../store/slices/taskSlice';
-import { logoutAdmin, setAdmin } from '../store/slices/adminSlice';
+import { logoutAdmin } from '../store/slices/adminSlice';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ avatarUrl: string }>({ avatarUrl: '' });
   const menuRef = useRef<HTMLDivElement>(null);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAdmin } = useSelector((state: RootState) => state.admin);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, profile } = useSelector((state: RootState) => state.auth);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Fetch user profile
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (user) {
-        try {
-          const profile = await authService.getUserProfile(user.uid);
-          if (profile) {
-            setUserProfile({ avatarUrl: profile.avatarUrl });
-          }
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-        }
-      }
-    };
-    fetchUserProfile();
-  }, [user]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -75,25 +58,10 @@ const Navbar = () => {
     setIsAvatarMenuOpen(false);
   }, [location]);
 
-  useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange(async (user) => {
-      if (user) {
-        const idTokenResult = await user.getIdTokenResult();
-        if (idTokenResult.claims.role === 'admin') {
-          dispatch(setAdmin(true));
-        }
-      } else {
-        dispatch(logout());
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
   const handleUserLogout = async () => {
     try {
       await authService.signOut();
       dispatch(logout());
-      dispatch(setSelectedBoardId(null));
       dispatch(logoutAdmin());
       navigate('/');
     } catch (error) {
@@ -109,9 +77,14 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-2 relative">
               <img src={logo} alt="Logo" className="h-8 w-auto" />
               <span className="text-xl font-bold text-gray-800">Study Connect</span>
+              {
+                profile?.role === 'premium' && (
+                  <img src={proBadge} alt="Pro Badge" className="absolute left-[95%] top-1/2 -translate-y-1/2 w-12 object-cover mt-[2px]" />
+                )
+              }
             </Link>
           </div>
 
@@ -145,20 +118,27 @@ const Navbar = () => {
               <FiClipboard className="h-4 w-4" />
               <span>Tasks</span>
             </Link>
-            {/* <Link
+            <Link
               to="/ai-assistant"
               className={`text-sm font-medium flex items-center space-x-1 ${isActive('/ai-assistant') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
               title="AI Assistant"
             >
-              <FiMessageSquare className="h-5 w-5" />
+              <FiMessageSquare className="h-4 w-4" />
               <span>AI Assistant</span>
-            </Link> */}
+            </Link>
             <Link
               to="/bookmarks"
               className={`text-sm font-medium flex items-center space-x-1 ${isActive('/bookmarks') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
             >
               <FiBookmark className="h-4 w-4" />
               <span>Bookmarks</span>
+            </Link>
+            <Link
+              to="/pricing"
+              className={`text-sm font-medium flex items-center space-x-1 ${isActive('/pricing') ? 'text-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              <FiCreditCard className="h-4 w-4" />
+              <span>Pricing</span>
             </Link>
             {isAdmin && (
               <Link
@@ -217,11 +197,11 @@ const Navbar = () => {
                   onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)}
                   className="flex items-center focus:outline-none"
                 >
-                  <div className="w-8 h-8 rounded-full overflow-hidden">
+                  <div className={`w-9 h-9 p-[2px] rounded-full ${profile?.role === 'premium' ? 'bg-gradient-to-tr from-yellow-400 via-amber-500 to-orange-400 shadow-md shadow-yellow-500/40 animate-border-spin' : 'bg-blue-700'}`}>
                     <img
-                      src={userProfile.avatarUrl || DEFAULT_AVATAR.male}
+                      src={profile?.avatarUrl || DEFAULT_AVATAR.male}
                       alt="Profile"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-full"
                     />
                   </div>
                 </button>
@@ -332,7 +312,7 @@ const Navbar = () => {
                 <FiClipboard className="h-5 w-5" />
                 <span>Tasks</span>
               </Link>
-              {/* <Link
+              <Link
                 to="/ai-assistant"
                 className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/ai-assistant')
                   ? 'bg-primary-50 border-primary-500 text-primary-700'
@@ -342,7 +322,7 @@ const Navbar = () => {
               >
                 <FiMessageSquare className="h-5 w-5" />
                 <span>AI Assistant</span>
-              </Link> */}
+              </Link>
               <Link
                 to="/bookmarks"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -353,6 +333,17 @@ const Navbar = () => {
               >
                 <FiBookmark className="h-5 w-5" />
                 <span>Bookmarks</span>
+              </Link>
+              <Link
+                to="/pricing"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pricing')
+                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+              >
+                <FiCreditCard className="h-5 w-5" />
+                <span>Pricing</span>
               </Link>
               {isAdmin && (
                 <Link

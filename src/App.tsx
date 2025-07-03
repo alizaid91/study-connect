@@ -13,9 +13,15 @@ import Profile from './pages/Profile';
 import Bookmarks from './pages/Bookmarks';
 import Footer from './components/Footer';
 import NotFound from './pages/NotFound.tsx';
-// import AiAssistant from './pages/AiAssitant.tsx';
-import { useSelector } from 'react-redux';
+import AiAssistant from './pages/AiAssitant.tsx';
+import Pricing from './pages/Pricing.tsx';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from './store';
+import { logout } from './store/slices/authSlice.ts';
+import { authService } from './services/authService.ts';
+import { setAdmin } from './store/slices/adminSlice.ts';
+import { UserProfile } from './types/user.ts';
+import PremiumComingSoonModal from './components/PremiumComingSoon.tsx';
 
 // Separate component for scroll to top functionality
 const ScrollToTop = () => {
@@ -33,6 +39,47 @@ const ScrollToTop = () => {
 
 function App() {
   const { isAdmin } = useSelector((state: RootState) => state.admin);
+  const { user, profile } = useSelector((state: RootState) => state.auth);
+  const isOpen = useSelector((state: RootState) => state.globalPopups.isPremiumComingSoonOpen);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsubscribeProfile = authService.listenUserProfile(user.uid);
+    return () => {
+      unsubscribeProfile();
+    };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+
+    const today = new Date().toLocaleDateString('en-GB');
+
+    if (profile.aiPromptUsage?.date !== today) {
+      authService.updateUserProfile(user.uid, {
+        aiPromptUsage: {
+          date: today,
+          count: 0,
+        },
+      } as UserProfile);
+    }
+  }, [user?.uid, profile?.aiPromptUsage?.date]);
+
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChange(async (user) => {
+      if (user) {
+        const idTokenResult = await user.getIdTokenResult();
+        const isAdmin = idTokenResult.claims.role === 'admin';
+        dispatch(setAdmin(isAdmin));
+      } else {
+        dispatch(logout());
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />
@@ -53,6 +100,12 @@ function App() {
                 />
               )
             }
+            <Route
+              path='/pricing'
+              element={
+                <Pricing />
+              }
+            />
             <Route
               path="/dashboard"
               element={
@@ -97,15 +150,18 @@ function App() {
                 </PrivateRoute>
               }
             />
-            {/* <Route path="/ai-assistant" element={
+            <Route path="/ai-assistant" element={
               <PrivateRoute>
                 <AiAssistant />
               </PrivateRoute>
-            } /> */}
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />
+        <PremiumComingSoonModal
+          isOpen={isOpen}
+        />
       </div>
     </Router>
   );

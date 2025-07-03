@@ -5,6 +5,9 @@ import resourceReducer from './slices/resourceSlice';
 import adminReducer from './slices/adminSlice';
 import bookmarkReducer from './slices/bookmarkSlice';
 import papersReducer from './slices/papersSlice';
+import chatReducer from './slices/chatSlice';
+import globalPopupsReduces from './slices/globalPopups'
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -13,6 +16,8 @@ export const store = configureStore({
     admin: adminReducer,
     bookmarks: bookmarkReducer,
     papers: papersReducer,
+    chat: chatReducer,
+    globalPopups: globalPopupsReduces
   },
 });
 

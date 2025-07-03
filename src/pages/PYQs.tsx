@@ -36,7 +36,7 @@ const sortQuickFilters = (qf: QuickFilter[]) => {
 const PYQs: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, userProfile } = useSelector((state: RootState) => state.auth);
+  const { user, profile } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
   const { papers, loading, error } = useSelector((state: RootState) => state.papers);
   const { boards, lists, tasks } = useSelector((state: RootState) => state.tasks);
@@ -232,8 +232,8 @@ const PYQs: React.FC = () => {
     if (!user) return;
     const fetchQuickFilters = async () => {
       const filters = await papersService.getQuickFilters(user.uid);
-      if (user && userProfile?.semester != 0) {
-        const readyMadeFilters = await papersService.getReadyMadeFilters(userProfile?.branch as string, userProfile?.year as string, userProfile?.semester as number);
+      if (user && profile?.semester != 0) {
+        const readyMadeFilters = await papersService.getReadyMadeFilters(profile?.branch as string, profile?.year as string, profile?.semester as number);
 
         setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
       } else {
@@ -491,7 +491,7 @@ const PYQs: React.FC = () => {
           </div>
         )}
         {
-          user && userProfile?.semester == 0 && (
+          user && profile?.semester == 0 && (
             <div className={`flex items-center justify-between w-full h-full mb-8 bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow-md`}>
               <h2 className='text-md sm:text-xl font-semibold text-gray-700'>Complete your profile to access ready-made quick filters.</h2>
               <motion.button
@@ -513,8 +513,8 @@ const PYQs: React.FC = () => {
               exit={{ opacity: 0, height: 0 }}
               className="mb-8 overflow-hidden"
             >
-              <h2 className="text-xl font-semibold mb-4 text-gray-700 flex flex-col justify-center sm:flex-row sm:items-center sm:justify-start">
-                <div className='flex items-center'><FiFilter className="mr-2" /> <span>Quick Filters</span></div> <span className='text-xs text-gray-500 ml-2 mt-1'>(Click to apply and drag to reorder)</span>
+              <h2 className="text-xl font-semibold mb-4 text-gray-700 flex flex-col justify-center sm:flex-row sm:items-center sm:justify-start ml-4">
+                <div className='flex items-center'><FiFilter className="mr-2" /> <span>Quick Filters</span></div> <span className='text-xs text-gray-500 ml-2 mt-1'>(Click to apply)</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
                 {quickFilters.slice(0, showMoreQuickFilters ? quickFilters.length : window.innerWidth < 768 ? 2 : 4).map((qf, idx) => (
@@ -527,7 +527,7 @@ const PYQs: React.FC = () => {
                       handleApplyQuickFilter(qf);
                       pyqsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    className="bg-white shadow-lg rounded-lg p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-pointer transition-all duration-200 hover:shadow-xl border-l-4 border-blue-500"
+                    className="bg-white shadow-lg rounded-r-3xl rounded-l-md p-5 flex items-center justify-between min-w-[240px] space-x-4 cursor-pointer transition-all duration-200 hover:shadow-xl border-l-4 border-blue-500"
                   >
                     <div
                       className="flex flex-col gap-1 text-sm text-gray-700"
@@ -589,7 +589,7 @@ const PYQs: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
-        className="bg-white rounded-lg shadow-lg p-6 mb-8 border border-gray-100"
+        className="bg-white rounded-3xl shadow-lg p-6 mb-8 border border-gray-100"
       >
         <div className={`flex justify-between items-center ${isFilterExpanded && 'mb-4'}`}>
           <h2 className="text-xl font-semibold text-gray-700 flex items-center">
@@ -819,7 +819,7 @@ const PYQs: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                  className="bg-white rounded-lg shadow-md overflow-hidden relative group"
+                  className="bg-white rounded-b-3xl  shadow-md overflow-hidden relative group"
                 >
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
                   <div className="p-6">

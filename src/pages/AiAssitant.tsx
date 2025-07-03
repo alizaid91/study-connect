@@ -13,22 +13,25 @@ import Sidebar from '../components/AI-Assistant/Sidebar';
 import Message from '../components/AI-Assistant/Message';
 import PromptInput from '../components/AI-Assistant/PromptInput';
 import EmptyChatState from '../components/AI-Assistant/EmptyChatState';
-import { BiMenuAltLeft } from "react-icons/bi";
+import { GoSidebarCollapse } from "react-icons/go";
 import { IoMdArrowDown } from "react-icons/io";
 import { motion } from 'framer-motion';
+import NewSessionPopup from '../components/AI-Assistant/NewSessionPopup';
+import { authService } from '../services/authService';
+import ChatPromptLimitReached from '../components/AI-Assistant/ChatPromptLimitReached';
 
 const AiAssistant = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, profile } = useSelector((state: RootState) => state.auth);
   const { sessions, messages, activeSessionId, loading, error, loadingAi, loadingMessages } = useSelector((state: RootState) => state.chat);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [sessionActionLoading, setSessionActionLoading] = useState({
     creatingSession: false,
     deletingSession: false,
   })
+  const [isCreateSessionPopupOpen, setIsCreateSessionPopupOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,28 +60,12 @@ const AiAssistant = () => {
     }
   }, [activeSessionId, dispatch]);
 
-  // Detect if AI is responding (last message is from user and sendMessage is loading)
-  useEffect(() => {
-    if (!activeSessionId) {
-      setAiLoading(false);
-      return;
-    }
-    const msgs = messages[activeSessionId] || [];
-    if (msgs.length === 0) {
-      setAiLoading(false);
-      return;
-    }
-    // If last message is from user and loading is true, AI is responding
-    const lastMsg = msgs[msgs.length - 1];
-    setAiLoading(lastMsg.sender === 'user' && loadingAi);
-  }, [messages, activeSessionId, loadingAi]);
-
   useEffect(() => {
     const scrollDiv = messagesEndRef.current;
     if (scrollDiv) {
       scrollDiv.scrollTop = scrollDiv.scrollHeight;
     }
-  }, [messages, activeSessionId, aiLoading]);
+  }, [messages, activeSessionId]);
 
   const handleScroll = () => {
     if (messagesEndRef.current) {
@@ -98,16 +85,23 @@ const AiAssistant = () => {
   }, [messagesEndRef.current]);
 
   const handleSend = (input: string) => {
+    if (!user) return
     if (!input.trim() || !activeSessionId) return;
-    dispatch(sendMessage({ sessionId: activeSessionId, content: input }));
+    dispatch(sendMessage({ userId: user?.uid, sessionId: activeSessionId, content: input }));
   };
 
   const handleNewSession = async (newSessionTitle: string) => {
+    if (!profile) {
+      dispatch(setError('Profile not loaded yet'));
+      return;
+    }
     setSessionActionLoading({ ...sessionActionLoading, creatingSession: true });
     if (!user?.uid) return;
     const { chatService } = await import('../services/chatService');
     const sessionId = await chatService.createSession(user.uid, sessionList.length === 0 ? 'New Chat' : newSessionTitle);
+    await authService.updateUserProfile(user.uid, { ...profile, chatSessionCount: profile?.chatSessionCount as number + 1 });
     dispatch(setActiveSession(sessionId));
+    setIsCreateSessionPopupOpen(false);
     setIsSidebarCollapsed(window.innerWidth < 768);
     setSessionActionLoading({ ...sessionActionLoading, creatingSession: false });
   };
@@ -124,12 +118,17 @@ const AiAssistant = () => {
   };
 
   const handleDeleteSession = async (sessionId: string) => {
+    if (!profile) {
+      dispatch(setError('Profile not loaded yet'));
+      return;
+    }
     setSessionActionLoading({ ...sessionActionLoading, deletingSession: true });
     if (!user?.uid) return;
     const { chatService } = await import('../services/chatService');
     try {
 
       await chatService.deleteSession(sessionId);
+      await authService.updateUserProfile(user.uid, { ...profile, chatSessionCount: profile?.chatSessionCount as number - 1 });
       if (activeSessionId === sessionId) {
         const newSessionList = sessionList.filter((session) => session.id !== sessionId);
         if (newSessionList.length > 0) {
@@ -148,19 +147,7 @@ const AiAssistant = () => {
 
   const sessionList = Object.values(sessions);
   const currentMessages = activeSessionId ? messages[activeSessionId] || [] : [];
-
-  // Prepare messages for rendering, including a loading AI message if needed
-  const renderedMessages: (ChatMessage & { showLoading?: boolean })[] = [...currentMessages];
-  if (aiLoading && activeSessionId) {
-    renderedMessages.push({
-      id: 'ai-loading',
-      sessionId: activeSessionId,
-      sender: 'ai',
-      content: '',
-      timestamp: new Date().toISOString(),
-      showLoading: true,
-    });
-  }
+  const renderedMessages: ChatMessage[] = [...currentMessages];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -191,9 +178,9 @@ const AiAssistant = () => {
                   sessions={sessionList}
                   activeSessionId={activeSessionId}
                   onSelectSession={id => dispatch(setActiveSession(id))}
-                  onCreateSession={(value: string) => handleNewSession(value)}
                   onRenameSession={handleRenameSession}
                   onDeleteSession={handleDeleteSession}
+                  setIsCreateSessionPopupOpen={(value: boolean) => setIsCreateSessionPopupOpen(value)}
                   isCollapsed={isSidebarCollapsed}
                   setIsSidebarCollapsed={(value) => setIsSidebarCollapsed(value)}
                   sessionActionLoading={sessionActionLoading}
@@ -203,12 +190,12 @@ const AiAssistant = () => {
           )}
           <div className="relative flex-1 flex flex-col">
             {isSidebarCollapsed && !loading && sessionList.length > 0 && (
-              <div className='absolute top-3 left-3 z-10 bg-white rounded-full shadow-md hover:bg-gray-50 flex items-center justify-center'>
+              <div className='text-gary-900 absolute top-3 left-3 z-10 bg-gray-300/80 rounded-full'>
                 <button
                   onClick={toggleSidebar}
-                  className="p-1"
+                  className="p-2"
                 >
-                  <BiMenuAltLeft size={28} />
+                  <GoSidebarCollapse size={22} />
                 </button>
               </div>
             )}
@@ -217,7 +204,7 @@ const AiAssistant = () => {
             ) : (
               <>
                 <div className={`mx-auto flex-1 flex flex-col h-full relative w-full ${isSidebarCollapsed ? 'max-w-[320px] sm:max-w-[460px] md:max-w-2xl lg:max-w-5xl' : 'max-w-[320px] sm:max-w-[460px] md:max-w-[400px] lg:max-w-4xl'}`}>
-                  <div ref={messagesEndRef} style={{ marginBottom: `${inputRef.current?.scrollHeight}px` }} className="pb-4 w-full flex-1 overflow-y-auto bg-gray-50">
+                  <div ref={messagesEndRef} style={{ marginBottom: `${inputRef.current?.scrollHeight}px` }} className="w-full flex-1 overflow-y-auto bg-gray-50">
                     {error && <div className="text-red-500">{error}</div>}
                     {loadingMessages && (
                       <div className="flex justify-center items-center w-full min-h-full bg-gray-50">
@@ -228,42 +215,56 @@ const AiAssistant = () => {
                         </div>
                       </div>
                     )}
-                    {!loadingMessages && renderedMessages.length === 0 && (
+                    {!loadingMessages && renderedMessages.length === 0 && (profile?.aiPromptUsage?.count as number < (profile?.role === 'free' ? 10 : 50)) && (
                       <div className="flex justify-center items-center w-full min-h-full bg-gray-50">
                         <div className="text-gray-500">No messages yet. Start chatting!</div>
                       </div>
                     )}
-                    <div className='w-full'>
+                    <div className='pb-6'>
                       {renderedMessages.map((msg, idx) => (
                         <Message
-                          key={msg.id + (msg.showLoading ? '-loading' : '')}
+                          key={idx}
                           message={msg}
                           isUser={msg.sender === 'user'}
-                          showLoading={!!msg.showLoading}
+                          showLoading={msg.id === 'ai-streaming' && msg.content === ''}
                         />
                       ))}
                     </div>
-                    {!isAtBottom && (
-                      <div className='absolute bottom-36 left-1/2 transform -translate-x-1/2 w-10 h-10 flex justify-center items-center bg-white rounded-full shadow-md hover:bg-gray-50 cursor-pointer z-0'
+                  </div>
+                  <div className='w-full absolute bottom-0'>
+                    <div className={`${(messages && !isAtBottom) ? 'visible' : 'invisible'} pb-2 bg-white/0 flex w-full justify-center items-center`}>
+                      <div
                         onClick={() => {
                           messagesEndRef.current?.scrollTo({ behavior: 'smooth', top: messagesEndRef.current?.scrollHeight });
-                        }}>
-                        <IoMdArrowDown className='w-6 h-6' />
+                        }}
+                        className='cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center'>
+                        <IoMdArrowDown size={26} />
                       </div>
-                    )}
-                  </div>
-                  <div ref={inputRef} onFocus={window.innerWidth < 768 ? handleInputFocus : undefined} className="w-full absolute bottom-0 bg-white pb-2">
-                    <div className='w-full'>
-                      <PromptInput
-                        onSend={handleSend}
-                        disabled={!activeSessionId || loading || loadingAi}
-                        loading={loading || loadingAi}
-                        placeholder="Type your message..."
-                      />
                     </div>
-                    <div className="text-xs text-gray-400 mt-2 text-center">
-                      Press Enter to send, Shift + Enter for new line
-                    </div>
+                    {
+                      !loading && profile?.aiPromptUsage?.count as number === (profile?.role === 'free' ? 10 : 50) ? (
+                        <div ref={inputRef} className="w-full">
+                          <ChatPromptLimitReached
+                            usedPrompts={profile?.aiPromptUsage?.count as number}
+                            promptLimit={profile?.role === 'premium' ? 50 : 10}
+                            aiCredits={profile?.aiCredits as number}
+                            userPlan={profile?.role || 'free'}
+                          />
+                        </div>
+                      ) : !loading ? (
+                        <div ref={inputRef} onFocus={window.innerWidth < 768 ? handleInputFocus : undefined} className="w-full">
+                          <PromptInput
+                            onSend={handleSend}
+                            disabled={!activeSessionId || loading || loadingAi || loadingMessages}
+                            loading={loading || loadingAi}
+                            placeholder="Type your message..."
+                          />
+                          <div className="text-xs text-gray-400 mt-2 text-center">
+                            Press Enter to send, Shift + Enter for new line
+                          </div>
+                        </div>
+                      ) : null
+                    }
                   </div>
                 </div>
               </>
@@ -272,6 +273,12 @@ const AiAssistant = () => {
         </>
       )
       }
+      <NewSessionPopup
+        isOpen={isCreateSessionPopupOpen}
+        onClose={() => setIsCreateSessionPopupOpen(false)}
+        onAddSession={handleNewSession}
+        isSubmitting={sessionActionLoading.creatingSession}
+      />
     </div >
   );
 };

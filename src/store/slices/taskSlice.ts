@@ -30,7 +30,6 @@ const taskSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-
     // Board actions
     setBoards: (state, action: PayloadAction<Board[]>) => {
       state.boards = action.payload;

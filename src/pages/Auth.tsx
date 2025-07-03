@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setUser, logout, setUserProfile } from '../store/slices/authSlice';
+import { setUser, logout } from '../store/slices/authSlice';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import logo from '../assets/logo.png';
@@ -45,10 +45,6 @@ const Auth = () => {
           dispatch(setAdmin(true));
         }
         dispatch(setUser(user));
-        const userProfile = await authService.getUserProfile(user.uid);
-        if (userProfile) {
-          dispatch(setUserProfile(userProfile));
-        }
         navigate('/');
       } else {
         dispatch(logout());
@@ -99,7 +95,7 @@ const Auth = () => {
     setResetLoading(true);
     try {
       await authService.sendPasswordResetEmail(resetEmail);
-      setResetSuccess('Password reset email sent! Please check your inbox.');
+      setResetSuccess("We've sent you a password reset link. Please check your inbox and spam folder.");
     } catch (err: any) {
       setResetError(err.message || 'Failed to send password reset email.');
     } finally {
@@ -313,6 +309,7 @@ const Auth = () => {
                   id="resetEmail"
                   name="resetEmail"
                   type="email"
+                  placeholder='Enter your email'
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   value={resetEmail}

@@ -1,21 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { UserProfile, DEFAULT_AVATAR } from '../types/user';
+import { DEFAULT_AVATAR, UserProfile } from '../types/user';
 import { motion, AnimatePresence } from 'framer-motion';
 import Cropper from 'react-easy-crop';
 import { FiUser, FiEdit, FiSave, FiX, FiCheck, FiLock } from 'react-icons/fi';
+import { MdDataUsage } from "react-icons/md";
 import { authService } from '../services/authService';
-import { setUserProfile } from '../store/slices/authSlice';
+import UsageTracker from '../components/profile/UsageTracker';
 
 // Function to create image from canvas for cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
-    const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', (error) => reject(error));
-    image.setAttribute('crossOrigin', 'anonymous');
-    image.src = url;
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // important for CORS and canvas
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
   });
 
 // Function to get cropped image
@@ -31,38 +32,40 @@ const getCroppedImg = async (
     throw new Error('Could not create canvas context');
   }
 
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
   ctx.drawImage(
     image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
+    pixelCrop.x * scaleX,
+    pixelCrop.y * scaleY,
+    pixelCrop.width * scaleX,
+    pixelCrop.height * scaleY,
     0,
     0,
     pixelCrop.width,
     pixelCrop.height
   );
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
-        throw new Error('Canvas is empty');
+        reject(new Error('Canvas is empty'));
+        return;
       }
       resolve(blob);
     }, 'image/jpeg', 0.95);
   });
 };
 
+
 // Profile page
 const Profile = () => {
-  const dispatch = useDispatch();
-  const { user, userProfile } = useSelector((state: RootState) => state.auth);
-  const [profileUpdated, setProfileUpdated] = useState(false);
-  const [profile, setProfile] = useState<Partial<UserProfile>>({});
-  const [oldProfile, setOldProfile] = useState<Partial<UserProfile>>({});
+  const { user, profile, loading } = useSelector((state: RootState) => state.auth);
+  const [tempProfile, setTempProfile] = useState<UserProfile | null>(profile);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [updating, setUpdating] = useState(false);
@@ -70,7 +73,7 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState<'general' | 'security'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'usage'>('general');
 
   // Security tab state
   const [oldPassword, setOldPassword] = useState('');
@@ -88,39 +91,34 @@ const Profile = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [isProfileChanged, setIsProfileChanged] = useState(false);
 
-  // Fetch profile
   useEffect(() => {
-    if (userProfile) {
-      setProfile(userProfile);
-      setOldProfile(userProfile);
-    }
-  }, [userProfile]);
+    setTempProfile(profile);
+  }, [profile]);
+
+  useEffect(() => {
+    const handelProfileChange = () => {
+      if (!tempProfile) return false;
+      return JSON.stringify(tempProfile) !== JSON.stringify(profile);
+    };
+    setIsProfileChanged(handelProfileChange());
+  }, [tempProfile, profile])
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setProfile(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    setProfileUpdated(true);
+    setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
   };
 
-  // Check if profile is updated
-  useEffect(() => {
-    if (profileUpdated && JSON.stringify(profile) === JSON.stringify(oldProfile)) {
-      setProfileUpdated(false);
-    } else {
-      setProfileUpdated(true);
-    }
-  }, [profile])
-
   // Handle crop complete
-  const onCropComplete = useCallback((croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+  const onCropComplete = useCallback(
+    (_: any, croppedAreaPixels: { x: number; y: number; width: number; height: number }) => {
+      setCroppedAreaPixels(croppedAreaPixels);
+    },
+    []
+  );
 
   // Handle file select
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,8 +192,7 @@ const Profile = () => {
       const imageUrl = data.secure_url;
 
       // Update profile with new avatar URL
-      await authService.updateUserAvatar(user.uid, imageUrl);
-      setProfile(prev => ({ ...prev, avatarUrl: imageUrl }));
+      await authService.updateUserProfile(user.uid, { ...tempProfile, avatarUrl: imageUrl } as UserProfile);
       setSuccess('Avatar updated successfully');
       setShowCropper(false);
       setImageSrc(null);
@@ -215,8 +212,7 @@ const Profile = () => {
     if (!user) return;
     setUpdating(true);
     try {
-      await authService.updateUserProfile(user.uid, profile);
-      dispatch(setUserProfile(profile));
+      await authService.updateUserProfile(user.uid, tempProfile as UserProfile);
       setSuccess('Profile updated successfully');
     } catch (error: any) {
       setError('Failed to update profile');
@@ -241,7 +237,7 @@ const Profile = () => {
     }
     setSecurityLoading(true);
     try {
-      await authService.updateUserPassword(user.email || '', oldPassword, newPassword);
+      await authService.updateUserPassword(profile?.email || '', oldPassword, newPassword);
       setSecuritySuccess('Password updated successfully.');
       setOldPassword('');
       setNewPassword('');
@@ -259,7 +255,7 @@ const Profile = () => {
     setResetSuccess('');
     setResetLoading(true);
     try {
-      await authService.sendPasswordResetEmail(profile.email || '');
+      await authService.sendPasswordResetEmail(profile?.email || '');
       setResetSuccess('Password reset email sent! Please check your inbox.');
     } catch (err: any) {
       setResetError(err.message || 'Failed to send password reset email.');
@@ -267,6 +263,16 @@ const Profile = () => {
       setResetLoading(false);
     }
   };
+
+  if (loading || !profile) {
+    return <div className="flex justify-center items-center min-h-screen bg-gray-50">
+      <div className="relative w-24 h-24">
+        <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
+        <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
+        <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
+      </div>
+    </div>
+  }
 
   // Profile page
   return (
@@ -297,6 +303,12 @@ const Profile = () => {
             onClick={() => setActiveTab('security')}
           >
             <FiLock className="inline mr-1" /> Security
+          </button>
+          <button
+            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${activeTab === 'usage' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-blue-500'}`}
+            onClick={() => setActiveTab('usage')}
+          >
+            <MdDataUsage className="inline mr-1" /> Usage
           </button>
         </div>
 
@@ -406,7 +418,7 @@ const Profile = () => {
                 >
                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 shadow-md">
                     <img
-                      src={profile.avatarUrl || DEFAULT_AVATAR[profile.gender || 'prefer not to say']}
+                      src={tempProfile?.avatarUrl || DEFAULT_AVATAR[tempProfile?.gender || 'prefer not to say']}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -450,7 +462,7 @@ const Profile = () => {
                       type="text"
                       required
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={profile.fullName || ''}
+                      value={tempProfile?.fullName || ''}
                       onChange={handleInputChange}
                     />
                   </motion.div>
@@ -468,7 +480,7 @@ const Profile = () => {
                       name="username"
                       type="text"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={profile.username || ''}
+                      value={tempProfile?.username || ''}
                       onChange={handleInputChange}
                     />
                   </motion.div>
@@ -485,7 +497,7 @@ const Profile = () => {
                       id="branch"
                       name="branch"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={profile.branch || ""}
+                      value={tempProfile?.branch || ""}
                       onChange={handleInputChange}
                     >
                       <option value="">Select Branch</option>
@@ -497,7 +509,7 @@ const Profile = () => {
                     </select>
                   </motion.div>
 
-                  {(profile.branch !== 'FE' && profile.branch !== '') && (
+                  {(tempProfile?.branch !== 'FE' && tempProfile?.branch !== '') && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -511,7 +523,7 @@ const Profile = () => {
                         id="year"
                         name="year"
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                        value={profile.year || ""}
+                        value={tempProfile?.year || ""}
                         onChange={handleInputChange}
                       >
                         <option value="">Select Year</option>
@@ -523,7 +535,7 @@ const Profile = () => {
                   )}
 
                   {
-                    profile.branch !== '' && (
+                    tempProfile?.branch !== '' && (
                       <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -536,22 +548,22 @@ const Profile = () => {
                           id="semester"
                           name="semester"
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                          value={profile.semester || ""}
+                          value={tempProfile?.semester || ""}
                           onChange={handleInputChange}
                         >
                           <option value="0">Select Semester</option>
                           {
-                            profile.branch === 'FE' ? (
+                            tempProfile?.branch === 'FE' ? (
                               <>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
                               </>
-                            ) : profile.year === 'SE' ? (
+                            ) : tempProfile?.year === 'SE' ? (
                               <>
                                 <option value="3">3</option>
                                 <option value="4">4</option>
                               </>
-                            ) : profile.year === 'TE' ? (
+                            ) : tempProfile?.year === 'TE' ? (
                               <>
                                 <option value="5">5</option>
                                 <option value="6">6</option>
@@ -581,7 +593,7 @@ const Profile = () => {
                       name="collegeName"
                       type="text"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={profile.collegeName || ''}
+                      value={tempProfile?.collegeName || ''}
                       onChange={handleInputChange}
                     />
                   </motion.div>
@@ -598,7 +610,7 @@ const Profile = () => {
                       id="gender"
                       name="gender"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={profile.gender || ""}
+                      value={tempProfile?.gender || ""}
                       onChange={handleInputChange}
                     >
                       <option value="">Select Gender</option>
@@ -629,7 +641,7 @@ const Profile = () => {
                       Updating Profile...
                     </button>
                   ) : (
-                    profileUpdated && (
+                    isProfileChanged && (
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -676,7 +688,7 @@ const Profile = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
-                  value={profile.email || ''}
+                  value={profile?.email || ''}
                   readOnly
                   className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 cursor-not-allowed"
                 />
@@ -746,6 +758,15 @@ const Profile = () => {
                 {resetError && <div className="text-red-500 text-xs mt-1">{resetError}</div>}
                 {resetSuccess && <div className="text-green-600 text-xs mt-1">{resetSuccess}</div>}
               </div>
+            </motion.div>
+          )}
+          {activeTab === 'usage' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              <UsageTracker />
             </motion.div>
           )}
         </>
