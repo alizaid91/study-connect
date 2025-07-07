@@ -23,7 +23,7 @@ export default function PromptTemplateSection({ isTyping, onSelectPrompt }: Prom
             });
             setPrompts(userPrompts);
         }
-    })
+    }, [])
 
     const shouldShow = isTyping;
 
