@@ -275,7 +275,7 @@ const TaskBoard = ({ boards }: TaskBoardProps) => {
     );
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="min-screen flex flex-col">
             <div className="w-full">
                 <div ref={boardSelectorRef} className="relative w-full flex justify-center">
                     <button

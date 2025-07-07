@@ -6,9 +6,9 @@ const initialState: ChatState = {
   sessions: {},
   messages: {},
   activeSessionId: localStorage.getItem('activeSessionId') || null,
-  loading: false,
+  loading: true,
   loadingAi: false,
-  loadingMessages: false,
+  loadingMessages: true,
   error: null,
 };
 

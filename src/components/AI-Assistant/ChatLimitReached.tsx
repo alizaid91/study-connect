@@ -10,10 +10,7 @@ const ChatLimitReached = ({ onClose }: ChatLimitReachedProps) => {
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
             <motion.div
-                className="fixed inset-0 bg-black bg-opacity-40"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm"
                 onClick={onClose}
             />
             <div className="min-h-screen px-4 flex items-center justify-center">

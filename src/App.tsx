@@ -58,6 +58,7 @@ function App() {
 
     if (profile.aiPromptUsage?.date !== today) {
       authService.updateUserProfile(user.uid, {
+        ...profile,
         aiPromptUsage: {
           date: today,
           count: 0,

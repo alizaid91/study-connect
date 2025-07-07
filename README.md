@@ -1,54 +1,124 @@
-# React + TypeScript + Vite
+# 🎓 Study Connect
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**The Ultimate Academic Companion for SPPU Engineering Students**  
+Built with ❤️ using React, TypeScript, Firebase, and Gemini AI
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Features
 
-## Expanding the ESLint configuration
+### 📚 1. SPPU Past Year Papers Repository
+- Filter papers by Subject, Branch, Year, and Semester
+- Bookmark important papers
+- Add papers to your Task Board
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 📘 2. Study Resources Library
+- Curated study materials (books, notes, videos, decodes)
+- Filter and Bookmark relevant resources
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### ✅ 3. Trello-like Task Management Board
+- Create custom task boards (2 Free, 5 for Premium users)
+- Add any past year paper directly as a task
+- Track progress with intuitive drag & drop
+---
+
+### 🔖 4. Bookmark Manager
+- Easily access all your saved Papers and Resources
+- Quick links to view/download/bookmarked items
+---
+
+### 🤖 5. RAG-Powered AI Study Assistant
+> _Context-aware academic support using the latest Generative AI_
+
+- Ask any syllabus or subject-related questions
+- Powered by Gemini AI + SPPU syllabus, resources, and papers
+- Dynamic response generation with full context
+---
+
+## 🆓 Free vs 🔐 Premium Access
+
+| Feature                   | Free User     | Premium User     |
+|---------------------------|---------------|------------------|
+| AI Chat Sessions / Day    | 2             | 10               |
+| AI Prompts / Day          | 10            | 50               |
+| Task Boards               | 2             | 5                |
+| Bookmarks                 | ✅             | ✅                |
+| Past Year Papers          | ✅             | ✅                |
+| Study Resources           | ✅             | ✅                |
+
+> 💳 **Premium subscription** is available via **Razorpay**.  
+> 🔁 Webhooks ensure real-time role upgrade after payment.
+
+---
+
+## ⚙️ Tech Stack
+
+### 🌐 Frontend
+- React (TypeScript)
+- Redux Toolkit
+- Tailwind CSS
+- Framer Motion (for animations)
+- Firebase Authentication & Firestore
+
+### 🧠 AI Backend (RAG Pipeline)
+- Express.js (REST API)
+- AstraDB (DataStax) – for Vector Search & Semantic Embeddings
+- Gemini 2.0 Flash – for accurate context-aware LLM responses
+- Razorpay Webhook – for Subscription Role Management
+
+---
+
+## 🧩 Architecture Overview
+
+```mermaid
+graph TD
+A[Frontend - Study Connect] --> B[Firebase Auth + Firestore]
+A --> C[AI Server (Express.js)]
+C --> D[DataStax AstraDB]
+C --> E[Gemini 2.0 Flash]
+A --> F[Razorpay Checkout]
+F --> G[Webhook API]
+G --> B
 ```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🖼️ Screenshots
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 📄 Papers View  
+![Papers Screenshot](./screenshots/papers.png)
+![Papers Screenshot](./screenshots/papers2.png)
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+---
+
+### 📘 Study Resources  
+![Resources Screenshot](./screenshots/resources.png)
+![Resources Screenshot](./screenshots/resources2.png)
+
+---
+
+### ✅ Task Board  
+![Task Board Screenshot](./screenshots/task-board.png)
+![Task Board Screenshot](./screenshots/task-board2.png)
+
+---
+
+### 🔖 Bookmarks  
+![Bookmarks Screenshot](./screenshots/bookmarks.png)
+
+---
+
+### 🤖 AI Assistant  
+![AI Assistant Screenshot](./screenshots/ai-assistant.png)
+
+## 📞 Contact & Support
+
+Having questions or need help?
+
+- 📧 **Email:** [alizaidshaikh9975@gmail.com](mailto:support@studyconnect.ai)  
+- 🌐 **Website:** https://student-guide-seven.vercel.app
+- 🌐 **Developer Portfolio:** https://dev-ali-zaid-portfolio.vercel.app/
+---
+
+Made with ❤️ by Engineering Students, for Engineering Students.

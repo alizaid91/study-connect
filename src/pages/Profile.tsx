@@ -109,6 +109,10 @@ const Profile = () => {
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === 'branch' && value === "") {
+      setTempProfile({ ...tempProfile, [name]: value, year: "", semester: 0 } as UserProfile);
+      return
+    }
     setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
   };
 
@@ -522,6 +526,7 @@ const Profile = () => {
                       <select
                         id="year"
                         name="year"
+                        required
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                         value={tempProfile?.year || ""}
                         onChange={handleInputChange}
@@ -547,11 +552,12 @@ const Profile = () => {
                         <select
                           id="semester"
                           name="semester"
+                          required
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                           value={tempProfile?.semester || ""}
                           onChange={handleInputChange}
                         >
-                          <option value="0">Select Semester</option>
+                          <option value="">Select Semester</option>
                           {
                             tempProfile?.branch === 'FE' ? (
                               <>

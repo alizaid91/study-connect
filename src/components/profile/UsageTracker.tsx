@@ -10,7 +10,11 @@ const UsageTracker = () => {
     const dailyAiPrompts = profile?.role === 'free' ? 10 : 50;
     const usedAiPrompts = profile?.aiPromptUsage?.count || 0;
     const extraCredits = profile?.aiCredits || 0;
-    const percentUsed = Math.min((usedAiPrompts / dailyAiPrompts) * 100, 100);
+    const percentUsed ={
+        aiPropmpts: Math.min((usedAiPrompts / dailyAiPrompts) * 100, 100),
+        chatSessions: Math.min((profile?.chatSessionCount || 0) / (profile?.role === 'free' ? 2 : 10) * 100, 100),
+        boards: Math.min((profile?.boardCount || 0) / (profile?.role === 'free' ? 2 : 5) * 100, 100)
+    };
 
     return (
         <div className="bg-white border border-gray-200 rounded-2xl shadow-md p-6 w-full mx-auto mt-8">
@@ -44,9 +48,9 @@ const UsageTracker = () => {
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${percentUsed}%` }}
+                            animate={{ width: `${percentUsed.aiPropmpts}%` }}
                             transition={{ duration: 0.8 }}
-                            className={`h-full ${percentUsed < 80 ? "bg-indigo-500" : "bg-red-500"
+                            className={`h-full ${percentUsed.aiPropmpts < 80 ? "bg-indigo-500" : "bg-red-500"
                                 } rounded-full`}
                         />
                     </div>
@@ -62,9 +66,9 @@ const UsageTracker = () => {
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${percentUsed}%` }}
+                            animate={{ width: `${percentUsed.chatSessions}%` }}
                             transition={{ duration: 0.8 }}
-                            className={`h-full ${percentUsed < 80 ? "bg-indigo-500" : "bg-red-500"
+                            className={`h-full ${percentUsed.chatSessions < 80 ? "bg-indigo-500" : "bg-red-500"
                                 } rounded-full`}
                         />
                     </div>
@@ -80,9 +84,9 @@ const UsageTracker = () => {
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${percentUsed}%` }}
+                            animate={{ width: `${percentUsed.boards}%` }}
                             transition={{ duration: 0.8 }}
-                            className={`h-full ${percentUsed < 80 ? "bg-indigo-500" : "bg-red-500"
+                            className={`h-full ${percentUsed.boards < 80 ? "bg-indigo-500" : "bg-red-500"
                                 } rounded-full`}
                         />
                     </div>

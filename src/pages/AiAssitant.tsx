@@ -60,11 +60,15 @@ const AiAssistant = () => {
     }
   }, [activeSessionId, dispatch]);
 
-  useEffect(() => {
-    const scrollDiv = messagesEndRef.current;
-    if (scrollDiv) {
-      scrollDiv.scrollTop = scrollDiv.scrollHeight;
+  const handelScrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollTo({ behavior: 'smooth', top: messagesEndRef.current.scrollHeight });
+      setIsAtBottom(true);
     }
+  }
+
+  useEffect(() => {
+    handelScrollToBottom();
   }, [messages, activeSessionId]);
 
   const handleScroll = () => {
@@ -203,8 +207,8 @@ const AiAssistant = () => {
               <EmptyChatState onCreateNewChat={() => handleNewSession('New Chat')} />
             ) : (
               <>
-                <div className={`mx-auto flex-1 flex flex-col h-full relative w-full ${isSidebarCollapsed ? 'max-w-[320px] sm:max-w-[460px] md:max-w-2xl lg:max-w-5xl' : 'max-w-[320px] sm:max-w-[460px] md:max-w-[400px] lg:max-w-4xl'}`}>
-                  <div ref={messagesEndRef} style={{ marginBottom: `${inputRef.current?.scrollHeight}px` }} className="w-full flex-1 overflow-y-auto bg-gray-50">
+                <div className={`mx-auto flex-1 flex flex-col h-full w-full ${isSidebarCollapsed ? 'max-w-[320px] sm:max-w-[460px] md:max-w-2xl lg:max-w-5xl' : 'max-w-[320px] sm:max-w-[460px] md:max-w-[400px] lg:max-w-4xl'}`}>
+                  <div ref={messagesEndRef} className="w-full flex-1 overflow-y-auto bg-gray-50">
                     {error && <div className="text-red-500">{error}</div>}
                     {loadingMessages && (
                       <div className="flex justify-center items-center w-full min-h-full bg-gray-50">
@@ -215,12 +219,11 @@ const AiAssistant = () => {
                         </div>
                       </div>
                     )}
-                    {!loadingMessages && renderedMessages.length === 0 && (profile?.aiPromptUsage?.count as number < (profile?.role === 'free' ? 10 : 50)) && (
-                      <div className="flex justify-center items-center w-full min-h-full bg-gray-50">
+                    {!loadingMessages && renderedMessages.length === 0 && (profile?.aiPromptUsage?.count as number < (profile?.role === 'free' ? 10 : 50)) ? (
+                      <div className="flex justify-center items-center w-full h-full bg-gray-50">
                         <div className="text-gray-500">No messages yet. Start chatting!</div>
                       </div>
-                    )}
-                    <div className='pb-6'>
+                    ) : (<div className='pb-6'>
                       {renderedMessages.map((msg, idx) => (
                         <Message
                           key={idx}
@@ -229,21 +232,17 @@ const AiAssistant = () => {
                           showLoading={msg.id === 'ai-streaming' && msg.content === ''}
                         />
                       ))}
-                    </div>
+                    </div>)}
                   </div>
-                  <div className='w-full absolute bottom-0'>
-                    <div className={`${(messages && !isAtBottom) ? 'visible' : 'invisible'} pb-2 bg-white/0 flex w-full justify-center items-center`}>
-                      <div
-                        onClick={() => {
-                          messagesEndRef.current?.scrollTo({ behavior: 'smooth', top: messagesEndRef.current?.scrollHeight });
-                        }}
-                        className='cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center'>
-                        <IoMdArrowDown size={26} />
-                      </div>
+                  <div className='w-full relative'>
+                    <div
+                      onClick={handelScrollToBottom}
+                      className={`${(messages && !isAtBottom) ? 'visible' : 'invisible'} absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto mb-3 cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center`}>
+                      <IoMdArrowDown size={26} />
                     </div>
                     {
                       !loading && profile?.aiPromptUsage?.count as number === (profile?.role === 'free' ? 10 : 50) ? (
-                        <div ref={inputRef} className="w-full">
+                        <div ref={inputRef} className="w-ful">
                           <ChatPromptLimitReached
                             usedPrompts={profile?.aiPromptUsage?.count as number}
                             promptLimit={profile?.role === 'premium' ? 50 : 10}

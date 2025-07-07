@@ -102,10 +102,8 @@ const Tasks = () => {
               </h2>
             </div>
           </div>
-          <div className="flex-1 overflow-hidden relative">
-            <div>
+          <div className="flex-1 overflow-hidden">
               <TaskBoard boards={getSortedBoards(boards)} />
-            </div>
           </div>
         </div>
       ) : (

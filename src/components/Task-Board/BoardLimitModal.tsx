@@ -13,15 +13,12 @@ export default function BoardLimitModal({ isOpen, onClose, userType }: BoardLimi
     return (
         <Dialog
             as={motion.div}
+            className="fixed inset-0 z-40 overflow-y-auto"
             static
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             open={isOpen}
             onClose={onClose}>
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
-
-            <div className="fixed inset-0 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4">
                 <Dialog.Panel
                     as={motion.div}
                     className="text-center inline-block w-full max-w-md p-8 overflow-hidden align-middle bg-white rounded-3xl shadow-xl z-50"
