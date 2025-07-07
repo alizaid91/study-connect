@@ -50,7 +50,7 @@ export default function BoardLimitModal({ isOpen, onClose, userType }: BoardLimi
                         </button>
                         <button
                             onClick={onClose}
-                            className="w-full rounded-xl px-4 py-2 text-gray-500 hover:text-gray-700 transition"
+                            className="w-full rounded-xl px-4 py-2 border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
                         >
                             Cancel
                         </button>

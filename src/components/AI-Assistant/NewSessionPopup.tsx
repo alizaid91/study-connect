@@ -27,7 +27,7 @@ const NewSessionPopup: React.FC<NewSessionPopupProps> = ({ isOpen, onClose, onAd
 
     return (
         <AnimatePresence>
-            {isOpen && profile?.chatSessionCount && profile?.chatSessionCount >= (profile.role === 'free' ? 2 : 5) ? (
+            {isOpen && profile?.chatSessionCount && profile?.chatSessionCount >= (profile.role === 'free' ? 2 : 10) ? (
                 <ChatLimitReached onClose={onClose}/>
             ) : isOpen ? (
                 <div className="fixed inset-0 z-50 overflow-y-auto">

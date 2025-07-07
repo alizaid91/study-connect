@@ -1,12 +1,15 @@
 import { motion } from "framer-motion"
 import { AlertTriangle } from "lucide-react";
 import { UpgradeToPremiumButton } from "../buttons/UpgradeToPremiumButton";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
 
 interface ChatLimitReachedProps {
     onClose: () => void;
 }
 
 const ChatLimitReached = ({ onClose }: ChatLimitReachedProps) => {
+    const { profile } = useSelector((state: RootState) => state.auth)
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
             <motion.div
@@ -26,14 +29,18 @@ const ChatLimitReached = ({ onClose }: ChatLimitReachedProps) => {
                     </div>
                     <h2 className="text-xl font-semibold text-gray-800">You've reached your chat limit</h2>
                     <p className="mt-2 text-gray-600">
-                        Free users can start up to <strong>2 AI chats</strong>. To create more chats, you can upgrade to premium.
+                        {profile?.role === 'free' ? 'Free' : 'Premium'} users can start up to <strong>{profile?.role === 'free' ? '2' : '10'} AI chats</strong>. To create more chats, you can upgrade to premium.
                     </p>
 
                     <div className="mt-6 flex flex-col gap-4">
-                        <UpgradeToPremiumButton />
+                        {
+                            profile?.role === 'free' && (
+                                <UpgradeToPremiumButton />
+                            )
+                        }
                         <button
                             onClick={onClose}
-                            className="w-full rounded-xl px-4 py-2 text-gray-500 hover:text-gray-700 transition"
+                            className="w-full rounded-xl px-4 py-2 border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
                         >
                             Cancel
                         </button>
