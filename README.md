@@ -68,22 +68,6 @@ Built with ❤️ using React, TypeScript, Firebase, and Gemini AI
 - Gemini 2.0 Flash – for accurate context-aware LLM responses
 - Razorpay Webhook – for Subscription Role Management
 
----
-
-## 🧩 Architecture Overview
-
-```mermaid
-graph TD
-A[Frontend - Study Connect] --> B[Firebase Auth + Firestore]
-A --> C[AI Server (Express.js)]
-C --> D[DataStax AstraDB]
-C --> E[Gemini 2.0 Flash]
-A --> F[Razorpay Checkout]
-F --> G[Webhook API]
-G --> B
-```
----
-
 ## 🖼️ Screenshots
 
 ### 📄 Papers View  
