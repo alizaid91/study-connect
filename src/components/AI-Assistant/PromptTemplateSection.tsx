@@ -36,7 +36,7 @@ export default function PromptTemplateSection({ isTyping, onSelectPrompt }: Prom
                     {/* Right Gradient */}
                     <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-gray-50 via-white/70 to-transparent z-10" />
 
-                    <div className='px-6 no-scrollbar h-full w-full flex items-center flex-nowrap overflow-x-auto gap-3 z-50'>
+                    <div className='px-6 no-scrollbar h-full w-full flex flex-nowrap overflow-x-auto gap-3 z-50'>
                         {prompts.map((prompt, index) => (
                             <button
                                 key={index}
