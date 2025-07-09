@@ -41,6 +41,7 @@ function App() {
   const { isAdmin } = useSelector((state: RootState) => state.admin);
   const { user, profile } = useSelector((state: RootState) => state.auth);
   const isOpen = useSelector((state: RootState) => state.globalPopups.isPremiumComingSoonOpen);
+  const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -77,6 +78,15 @@ function App() {
         dispatch(logout());
       }
     });
+    fetch(`${AI_URL}/`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`AI service responded with status ${response.status}`);
+        }
+      })
+      .catch((error) => {
+        console.error('Error connecting to AI service:', error);
+      });
 
     return () => unsubscribe();
   }, []);

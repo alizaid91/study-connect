@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import NewSessionPopup from '../components/AI-Assistant/NewSessionPopup';
 import { authService } from '../services/authService';
 import ChatPromptLimitReached from '../components/AI-Assistant/ChatPromptLimitReached';
+import ErrorMessageBox from '../components/AI-Assistant/ErrorMessageBox';
 
 const AiAssistant = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -158,7 +159,7 @@ const AiAssistant = () => {
   };
 
   return (
-    <div className="relative flex h-[79vh] w-full bg-gray-50 rounded-lg shadow-lg min-h-[79vh] md:min-h-[90vh] pb-2 md:pb-0">
+    <div className="relative flex h-[85vh] w-full bg-gray-50 rounded-lg shadow-lg min-h-[79vh] md:min-h-[90vh] pb-2 md:pb-0">
       {loading ? (
         <div className="flex justify-center items-center w-full min-h-screen bg-gray-50">
           <div className="relative w-24 h-24">
@@ -209,7 +210,6 @@ const AiAssistant = () => {
               <>
                 <div className={`mx-auto flex-1 flex flex-col h-full w-full ${isSidebarCollapsed ? 'max-w-[320px] sm:max-w-[460px] md:max-w-2xl lg:max-w-5xl' : 'max-w-[320px] sm:max-w-[460px] md:max-w-[400px] lg:max-w-4xl'}`}>
                   <div ref={messagesEndRef} className="w-full flex-1 overflow-y-auto bg-gray-50">
-                    {error && <div className="text-red-500">{error}</div>}
                     {loadingMessages && (
                       <div className="flex justify-center items-center w-full min-h-full bg-gray-50">
                         <div className="relative w-24 h-24">
@@ -229,9 +229,14 @@ const AiAssistant = () => {
                           key={idx}
                           message={msg}
                           isUser={msg.sender === 'user'}
-                          showLoading={msg.id === 'ai-streaming' && msg.content === ''}
+                          showLoading={!error && msg.id === 'ai-streaming' && msg.content === ''}
                         />
                       ))}
+                      {
+                        !loading && error && (
+                          <ErrorMessageBox message={error} />
+                        )
+                      }
                     </div>)}
                   </div>
                   <div className='w-full relative'>

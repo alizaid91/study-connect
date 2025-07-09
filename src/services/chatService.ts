@@ -21,74 +21,82 @@ const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 export const chatService = {
   async sendMessage(userId: string, sessionId: string, content: string): Promise<void> {
 
-    try {
-      // Add user message to Firestore
-      const messageRef = collection(db, `chatSessions/${sessionId}/messages`);
-      const userMessage = {
-        sessionId,
-        sender: 'user',
-        content,
-        timestamp: new Date().toISOString(),
-      };
-      await addDoc(messageRef, userMessage);
+    // Add user & AI message to Redux store
+    const tempUserMessage: ChatMessage = {
+      id: 'tem-user-message',
+      sessionId,
+      sender: 'user',
+      content,
+      timestamp: new Date().toISOString(),
+    };
+    store.dispatch(addMessage({ sessionId, message: tempUserMessage }));
 
-      const tempAIMessage: ChatMessage = {
-        id: 'ai-streaming',
-        sessionId,
-        sender: 'ai',
-        content: '',
-        timestamp: new Date().toISOString(),
-      };
-      store.dispatch(addMessage({ sessionId, message: tempAIMessage }));
-      
-      // Send to AI server
-      const response = await fetch(`${AI_URL}/ask`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: content }),
-      });
-      if (!response.ok) {
-        throw new Error(`AI service responded with status ${response.status}`);
-      }
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
+    const tempAIMessage: ChatMessage = {
+      id: 'ai-streaming',
+      sessionId,
+      sender: 'ai',
+      content: '',
+      timestamp: new Date().toISOString(),
+    };
+    store.dispatch(addMessage({ sessionId, message: tempAIMessage }));
 
-      try {
-        while (true) {
-          const { done, value } = await reader?.read() || {};
+    // Send to AI server
+    const response = await fetch(`${AI_URL}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: content }),
+    });
 
-          if (done || !value || value.length === 0) {
-            break;
-          }
-
-          const chunk = decoder.decode(value, { stream: true });
-          fullText += chunk;
-
-          store.dispatch(setStreamedResponse({ sessionId, chunk }));
-        }
-      } catch (err) {
-        console.error("❌ Stream error:", err);
-      }
-
-      const aiMessage = {
-        sessionId,
-        sender: 'ai',
-        content: fullText,
-        timestamp: new Date().toISOString(),
-      };
-      await addDoc(messageRef, aiMessage);
-      authService.updateUserProfile(userId, await authService.getUserProfile(userId).then(profile => ({
-        ...profile,
-        aiPromptUsage: {
-          date: profile?.aiPromptUsage?.date || new Date().toLocaleDateString('en-GB'),
-          count: (profile?.aiPromptUsage?.count || 0) + 1,
-        },
-      } as UserProfile)));
-    } catch (error) {
-      console.error('Error sending message to AI:', error);
-      throw new Error('Failed to get response from AI service');
+    if (!response.ok) {
+      throw new Error(`AI service responded with status ${response.status}`);
     }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader?.read() || {};
+
+        if (done || !value || value.length === 0) {
+          break;
+        }
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+
+        store.dispatch(setStreamedResponse({ sessionId, chunk }));
+      }
+    } catch (err) {
+      throw new Error('Error reading AI response stream');
+    }
+
+    const messageRef = collection(db, `chatSessions/${sessionId}/messages`);
+
+    const userMessage = {
+      sessionId,
+      sender: 'user',
+      content,
+      timestamp: new Date().toISOString(),
+    };
+    await addDoc(messageRef, userMessage);
+
+    const aiMessage = {
+      sessionId,
+      sender: 'ai',
+      content: fullText,
+      timestamp: new Date().toISOString(),
+    };
+    await addDoc(messageRef, aiMessage);
+
+    authService.updateUserProfile(userId, await authService.getUserProfile(userId).then(profile => ({
+      ...profile,
+      aiPromptUsage: {
+        date: profile?.aiPromptUsage?.date || new Date().toLocaleDateString('en-GB'),
+        count: (profile?.aiPromptUsage?.count || 0) + 1,
+      },
+    } as UserProfile)));
   },
 
   async sendMessageToDappier(userId: string, sessionId: string, content: string): Promise<void> {

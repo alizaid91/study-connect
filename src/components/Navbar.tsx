@@ -79,7 +79,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2 relative">
               <img src={logo} alt="Logo" className="h-8 w-auto" />
-              <span className="text-xl font-bold text-gray-800">Study Connect</span>
+              <span className="text-xl font-bold text-gray-800 mt-[2px]">Study Connect</span>
               {
                 profile?.role === 'premium' && (
                   <img src={proBadge} alt="Pro Badge" className="absolute left-[95%] top-1/2 -translate-y-1/2 w-12 object-cover mt-[2px]" />

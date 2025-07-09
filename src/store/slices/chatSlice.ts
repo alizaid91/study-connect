@@ -17,19 +17,30 @@ export const sendMessage = createAsyncThunk(
   'chat/sendMessage',
   async (
     { userId, sessionId, content }: { userId: string, sessionId: string; content: string },
-    { rejectWithValue, dispatch }
+    { rejectWithValue, dispatch, getState }
   ) => {
     try {
+      const state = getState() as { chat: ChatState };
+      if (state.chat.error) {
+        const messages = state.chat.messages[sessionId] || [];
+
+        const trimmedMessages =
+          messages.length >= 2
+            ? messages.slice(0, messages.length - 2)
+            : [];
+
+        dispatch(chatSlice.actions.setMessages({
+          sessionId,
+          messages: trimmedMessages
+        }));
+      }
       dispatch(chatSlice.actions.setLoadingAi(true));
+      dispatch(chatSlice.actions.setError(null));
       return await chatService.sendMessage(userId, sessionId, content);
     } catch (error: any) {
       console.log('regiecting with error: ', error)
-      dispatch(chatSlice.actions.updateMessage({
-        sessionId,
-        content: error.message,
-      }));
       dispatch(chatSlice.actions.setLoadingAi(false));
-      return rejectWithValue(error.message);
+      return rejectWithValue('Something went wrong while generating AI response. Please try again!');
     } finally {
       dispatch(chatSlice.actions.setLoadingAi(false));
     }
@@ -121,7 +132,6 @@ const chatSlice = createSlice({
     builder
       .addCase(sendMessage.pending, (state) => {
         state.loadingAi = true;
-        state.error = null;
       })
       .addCase(sendMessage.fulfilled, (state) => {
         state.loadingAi = false;

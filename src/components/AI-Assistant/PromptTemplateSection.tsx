@@ -23,34 +23,33 @@ export default function PromptTemplateSection({ isTyping, onSelectPrompt }: Prom
             });
             setPrompts(userPrompts);
         }
-    }, [])
+    }, [profile])
 
     const shouldShow = isTyping;
 
     return (
         <AnimatePresence>
             {prompts.length && shouldShow && !loadingAi && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className="p-2 sm:p-4 border border-gray-300 rounded-3xl mb-4 shadow-sm"
-                >
-                    <div className="flex flex-nowrap overflow-x-auto gap-3 px-2">
+                <div className="sm:mx-2 mt-4 mb-2 relative">
+                    <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-gray-50 via-white/70 to-transparent z-10" />
+
+                    {/* Right Gradient */}
+                    <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-gray-50 via-white/70 to-transparent z-10" />
+
+                    <div className='px-6 no-scrollbar h-full w-full flex items-center flex-nowrap overflow-x-auto gap-3 z-50'>
                         {prompts.map((prompt, index) => (
                             <button
                                 key={index}
                                 onClick={() => {
-                                        onSelectPrompt(prompt);
+                                    onSelectPrompt(prompt);
                                 }}
-                                className="flex-shrink-0 max-w-fit px-4 py-1.5 text-sm rounded-3xl bg-gray-300/60 text-black font-semibold transition"
+                                className="flex-shrink-0 max-w-full px-4 py-1.5 text-sm rounded-3xl bg-gray-300/60 text-black font-semibold transition"
                             >
                                 {prompt}
                             </button>
                         ))}
                     </div>
-                </motion.div>
+                </div>
             )}
         </AnimatePresence>
     );
