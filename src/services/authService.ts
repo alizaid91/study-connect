@@ -24,8 +24,6 @@ export interface AuthFormData {
     fullName?: string;
 }
 
-const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
-
 class AuthService {
     async signInWithEmail(email: string, password: string) {
         return await signInWithEmailAndPassword(auth, email, password);
@@ -224,14 +222,7 @@ class AuthService {
             const userRef = doc(db, 'users', userDoc.id);
             try {
                 await updateDoc(userRef, {
-                    role: 'free',               // default role for existing users
-                    aiCredits: 0,               // no extra credits initially
-                    aiPromptUsage: {
-                        date: '',                 // will be set when first AI prompt is used
-                        count: 0,
-                    },
-                    boardCount: 0,              // you can adjust based on existing data if needed
-                    chatSessionCount: 0,        // you can adjust based on existing data if needed
+                    pattern: "",
                 });
                 console.log(`Updated user: ${userDoc.id}`);
             } catch (err) {

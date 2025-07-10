@@ -76,7 +76,7 @@ const Pricing = () => {
                 <div onClick={() => setSelectedPlan('premium')} className={`${selectedPlan === 'premium' ? 'border-2 border-indigo-600' : 'border-2 border-gray-300'} cursor-pointer rounded-3xl p-6 shadow-lg hover:shadow-xl transition flex flex-col justify-between`}>
                     <div>
                         <h2 className="text-2xl font-bold text-indigo-800">Premium</h2>
-                        <p className="mt-1 text-indigo-700">₹149 / month</p>
+                        <p className="mt-1 text-indigo-700">₹99 / month</p>
                         <ul className="mt-4 space-y-2 text-gray-700">
                             <li>✔️ PYQ Papers</li>
                             <li>✔️ Study Resources</li>

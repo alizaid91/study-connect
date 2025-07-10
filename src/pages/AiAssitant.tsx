@@ -244,43 +244,39 @@ const AiAssistant = () => {
                 </>
               )}
             </div>
-            {
-              sessionList.length > 0 && (
-                <div className={`absolute w-full left-1/2 -translate-x-1/2 bottom-0 backdrop-blur-sm max-w-[900px] px-4`}>
-                  <div className='w-full relative'>
-                    <div
-                      onClick={handelScrollToBottom}
-                      className={`${(messages && !isAtBottom) ? 'visible' : 'invisible'} absolute -top-14 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto mb-3 cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center`}>
-                      <IoMdArrowDown size={26} />
-                    </div>
-                    {
-                      !loading && profile?.aiPromptUsage?.count as number === (profile?.role === 'free' ? 10 : 50) ? (
-                        <div ref={inputRef} className="w-full">
-                          <ChatPromptLimitReached
-                            usedPrompts={profile?.aiPromptUsage?.count as number}
-                            promptLimit={profile?.role === 'premium' ? 50 : 10}
-                            aiCredits={profile?.aiCredits as number}
-                            userPlan={profile?.role || 'free'}
-                          />
-                        </div>
-                      ) : !loading ? (
-                        <div ref={inputRef} onFocus={window.innerWidth < 768 ? handleInputFocus : undefined} className="w-full">
-                          <PromptInput
-                            onSend={handleSend}
-                            disabled={!activeSessionId || loading || loadingAi || loadingMessages}
-                            loading={loading || loadingAi}
-                            placeholder="Type your message..."
-                          />
-                          <div className="text-xs text-gray-400 mt-2 text-center pb-1">
-                            Press Enter to send, Shift + Enter for new line
-                          </div>
-                        </div>
-                      ) : null
-                    }
-                  </div>
+            <div className={`absolute w-full left-1/2 -translate-x-1/2 bottom-0 backdrop-blur-sm max-w-[900px] px-4`}>
+              <div className='w-full relative'>
+                <div
+                  onClick={handelScrollToBottom}
+                  className={`${(messages && !isAtBottom) ? 'visible' : 'invisible'} absolute -top-16 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto mb-3 cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center`}>
+                  <IoMdArrowDown size={26} />
                 </div>
-              )
-            }
+                {
+                  !loading && profile?.aiPromptUsage?.count as number === (profile?.role === 'free' ? 10 : 50) ? (
+                    <div ref={inputRef} className="w-full pb-2">
+                      <ChatPromptLimitReached
+                        usedPrompts={profile?.aiPromptUsage?.count as number}
+                        promptLimit={profile?.role === 'premium' ? 50 : 10}
+                        aiCredits={profile?.aiCredits as number}
+                        userPlan={profile?.role || 'free'}
+                      />
+                    </div>
+                  ) : !loading && sessionList.length > 0 ? (
+                    <div ref={inputRef} onFocus={window.innerWidth < 768 ? handleInputFocus : undefined} className="w-full">
+                      <PromptInput
+                        onSend={handleSend}
+                        disabled={!activeSessionId || loading || loadingAi || loadingMessages}
+                        loading={loading || loadingAi}
+                        placeholder="Type your message..."
+                      />
+                      <div className="text-xs text-gray-400 mt-2 text-center pb-1">
+                        Press Enter to send, Shift + Enter for new line
+                      </div>
+                    </div>
+                  ) : null
+                }
+              </div>
+            </div>
           </div>
         </>
       )

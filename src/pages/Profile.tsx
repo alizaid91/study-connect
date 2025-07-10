@@ -109,8 +109,14 @@ const Profile = () => {
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === 'branch' && value === "") {
-      setTempProfile({ ...tempProfile, [name]: value, year: "", semester: 0 } as UserProfile);
+    if (name === 'branch') {
+      if (value === "") {
+        setTempProfile({ ...tempProfile, [name]: value, year: "", semester: 0 } as UserProfile);
+      } else if (value === "FE") {
+        setTempProfile({ ...tempProfile, [name]: value, year: "", semester: 1 } as UserProfile);
+      } else {
+        setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
+      }
       return
     }
     setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
@@ -512,6 +518,32 @@ const Profile = () => {
                       <option value="Mechanical">Mechanical Engineering</option>
                     </select>
                   </motion.div>
+
+                  {
+                    tempProfile?.branch !== '' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        <label htmlFor="pattern" className="block text-sm font-medium text-gray-700">
+                          Pattern
+                        </label>
+                        <select
+                          id="pattern"
+                          name="pattern"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                          value={tempProfile?.pattern || ""}
+                          onChange={handleInputChange}
+                        >
+                          <option value={undefined}>Select Pattern</option>
+                          <option value="2019">2019</option>
+                          <option value="2024">2024</option>
+                        </select>
+                      </motion.div>
+                    )
+                  }
 
                   {(tempProfile?.branch !== 'FE' && tempProfile?.branch !== '') && (
                     <motion.div

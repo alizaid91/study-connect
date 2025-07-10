@@ -18,6 +18,7 @@ export default function PromptTemplateSection({ isTyping, onSelectPrompt }: Prom
         if (profile && profile.role) {
             const userPrompts = getPromptsForUser({
                 branch: profile?.branch,
+                pattern: profile?.pattern,
                 year: profile?.year,
                 semester: profile?.semester,
             });
