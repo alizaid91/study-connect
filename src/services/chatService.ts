@@ -51,6 +51,18 @@ export const chatService = {
       throw new Error(`AI service responded with status ${response.status}`);
     }
 
+    const messageRef = collection(db, `chatSessions/${sessionId}/messages`);
+
+    const userMessage = {
+      sessionId,
+      sender: 'user',
+      content,
+      timestamp: new Date().toISOString(),
+    };
+    await addDoc(messageRef, userMessage);
+    
+    store.dispatch(addMessage({ sessionId, message: tempAIMessage }));
+
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullText = "";
@@ -71,16 +83,6 @@ export const chatService = {
     } catch (err) {
       throw new Error('Error reading AI response stream');
     }
-
-    const messageRef = collection(db, `chatSessions/${sessionId}/messages`);
-
-    const userMessage = {
-      sessionId,
-      sender: 'user',
-      content,
-      timestamp: new Date().toISOString(),
-    };
-    await addDoc(messageRef, userMessage);
 
     const aiMessage = {
       sessionId,

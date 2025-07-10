@@ -212,7 +212,7 @@ const AiAssistant = () => {
               ) : (
                 <>
                   <div className={`relative mx-auto flex-1 flex flex-col h-full min-w-full max-w-[100vw]`}>
-                    <div ref={messagesEndRef} className="min-w-full flex-1 max-h-full overflow-y-auto bg-gray-50 px-4">
+                    <div ref={messagesEndRef} className="min-w-full flex-1 max-h-full overflow-y-auto bg-gray-50 px-4 pb-6">
                       {loadingMessages && (
                         <div className="flex justify-center items-center min-w-[300px] md:min-w-[900px] overflow-hidden min-h-full bg-gray-50">
                           <div className="relative w-24 h-24">
@@ -224,7 +224,7 @@ const AiAssistant = () => {
                       )}
                       {!loadingMessages && renderedMessages.length === 0 && (profile?.aiPromptUsage?.count as number < (profile?.role === 'free' ? 10 : 50)) ? (
                         <NoMessagesState />
-                      ) : (<div className='pb-6'>
+                      ) : (<div>
                         {renderedMessages.map((msg, idx) => (
                           <Message
                             key={idx}
