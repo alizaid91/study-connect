@@ -36,14 +36,14 @@ export default function PromptTemplateSection({ isTyping, onSelectPrompt }: Prom
                     {/* Right Gradient */}
                     {/* <div className="pointer-events-none absolute -right-4 top-0 h-full w-8 border border-red-500 bg-gradient-to-l from-gray-50 via-white/70 to-transparent z-10" /> */}
 
-                    <div className=' no-scrollbar h-full w-full flex flex-nowrap overflow-x-auto gap-3 z-50'>
+                    <div className='px-4 no-scrollbar h-full w-full flex flex-nowrap overflow-x-auto gap-3 z-50 snap-x snap-mandatory'>
                         {prompts.map((prompt, index) => (
                             <button
                                 key={index}
                                 onClick={() => {
                                     onSelectPrompt(prompt);
                                 }}
-                                className="flex-shrink-0 max-w-full px-4 py-1.5 text-sm rounded-3xl bg-gray-300 text-black font-semibold transition"
+                                className="flex-shrink-0 max-w-full px-4 py-1.5 text-sm rounded-3xl bg-gray-300/50 text-black font-semibold transition snap-start"
                             >
                                 {prompt}
                             </button>

@@ -20,6 +20,7 @@ import NewSessionPopup from '../components/AI-Assistant/NewSessionPopup';
 import { authService } from '../services/authService';
 import ChatPromptLimitReached from '../components/AI-Assistant/ChatPromptLimitReached';
 import ErrorMessageBox from '../components/AI-Assistant/ErrorMessageBox';
+import NoMessagesState from '../components/AI-Assistant/NoMessagesState';
 
 const AiAssistant = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -195,9 +196,9 @@ const AiAssistant = () => {
             </motion.div>
           )}
           <div className='relative w-full flex justify-center'>
-            <div style={{ paddingBottom: `${inputRef.current?.scrollHeight}px` }} className={`flex flex-col max-w-[900px] max-h-full px-2`}>
+            <div style={{ paddingBottom: `${inputRef.current?.scrollHeight}px` }} className={`flex flex-col max-w-[900px] max-h-full px-2 min-w-[300px] md:min-w-[900px]`}>
               {isSidebarCollapsed && !loading && sessionList.length > 0 && (
-                <div className='text-gary-900 absolute top-3 left-3 z-10 bg-gray-300/80 rounded-full'>
+                <div className='text-gary-900 absolute top-3 left-3 z-10 bg-gray-300 rounded-full'>
                   <button
                     onClick={toggleSidebar}
                     className="p-2"
@@ -210,8 +211,8 @@ const AiAssistant = () => {
                 <EmptyChatState onCreateNewChat={() => handleNewSession('New Chat')} />
               ) : (
                 <>
-                  <div className={`relative mx-auto flex-1 flex flex-col h-full max-w-[100vw]`}>
-                    <div ref={messagesEndRef} className="w-full flex-1 max-h-full overflow-y-auto bg-gray-50 px-4">
+                  <div className={`relative mx-auto flex-1 flex flex-col h-full min-w-full max-w-[100vw]`}>
+                    <div ref={messagesEndRef} className="min-w-full flex-1 max-h-full overflow-y-auto bg-gray-50 px-4">
                       {loadingMessages && (
                         <div className="flex justify-center items-center min-w-[300px] md:min-w-[900px] overflow-hidden min-h-full bg-gray-50">
                           <div className="relative w-24 h-24">
@@ -222,9 +223,7 @@ const AiAssistant = () => {
                         </div>
                       )}
                       {!loadingMessages && renderedMessages.length === 0 && (profile?.aiPromptUsage?.count as number < (profile?.role === 'free' ? 10 : 50)) ? (
-                        <div className="flex justify-center items-center w-full h-full bg-gray-50">
-                          <div className="text-gray-500">No messages yet. Start chatting!</div>
-                        </div>
+                        <NoMessagesState />
                       ) : (<div className='pb-6'>
                         {renderedMessages.map((msg, idx) => (
                           <Message
@@ -245,39 +244,43 @@ const AiAssistant = () => {
                 </>
               )}
             </div>
-            <div className={`absolute w-full left-1/2 -translate-x-1/2 bottom-0 backdrop-blur-sm max-w-[900px] px-4`}>
-              <div className='w-full relative'>
-                <div
-                  onClick={handelScrollToBottom}
-                  className={`${(messages && !isAtBottom) ? 'visible' : 'invisible'} absolute -top-14 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto mb-3 cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center`}>
-                  <IoMdArrowDown size={26} />
+            {
+              sessionList.length > 0 && (
+                <div className={`absolute w-full left-1/2 -translate-x-1/2 bottom-0 backdrop-blur-sm max-w-[900px] px-4`}>
+                  <div className='w-full relative'>
+                    <div
+                      onClick={handelScrollToBottom}
+                      className={`${(messages && !isAtBottom) ? 'visible' : 'invisible'} absolute -top-14 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto mb-3 cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center`}>
+                      <IoMdArrowDown size={26} />
+                    </div>
+                    {
+                      !loading && profile?.aiPromptUsage?.count as number === (profile?.role === 'free' ? 10 : 50) ? (
+                        <div ref={inputRef} className="w-full">
+                          <ChatPromptLimitReached
+                            usedPrompts={profile?.aiPromptUsage?.count as number}
+                            promptLimit={profile?.role === 'premium' ? 50 : 10}
+                            aiCredits={profile?.aiCredits as number}
+                            userPlan={profile?.role || 'free'}
+                          />
+                        </div>
+                      ) : !loading ? (
+                        <div ref={inputRef} onFocus={window.innerWidth < 768 ? handleInputFocus : undefined} className="w-full">
+                          <PromptInput
+                            onSend={handleSend}
+                            disabled={!activeSessionId || loading || loadingAi || loadingMessages}
+                            loading={loading || loadingAi}
+                            placeholder="Type your message..."
+                          />
+                          <div className="text-xs text-gray-400 mt-2 text-center pb-1">
+                            Press Enter to send, Shift + Enter for new line
+                          </div>
+                        </div>
+                      ) : null
+                    }
+                  </div>
                 </div>
-                {
-                  !loading && profile?.aiPromptUsage?.count as number === (profile?.role === 'free' ? 10 : 50) ? (
-                    <div ref={inputRef} className="w-full">
-                      <ChatPromptLimitReached
-                        usedPrompts={profile?.aiPromptUsage?.count as number}
-                        promptLimit={profile?.role === 'premium' ? 50 : 10}
-                        aiCredits={profile?.aiCredits as number}
-                        userPlan={profile?.role || 'free'}
-                      />
-                    </div>
-                  ) : !loading ? (
-                    <div ref={inputRef} onFocus={window.innerWidth < 768 ? handleInputFocus : undefined} className="w-full">
-                      <PromptInput
-                        onSend={handleSend}
-                        disabled={!activeSessionId || loading || loadingAi || loadingMessages}
-                        loading={loading || loadingAi}
-                        placeholder="Type your message..."
-                      />
-                      <div className="text-xs text-gray-400 mt-2 text-center pb-1">
-                        Press Enter to send, Shift + Enter for new line
-                      </div>
-                    </div>
-                  ) : null
-                }
-              </div>
-            </div>
+              )
+            }
           </div>
         </>
       )

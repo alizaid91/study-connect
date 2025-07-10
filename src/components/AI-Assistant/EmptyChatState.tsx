@@ -11,7 +11,8 @@ const EmptyChatState: React.FC<EmptyChatStateProps> = ({ onCreateNewChat }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center h-full bg-gray-50 p-8"
+      style={{ minHeight: `${window.innerHeight - 64}px` }}
+      className="flex flex-col items-center justify-center bg-gray-50 p-8"
     >
       <motion.div
         initial={{ scale: 0.8 }}
