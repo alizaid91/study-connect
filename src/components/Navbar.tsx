@@ -8,6 +8,7 @@ import { DEFAULT_AVATAR } from '../types/user';
 import { authService } from '../services/authService';
 import logo from '../assets/logo.png';
 import proBadge from '../assets/Pro_logo.png'
+import clsx from 'clsx';
 import {
   FiBook,
   FiBookmark,
@@ -23,7 +24,12 @@ import {
 } from 'react-icons/fi';
 import { logoutAdmin } from '../store/slices/adminSlice';
 
-const Navbar = () => {
+interface NavbarProps {
+  isHidden?: boolean;
+}
+
+
+const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -72,8 +78,11 @@ const Navbar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      <div className={clsx(
+        "transition-transform duration-300 px-4 sm:px-6 lg:px-8 bg-white shadow-md fixed top-0 left-0 right-0 z-40",
+        isHidden ? "-translate-y-full" : "translate-y-0"
+      )}>
         <div className="flex justify-between h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
@@ -244,138 +253,140 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+      <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-40">
+        {/* Mobile menu */}
+        <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} lg:hidden`}>
+          <div className="relative">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
 
-      {/* Mobile menu */}
-      <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} lg:hidden`}>
-        <div className="relative">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          {/* Menu content */}
-          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50">
-            <div className="pt-2 pb-3 space-y-1">
-              <Link
-                to="/"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-              >
-                <FiHome className="h-5 w-5" />
-                <span>Home</span>
-              </Link>
-              <Link
-                to="/dashboard"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-              >
-                <FiGrid className="h-5 w-5" />
-                <span>Dashboard</span>
-              </Link>
-              <Link
-                to="/pyqs"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-              >
-                <FiFileText className="h-5 w-5" />
-                <span>PYQs</span>
-              </Link>
-              <Link
-                to="/resources"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/resources')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-              >
-                <FiBook className="h-5 w-5" />
-                <span>Resources</span>
-              </Link>
-              <Link
-                to="/tasks"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/tasks')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-              >
-                <FiClipboard className="h-5 w-5" />
-                <span>Tasks</span>
-              </Link>
-              <Link
-                to="/ai-assistant"
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/ai-assistant')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <FiMessageSquare className="h-5 w-5" />
-                <span>AI Assistant</span>
-              </Link>
-              <Link
-                to="/bookmarks"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/bookmarks')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-              >
-                <FiBookmark className="h-5 w-5" />
-                <span>Bookmarks</span>
-              </Link>
-              <Link
-                to="/pricing"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pricing')
-                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-              >
-                <FiCreditCard className="h-5 w-5" />
-                <span>Pricing</span>
-              </Link>
-              {isAdmin && (
+            {/* Menu content */}
+            <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50">
+              <div className="pt-2 pb-3 space-y-1">
                 <Link
-                  to="/admin/dashboard"
+                  to="/"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/admin/dashboard')
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/')
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
                     : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                 >
-                  <FiShield className="h-5 w-5" />
-                  <span>Admin Dashboard</span>
+                  <FiHome className="h-5 w-5" />
+                  <span>Home</span>
                 </Link>
-              )}
-              {user && (
                 <Link
-                  to="/profile"
-                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile')
+                  to="/dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                >
+                  <FiGrid className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  to="/pyqs"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pyqs')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                >
+                  <FiFileText className="h-5 w-5" />
+                  <span>PYQs</span>
+                </Link>
+                <Link
+                  to="/resources"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/resources')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                >
+                  <FiBook className="h-5 w-5" />
+                  <span>Resources</span>
+                </Link>
+                <Link
+                  to="/tasks"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/tasks')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                >
+                  <FiClipboard className="h-5 w-5" />
+                  <span>Tasks</span>
+                </Link>
+                <Link
+                  to="/ai-assistant"
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/ai-assistant')
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
                     : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <FiSettings className="h-5 w-5" />
-                  <span>Settings</span>
+                  <FiMessageSquare className="h-5 w-5" />
+                  <span>AI Assistant</span>
                 </Link>
-              )}
+                <Link
+                  to="/bookmarks"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/bookmarks')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                >
+                  <FiBookmark className="h-5 w-5" />
+                  <span>Bookmarks</span>
+                </Link>
+                <Link
+                  to="/pricing"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/pricing')
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                >
+                  <FiCreditCard className="h-5 w-5" />
+                  <span>Pricing</span>
+                </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/admin/dashboard')
+                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                  >
+                    <FiShield className="h-5 w-5" />
+                    <span>Admin Dashboard</span>
+                  </Link>
+                )}
+                {user && (
+                  <Link
+                    to="/profile"
+                    className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile')
+                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <FiSettings className="h-5 w-5" />
+                    <span>Settings</span>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
+
   );
 };
 

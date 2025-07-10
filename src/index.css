@@ -44,3 +44,7 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+.max-h-minus-navbar {
+  max-height: calc(90% - 64px);
+}

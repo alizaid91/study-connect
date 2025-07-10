@@ -40,7 +40,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
     <div>
       <PromptTemplateSection isTyping={!input.trim()} onSelectPrompt={(prompt) => setInput(prompt)} />
       <div
-        className={`flex flex-col gap-2 p-2 border border-gray-300 rounded-3xl transition-all duration-200`}
+        className={`flex flex-col gap-2 p-2 border border-gray-300 rounded-3xl transition-all duration-200 bg-white`}
       >
         {/* Input area */}
         <div className="w-full min-h-[20px] md:min-h-[44px]">

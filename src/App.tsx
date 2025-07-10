@@ -1,27 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import Navbar from './components/Navbar.tsx';
-import Home from './pages/Home.tsx';
-import Dashboard from './pages/Dashboard.tsx';
-import Tasks from './pages/Tasks.tsx';
-import Resources from './pages/Resources.tsx';
-import Auth from './pages/Auth.tsx';
-import PYQs from './pages/PYQs.tsx';
-import AdminDashboard from './pages/AdminDashboard.tsx';
-import PrivateRoute from './components/PrivateRoute.tsx';
-import Profile from './pages/Profile';
-import Bookmarks from './pages/Bookmarks';
-import Footer from './components/Footer';
-import NotFound from './pages/NotFound.tsx';
-import AiAssistant from './pages/AiAssitant.tsx';
-import Pricing from './pages/Pricing.tsx';
+import AppRouter from './Routes/AppRouter.tsx';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from './store';
 import { logout } from './store/slices/authSlice.ts';
 import { authService } from './services/authService.ts';
 import { setAdmin } from './store/slices/adminSlice.ts';
 import { UserProfile } from './types/user.ts';
-import PremiumComingSoonModal from './components/PremiumComingSoon.tsx';
 
 // Separate component for scroll to top functionality
 const ScrollToTop = () => {
@@ -38,9 +23,7 @@ const ScrollToTop = () => {
 };
 
 function App() {
-  const { isAdmin } = useSelector((state: RootState) => state.admin);
   const { user, profile } = useSelector((state: RootState) => state.auth);
-  const isOpen = useSelector((state: RootState) => state.globalPopups.isPremiumComingSoonOpen);
   const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
   const dispatch = useDispatch();
 
@@ -83,6 +66,9 @@ function App() {
         if (!response.ok) {
           throw new Error(`AI service responded with status ${response.status}`);
         }
+        response.text().then((text) => {
+          console.log(text)
+        })
       })
       .catch((error) => {
         console.error('Error connecting to AI service:', error);
@@ -94,86 +80,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar />
-        <main className="w-full flex-grow pt-16">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Auth />} />
-            {
-              isAdmin && (
-
-                <Route
-                  path="/admin/dashboard"
-                  element={
-                    <AdminDashboard />
-                  }
-                />
-              )
-            }
-            <Route
-              path='/pricing'
-              element={
-                <Pricing />
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/tasks"
-              element={
-                <PrivateRoute>
-                  <Tasks />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/resources"
-              element={
-                <Resources />
-              }
-            />
-            <Route
-              path="/pyqs"
-              element={
-                <PYQs />
-              }
-            />
-            <Route
-              path="/bookmarks"
-              element={
-                <PrivateRoute>
-                  <Bookmarks />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <PrivateRoute>
-                  <Profile />
-                </PrivateRoute>
-              }
-            />
-            <Route path="/ai-assistant" element={
-              <PrivateRoute>
-                <AiAssistant />
-              </PrivateRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <Footer />
-        <PremiumComingSoonModal
-          isOpen={isOpen}
-        />
-      </div>
+      <AppRouter />
     </Router>
   );
 }
