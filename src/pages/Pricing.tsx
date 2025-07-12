@@ -7,7 +7,6 @@ import { authService } from "../services/authService";
 import { UpgradeToPremiumButton } from "../components/buttons/UpgradeToPremiumButton";
 
 const Pricing = () => {
-    const dispatch = useDispatch<AppDispatch>();
     const { user, profile } = useSelector((state: RootState) => state.auth);
     const faqs = [
         {
@@ -53,7 +52,7 @@ const Pricing = () => {
                             <li>✔️ Study Resources</li>
                             <li>✔️ 2 Task Boards</li>
                             <li>✔️ 2 AI Chats</li>
-                            <li>✔️ 10 AI Prompts/day</li>
+                            <li>✔️ 5 AI Prompts/day</li>
                             <li>✔️ Buy Extra AI Credits</li>
                         </ul>
                     </div>
@@ -84,12 +83,13 @@ const Pricing = () => {
                             <li>✔️ 10 AI Chats</li>
                             <li>✔️ 50 AI Prompts/day</li>
                             <li>✔️ Buy Extra AI Credits</li>
+                            <li>✔️ Super Fast AI Responses</li>
                             <li>✨ Priority Support</li>
                         </ul>
                     </div>
                     {
                         !user ? (
-                            <UpgradeToPremiumButton text="Continue with Premium" extraClasses="mt-6"/>
+                            <UpgradeToPremiumButton text="Continue with Premium" extraClasses="mt-6" />
                         ) : profile?.role === 'premium' ? (
                             <div className="flex justify-center items-center mt-6 w-full rounded-xl border border-indigo-600 text-indigo-600 px-4 py-2 font-medium hover:bg-indigo-50 transition">
                                 Current Plan

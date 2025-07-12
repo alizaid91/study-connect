@@ -7,6 +7,13 @@ interface AuthState {
     uid: string;
   } | null;
   profile: UserProfile | null;
+  quota: {
+    taskBoards: number;
+    chatSessions: number;
+    aiCredits: number;
+    promptsPerDay: number;
+  };
+  isAIActive: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -18,6 +25,13 @@ const loadInitialState = (): AuthState => {
     return {
       user: JSON.parse(savedState),
       profile: null,
+      quota: {
+        taskBoards: 0,
+        chatSessions: 0,
+        aiCredits: 0,
+        promptsPerDay: 0,
+      },
+      isAIActive: false,
       loading: false,
       error: null,
     };
@@ -25,6 +39,13 @@ const loadInitialState = (): AuthState => {
   return {
     user: null,
     profile: null,
+    quota: {
+      taskBoards: 0,
+      chatSessions: 0,
+      aiCredits: 0,
+      promptsPerDay: 0,
+    },
+    isAIActive: false,
     loading: false,
     error: null,
   };
@@ -47,8 +68,24 @@ const authSlice = createSlice({
       // Save to localStorage
       localStorage.setItem('authState', JSON.stringify(state.user));
     },
+    setIsAiActive: (state, action: PayloadAction<boolean>) => {
+      state.isAIActive = action.payload;
+    },
     setProfile: (state, action: PayloadAction<UserProfile>) => {
       state.profile = action.payload;
+    },
+    setQuota: (state, action: PayloadAction<{
+      taskBoards: number;
+      chatSessions: number;
+      aiCredits: number;
+      promptsPerDay: number;
+    }>) => {
+      state.quota = {
+        taskBoards: action.payload.taskBoards,
+        chatSessions: action.payload.chatSessions,
+        aiCredits: action.payload.aiCredits,
+        promptsPerDay: action.payload.promptsPerDay,
+      };
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -68,5 +105,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, setProfile, setLoading, setError, logout } = authSlice.actions;
+export const { setUser, setIsAiActive, setProfile, setQuota, setLoading, setError, logout } = authSlice.actions;
 export default authSlice.reducer; 

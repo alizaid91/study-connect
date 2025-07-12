@@ -13,7 +13,7 @@ interface NewSessionPopupProps {
 }
 
 const NewSessionPopup: React.FC<NewSessionPopupProps> = ({ isOpen, onClose, onAddSession, isSubmitting }) => {
-    const { profile } = useSelector((state: RootState) => state.auth);
+    const { profile, quota } = useSelector((state: RootState) => state.auth);
     const [title, setTitle] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -27,7 +27,7 @@ const NewSessionPopup: React.FC<NewSessionPopupProps> = ({ isOpen, onClose, onAd
 
     return (
         <AnimatePresence>
-            {isOpen && profile?.chatSessionCount && profile?.chatSessionCount >= (profile.role === 'free' ? 2 : 10) ? (
+            {isOpen && profile?.chatSessionCount && profile?.chatSessionCount >= (quota.chatSessions) ? (
                 <ChatLimitReached onClose={onClose}/>
             ) : isOpen ? (
                 <div className="fixed inset-0 z-50 overflow-y-auto">

@@ -5,15 +5,15 @@ import { useSelector } from 'react-redux';
 import { UpgradeToPremiumButton } from "../buttons/UpgradeToPremiumButton";
 
 const UsageTracker = () => {
-    const { profile } = useSelector((state: RootState) => state.auth);
+    const { profile, quota } = useSelector((state: RootState) => state.auth);
     const plan = profile?.role || "free";
-    const dailyAiPrompts = profile?.role === 'free' ? 10 : 50;
+    const dailyAiPrompts = quota?.promptsPerDay;
     const usedAiPrompts = profile?.aiPromptUsage?.count || 0;
-    const extraCredits = profile?.aiCredits || 0;
-    const percentUsed ={
+    const extraCredits = quota.aiCredits;
+    const percentUsed = {
         aiPropmpts: Math.min((usedAiPrompts / dailyAiPrompts) * 100, 100),
-        chatSessions: Math.min((profile?.chatSessionCount || 0) / (profile?.role === 'free' ? 2 : 10) * 100, 100),
-        boards: Math.min((profile?.boardCount || 0) / (profile?.role === 'free' ? 2 : 5) * 100, 100)
+        chatSessions: Math.min((profile?.chatSessionCount || 0) / (quota.chatSessions) * 100, 100),
+        boards: Math.min((profile?.boardCount || 0) / (quota.taskBoards) * 100, 100)
     };
 
     return (
@@ -60,7 +60,7 @@ const UsageTracker = () => {
                     <div className="text-sm text-gray-600 mb-1">
                         AI Sessions Created:{" "}
                         <span className="font-medium text-gray-800">
-                            {profile?.chatSessionCount} / {profile?.role === 'free' ? 2 : 10}
+                            {profile?.chatSessionCount} / {quota.chatSessions}
                         </span>
                     </div>
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
@@ -78,7 +78,7 @@ const UsageTracker = () => {
                     <div className="text-sm text-gray-600 mb-1">
                         Task boards created:{" "}
                         <span className="font-medium text-gray-800">
-                            {profile?.boardCount} / {profile?.role === 'free' ? 2 : 5}
+                            {profile?.boardCount} / {quota.taskBoards}
                         </span>
                     </div>
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">

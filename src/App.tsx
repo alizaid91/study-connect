@@ -6,6 +6,7 @@ import { RootState } from './store';
 import { logout } from './store/slices/authSlice.ts';
 import { authService } from './services/authService.ts';
 import { setAdmin } from './store/slices/adminSlice.ts';
+import { setIsAiActive } from './store/slices/authSlice.ts';
 import { UserProfile } from './types/user.ts';
 
 // Separate component for scroll to top functionality
@@ -61,6 +62,7 @@ function App() {
         dispatch(logout());
       }
     });
+
     fetch(`${AI_URL}/`)
       .then((response) => {
         if (!response.ok) {

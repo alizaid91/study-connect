@@ -14,7 +14,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
 import { UserProfile, DEFAULT_AVATAR } from '../types/user';
-import { setProfile } from '../store/slices/authSlice';
+import { setProfile, setQuota } from '../store/slices/authSlice';
 import { store } from '../store/index';
 
 export interface AuthFormData {
@@ -153,6 +153,12 @@ class AuthService {
             if (docSnap.exists()) {
                 const profile = docSnap.data() as UserProfile;
                 store.dispatch(setProfile(profile));
+                store.dispatch(setQuota({
+                    taskBoards: profile.role === 'premium' ? 5 : 2,
+                    chatSessions: profile.role === 'premium' ? 10 : 2,
+                    aiCredits: profile.aiCredits || 0,
+                    promptsPerDay: profile.role === 'premium' ? 50 : 5,
+                }))
             } else {
                 console.warn(`Profile not found for userId: ${userId}`);
             }

@@ -24,7 +24,7 @@ import NoMessagesState from '../components/AI-Assistant/NoMessagesState';
 
 const AiAssistant = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user, profile } = useSelector((state: RootState) => state.auth);
+  const { user, profile, quota } = useSelector((state: RootState) => state.auth);
   const { sessions, messages, activeSessionId, loading, error, loadingAi, loadingMessages } = useSelector((state: RootState) => state.chat);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -252,16 +252,16 @@ const AiAssistant = () => {
                   <IoMdArrowDown size={26} />
                 </div>
                 {
-                  !loading && profile?.aiPromptUsage?.count as number === (profile?.role === 'free' ? 10 : 50) ? (
+                  !loading && profile?.aiPromptUsage?.count as number === (quota.promptsPerDay) ? (
                     <div ref={inputRef} className="w-full pb-2">
                       <ChatPromptLimitReached
                         usedPrompts={profile?.aiPromptUsage?.count as number}
-                        promptLimit={profile?.role === 'premium' ? 50 : 10}
+                        promptLimit={quota.promptsPerDay}
                         aiCredits={profile?.aiCredits as number}
                         userPlan={profile?.role || 'free'}
                       />
                     </div>
-                  ) : !loading && sessionList.length > 0 ? (
+                  ) : !loading && profile && sessionList.length > 0 ? (
                     <div ref={inputRef} onFocus={window.innerWidth < 768 ? handleInputFocus : undefined} className="w-full">
                       <PromptInput
                         onSend={handleSend}

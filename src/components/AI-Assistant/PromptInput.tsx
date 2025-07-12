@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiPlus, FiSend } from 'react-icons/fi';
 import PromptTemplateSection from './PromptTemplateSection';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
 interface PromptInputProps {
   onSend: (input: string) => void;
@@ -18,6 +20,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
+  const { isAIActive } = useSelector((state: RootState) => state.auth);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -37,7 +40,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
   };
 
   return (
-    <div>
+    <div className='relative'>
       <PromptTemplateSection isTyping={!input.trim()} onSelectPrompt={(prompt) => setInput(prompt)} />
       <div
         className={`flex flex-col gap-2 p-2 border border-gray-300 rounded-3xl transition-all duration-200 bg-white`}
