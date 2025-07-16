@@ -25,17 +25,17 @@ const Message: React.FC<MessageProps> = ({ message, isUser, showLoading }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`w-full flex ${isUser ? 'justify-end pt-12 mb-3' : 'justify-start'} items-start`}
+      className={`w-full flex ${isUser ? 'justify-end pt-6 mb-3' : 'justify-start'} items-start`}
     >
       <div
-        className={`relative px-6 py-3 rounded-3xl transition-all duration-200 break-words overflow-x-auto
+        className={`relative py-3 rounded-3xl transition-all duration-200 break-words overflow-x-auto
           ${isUser
-            ? 'max-w-[80%] bg-gradient-to-br from-blue-500 to-blue-700 text-white'
-            : 'max-w-full bg-gray-200/70 text-gray-900'
+            ? 'max-w-[80%] px-6 bg-gray-200/70 text-gray-900'
+            : 'max-w-full mb-6 px-3 border-b border-gray-200 bg-white text-gray-800'}
           }`}
       >
         {isUser ? (
-          <div className="whitespace-pre-line text-base font-medium tracking-wide">{message.content}</div>
+          <div className="whitespace-pre-line text-base tracking-wide">{message.content}</div>
         ) : (
           <div className="prose prose-sm max-w-none break-words overflow-x-auto">
             <ReactMarkdown

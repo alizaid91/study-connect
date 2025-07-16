@@ -31,7 +31,7 @@ export default function PromptTemplateSection({ isTyping, onSelectPrompt }: Prom
     return (
         <AnimatePresence>
             {prompts.length && shouldShow && !loadingAi && (
-                <div className="sm:mx-2 mt-4 mb-2 relative">
+                <div className="sm:mx-2 mb-2 relative">
                     {/* <div className="pointer-events-none absolute -left-4 top-0 border border-red-500 h-full w-8 bg-gradient-to-r from-gray-50 via-white/70 to-transparent z-10" /> */}
 
                     {/* Right Gradient */}

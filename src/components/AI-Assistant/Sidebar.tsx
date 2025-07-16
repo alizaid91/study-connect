@@ -86,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className="h-full bg-white border-r border-gray-200 flex flex-col">
+    <div className="h-full max-w-[300px] bg-white border-r border-gray-200 flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div onClick={() => setIsCreateSessionPopupOpen(true)} className='w-fit py-2 px-3 border border-gray-200 hover:bg-gray-100 rounded-3xl flex items-center justify-center gap-2 cursor-pointer'>
           <FiEdit size={20} /> <span>New Chat</span>
@@ -108,7 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className={`group p-2 ${isCollapsed ? 'px-1' : 'px-4'}`}
+              className={`group p-2 px-4}`}
               ref={el => menuRefs.current[session.id] = el}
             >
               <div
