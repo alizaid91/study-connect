@@ -37,8 +37,9 @@ const AiAssistant = () => {
     loadingMessages,
   } = useSelector((state: RootState) => state.chat);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const [sessionActionLoading, setSessionActionLoading] = useState({
     creatingSession: false,
     deletingSession: false,
@@ -80,37 +81,26 @@ const AiAssistant = () => {
     }
   }, [activeSessionId, dispatch]);
 
-  const handelScrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollTo({
-        behavior: "smooth",
-        top: messagesEndRef.current.scrollHeight,
-      });
-      setIsAtBottom(true);
-    }
-  };
-
+  // Scroll to bottom when messages change
   useEffect(() => {
-    handelScrollToBottom();
+    if(loadingAi && showScrollButton) return;
+    scrollToBottom();
   }, [messages, activeSessionId]);
 
-  const handleScroll = () => {
-    if (messagesEndRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = messagesEndRef.current;
-      if (scrollTop === 0) return;
-      const isBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 10;
-      setIsAtBottom(isBottom);
-    }
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    const messagesContainer = messagesEndRef.current;
-    if (messagesContainer) {
-      messagesContainer.addEventListener("scroll", handleScroll);
-      return () =>
-        messagesContainer.removeEventListener("scroll", handleScroll);
-    }
-  }, [messagesEndRef, messagesEndRef.current]);
+  const handleScroll = () => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    const atBottom =
+      container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+
+    setShowScrollButton(!atBottom);
+  };
 
   const handleSend = (input: string) => {
     if (!user) return;
@@ -269,7 +259,11 @@ const AiAssistant = () => {
               </div>
             ) : (
               <>
-                <div ref={messagesEndRef} style={{maxHeight: `calc((${visibleHeight}px - ${inputRefHeight}px)`}} className={`flex flex-col flex-1 max-w-full overflow-auto`}>
+                <div
+                  ref={chatContainerRef}
+                  onScroll={handleScroll}
+                  style={{ maxHeight: `calc((${visibleHeight}px - ${inputRefHeight}px)` }}
+                  className={`flex flex-col flex-1 max-w-full overflow-auto`}>
                   {!loading && renderedMessages.length === 0 ? (
                     <NoMessagesState />
                   ) : (
@@ -286,6 +280,7 @@ const AiAssistant = () => {
                             }
                           />
                         ))}
+                        <div ref={messagesEndRef} />
                         {!loading && error && (
                           <ErrorMessageBox message={error} />
                         )}
@@ -294,17 +289,17 @@ const AiAssistant = () => {
                 </div>
                 <div
                 ref={inputRef} 
-                  className={`w-full max-w-full bg-white`}
+                  className={`w-full max-w-full`}
                 >
-                  <div className="w-full relative">
-                    <div
-                      onClick={handelScrollToBottom}
-                      className={`${
-                        messages && !isAtBottom ? "visible" : "invisible"
-                      } absolute -top-16 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto mb-3 cursor-pointer border border-gray-500/50 bg-white shadow-xl hover:bg-white/90 rounded-full p-1 flex items-center justify-center`}
+                  <div className="w-full relative pb-2">
+                    {showScrollButton && (
+                      <div
+                      onClick={scrollToBottom}
+                      className={`absolute -top-12 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto cursor-pointer bg-black/50 backdrop-blur-sm text-white shadow-xl rounded-full p-1 flex items-center justify-center`}
                     >
-                      <IoMdArrowDown size={26} />
+                      <IoMdArrowDown size={28} />
                     </div>
+                    )}
                     {!loading &&
                     (profile?.aiPromptUsage?.count as number) ===
                       quota.promptsPerDay ? (
@@ -319,9 +314,6 @@ const AiAssistant = () => {
                     ) : !loading && profile && sessionList.length > 0 ? (
                       <div
                         ref={inputRef}
-                        onFocus={
-                          window.innerWidth < 768 ? handleInputFocus : undefined
-                        }
                         className="w-full pt-2"
                       >
                         <PromptInput
@@ -335,9 +327,6 @@ const AiAssistant = () => {
                           loading={loading || loadingAi}
                           placeholder="Type your message..."
                         />
-                        <div className="text-xs text-gray-400 mt-2 text-center pb-1">
-                          Press Enter to send, Shift + Enter for new line
-                        </div>
                       </div>
                     ) : null}
                   </div>
