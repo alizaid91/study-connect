@@ -18,7 +18,6 @@ const PromptInput: React.FC<PromptInputProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -29,21 +28,6 @@ const PromptInput: React.FC<PromptInputProps> = ({
     }
   }, [input]);
 
-  // Detect keyboard via Visual Viewport API
-  useEffect(() => {
-    const onViewportResize = () => {
-      if (window.visualViewport) {
-        const offset = window.innerHeight - window.visualViewport.height;
-        setKeyboardOffset(offset > 0 ? offset : 0);
-      }
-    };
-
-    window.visualViewport?.addEventListener("resize", onViewportResize);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", onViewportResize);
-    };
-  }, []);
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -52,11 +36,17 @@ const PromptInput: React.FC<PromptInputProps> = ({
     }
   };
 
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      textareaRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 300);
+  };
+
   return (
-    <div
-      className="relative"
-      style={{ marginBottom: keyboardOffset ? `${keyboardOffset}px` : "0px" }}
-    >
+    <div className="relative">
       <PromptTemplateSection
         isTyping={!input.trim()}
         onSelectPrompt={(prompt) => setInput(prompt)}
@@ -67,6 +57,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
         {/* Input area */}
         <div className="w-full min-h-[20px] md:min-h-[44px]">
           <textarea
+            onFocus={window.innerWidth < 768 ? handleInputFocus : undefined}
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -109,7 +100,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
           </div>
         </div>
       </div>
-
+      
       {window.innerWidth > 768 && (
         <div className="text-xs text-gray-400 mt-2 text-center">
           Press Enter to send, Shift + Enter for new line

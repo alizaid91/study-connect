@@ -56,12 +56,6 @@ const AiAssistant = () => {
     }
   }, [inputRef.current?.clientHeight, activeSessionId]);
 
-  const handleInputFocus = () => {
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 300);
-  };
-
   // close sidebar initially on mobile view
   useEffect(() => {
     setIsSidebarCollapsed(window.innerWidth < 768);
@@ -83,7 +77,6 @@ const AiAssistant = () => {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    if(loadingAi && showScrollButton) return;
     scrollToBottom();
   }, [messages, activeSessionId]);
 
@@ -312,10 +305,7 @@ const AiAssistant = () => {
                         />
                       </div>
                     ) : !loading && profile && sessionList.length > 0 ? (
-                      <div
-                        ref={inputRef}
-                        className="w-full pt-2"
-                      >
+                      <div className="w-full pt-2">
                         <PromptInput
                           onSend={handleSend}
                           disabled={
