@@ -5,15 +5,15 @@ import { useSelector } from 'react-redux';
 import { UpgradeToPremiumButton } from "../buttons/UpgradeToPremiumButton";
 
 const UsageTracker = () => {
-    const { profile, quota } = useSelector((state: RootState) => state.auth);
+    const { profile } = useSelector((state: RootState) => state.auth);
     const plan = profile?.role || "free";
-    const dailyAiPrompts = quota?.promptsPerDay;
-    const usedAiPrompts = profile?.aiPromptUsage?.count || 0;
-    const extraCredits = quota.aiCredits;
+    const dailyAiPrompts = profile?.quotas?.promptsPerDay || 0;
+    const usedAiPrompts = profile?.usage.aiPromptUsage?.count || 0;
+    const extraCredits = profile?.quotas.aiCredits;
     const percentUsed = {
-        aiPropmpts: Math.min((usedAiPrompts / dailyAiPrompts) * 100, 100),
-        chatSessions: Math.min((profile?.chatSessionCount || 0) / (quota.chatSessions) * 100, 100),
-        boards: Math.min((profile?.boardCount || 0) / (quota.taskBoards) * 100, 100)
+        aiPrompts: Math.min((usedAiPrompts / dailyAiPrompts) * 100, 100),
+        chatSessions: Math.min((profile?.usage.chatSessionCount || 0) / (profile?.quotas.chatSessions as number) * 100, 100),
+        boards: Math.min((profile?.usage.boardCount || 0) / (profile?.quotas.taskBoards as number) * 100, 100)
     };
 
     return (
@@ -48,9 +48,9 @@ const UsageTracker = () => {
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${percentUsed.aiPropmpts}%` }}
+                            animate={{ width: `${percentUsed?.aiPrompts}%` }}
                             transition={{ duration: 0.8 }}
-                            className={`h-full ${percentUsed.aiPropmpts < 80 ? "bg-indigo-500" : "bg-red-500"
+                            className={`h-full ${percentUsed?.aiPrompts < 80 ? "bg-indigo-500" : "bg-red-500"
                                 } rounded-full`}
                         />
                     </div>
@@ -60,7 +60,7 @@ const UsageTracker = () => {
                     <div className="text-sm text-gray-600 mb-1">
                         AI Sessions Created:{" "}
                         <span className="font-medium text-gray-800">
-                            {profile?.chatSessionCount} / {quota.chatSessions}
+                            {profile?.usage.chatSessionCount} / {profile?.quotas.chatSessions}
                         </span>
                     </div>
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
@@ -78,7 +78,7 @@ const UsageTracker = () => {
                     <div className="text-sm text-gray-600 mb-1">
                         Task boards created:{" "}
                         <span className="font-medium text-gray-800">
-                            {profile?.boardCount} / {quota.taskBoards}
+                            {profile?.usage.boardCount} / {profile?.quotas.taskBoards}
                         </span>
                     </div>
                     <div className="h-3 rounded-full bg-gray-200 overflow-hidden">

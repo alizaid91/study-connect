@@ -94,10 +94,13 @@ export const chatService = {
 
     authService.updateUserProfile(userId, await authService.getUserProfile(userId).then(profile => ({
       ...profile,
-      aiPromptUsage: {
-        date: profile?.aiPromptUsage?.date || new Date().toLocaleDateString('en-GB'),
-        count: (profile?.aiPromptUsage?.count || 0) + 1,
-      },
+      usage: {
+        ...profile?.usage,
+        aiPromptUsage: {
+          date: profile?.usage.aiPromptUsage?.date || new Date().toLocaleDateString("en-GB"),
+          count: (profile?.usage.aiPromptUsage?.count || 0) + 1,
+        },
+      }
     } as UserProfile)));
   },
 
@@ -142,10 +145,13 @@ export const chatService = {
       await addDoc(messageRef, aiMessage);
       authService.updateUserProfile(userId, await authService.getUserProfile(userId).then(profile => ({
         ...profile,
-        aiPromptUsage: {
-          date: profile?.aiPromptUsage?.date || new Date().toLocaleDateString('en-GB'),
-          count: (profile?.aiPromptUsage?.count || 0) + 1,
-        },
+        usage: {
+          ...profile?.usage,
+          aiPromptUsage: {
+            date: profile?.usage.aiPromptUsage?.date || new Date().toLocaleDateString("en-GB"),
+            count: (profile?.usage.aiPromptUsage?.count || 0) + 1,
+          },
+        }
       }) as UserProfile));
     } catch (error) {
       console.error('Error sending message to AI:', error);

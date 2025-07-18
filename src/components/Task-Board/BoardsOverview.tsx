@@ -16,7 +16,7 @@ interface BoardsOverviewProps {
 }
 
 const BoardsOverview = ({ boards, onSelectBoard }: BoardsOverviewProps) => {
-  const { user, profile } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);

@@ -41,18 +41,21 @@ function App() {
 
     const today = new Date().toLocaleDateString('en-GB');
 
-    if (profile.aiPromptUsage?.date !== today) {
+    if (profile.usage.aiPromptUsage?.date !== today) {
       authService.updateUserProfile(user.uid, {
         ...profile,
-        aiPromptUsage: {
-          date: today,
-          count: 0,
+        usage: {
+          aiPromptUsage: {
+            date: today,
+            count: 0,
+          },
         },
       } as UserProfile);
     }
-  }, [user?.uid, profile?.aiPromptUsage?.date]);
+  }, [user?.uid, profile?.usage.aiPromptUsage?.date]);
 
   useEffect(() => {
+    // authService.migrateUserProfiles();
     const unsubscribe = authService.onAuthStateChange(async (user) => {
       if (user) {
         const idTokenResult = await user.getIdTokenResult();

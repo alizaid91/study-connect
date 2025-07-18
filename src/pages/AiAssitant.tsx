@@ -24,7 +24,7 @@ import NoMessagesState from "../components/AI-Assistant/NoMessagesState";
 
 const AiAssistant = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user, profile, quota } = useSelector(
+  const { user, profile } = useSelector(
     (state: RootState) => state.auth
   );
   const {
@@ -121,8 +121,10 @@ const AiAssistant = () => {
     );
     await authService.updateUserProfile(user.uid, {
       ...profile,
-      chatSessionCount: (profile?.chatSessionCount as number) + 1,
-    });
+      usage: {
+        ...profile.usage,
+        chatSessionCount: (profile.usage.chatSessionCount || 0) + 1
+    }});
     dispatch(setActiveSession(sessionId));
     setIsCreateSessionPopupOpen(false);
     setIsSidebarCollapsed(window.innerWidth < 768);
@@ -155,8 +157,10 @@ const AiAssistant = () => {
       await chatService.deleteSession(sessionId);
       await authService.updateUserProfile(user.uid, {
         ...profile,
-        chatSessionCount: (profile?.chatSessionCount as number) - 1,
-      });
+        usage: {
+          ...profile.usage,
+          chatSessionCount: (profile.usage.chatSessionCount || 0) - 1
+      }});
       if (activeSessionId === sessionId) {
         const newSessionList = sessionList.filter(
           (session) => session.id !== sessionId
@@ -294,13 +298,13 @@ const AiAssistant = () => {
                     </div>
                     )}
                     {!loading &&
-                    (profile?.aiPromptUsage?.count as number) ===
-                      quota.promptsPerDay ? (
+                    (profile?.usage.aiPromptUsage?.count as number) ===
+                      profile?.quotas.promptsPerDay ? (
                       <div ref={inputRef} className="w-full pb-2">
                         <ChatPromptLimitReached
-                          usedPrompts={profile?.aiPromptUsage?.count as number}
-                          promptLimit={quota.promptsPerDay}
-                          aiCredits={profile?.aiCredits as number}
+                          usedPrompts={profile?.usage.aiPromptUsage?.count as number}
+                          promptLimit={profile?.quotas.promptsPerDay as number}
+                          aiCredits={profile?.usage.aiCreditsUsed as number}
                           userPlan={profile?.role || "free"}
                         />
                       </div>

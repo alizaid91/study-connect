@@ -24,7 +24,7 @@ const BoardFormModal = ({
     mode = 'create'
 }: BoardFormModalProps) => {
     const [title, setTitle] = useState(initialTitle);
-    const { profile, quota } = useSelector((state: RootState) => state.auth);
+    const { profile } = useSelector((state: RootState) => state.auth);
 
     useEffect(() => {
         if (isOpen) {
@@ -41,7 +41,7 @@ const BoardFormModal = ({
 
     return (
         <AnimatePresence>
-            {isOpen && profile && profile.boardCount && profile.boardCount >= (quota.taskBoards)
+            {isOpen && profile && profile.usage.boardCount && profile.usage.boardCount >= (profile.quotas.taskBoards as number)
                 ? <BoardLimitModal
                     isOpen={isOpen}
                     onClose={onClose}
