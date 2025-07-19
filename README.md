@@ -101,8 +101,8 @@ Built with ❤️ using React, TypeScript, Firebase, and Gemini AI
 Having questions or need help?
 
 - 📧 **Email:** [alizaidshaikh9975@gmail.com](mailto:support@studyconnect.ai)  
-- 🌐 **Website:** https://student-guide-seven.vercel.app
-- 🌐 **Developer Portfolio:** https://dev-ali-zaid-portfolio.vercel.app/
+- 🌐 **Website:** https://studyconnect.live
+- 🌐 **Developer Portfolio:** https://devalizaid.me
 ---
 
 Made with ❤️ by Engineering Students, for Engineering Students.
