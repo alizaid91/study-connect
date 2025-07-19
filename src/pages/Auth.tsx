@@ -24,8 +24,6 @@ const Auth = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   useEffect(() => {
     const hash = location.hash.replace('#', '');
@@ -36,23 +34,6 @@ const Auth = () => {
       setIsLogin(false);
     }
   }, [location.hash]);
-
-  useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange(async (user) => {
-      if (user) {
-        const idTokenResult = await user.getIdTokenResult();
-        if (idTokenResult.claims.role === 'admin') {
-          dispatch(setAdmin(true));
-        }
-        dispatch(setUser(user));
-        navigate('/');
-      } else {
-        dispatch(logout());
-      }
-    });
-
-    return () => unsubscribe();
-  }, [dispatch, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

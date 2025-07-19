@@ -1,13 +1,10 @@
-import { BrowserRouter as Router, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import AppRouter from './Routes/AppRouter.tsx';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from './store';
-import { logout } from './store/slices/authSlice.ts';
-import { authService } from './services/authService.ts';
-import { setAdmin } from './store/slices/adminSlice.ts';
-import { setIsAiActive } from './store/slices/authSlice.ts';
-import { UserProfile } from './types/user.ts';
+import { BrowserRouter as Router, useLocation} from "react-router-dom";
+import { useEffect } from "react";
+import AppRouter from "./Routes/AppRouter.tsx";
+import { useSelector } from "react-redux";
+import { RootState } from "./store";
+import { authService } from "./services/authService.ts";
+import { UserProfile } from "./types/user.ts";
 
 // Separate component for scroll to top functionality
 const ScrollToTop = () => {
@@ -16,7 +13,7 @@ const ScrollToTop = () => {
   useEffect(() => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   }, [pathname]);
 
@@ -26,7 +23,6 @@ const ScrollToTop = () => {
 function App() {
   const { user, profile } = useSelector((state: RootState) => state.auth);
   const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
-  const dispatch = useDispatch();
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -39,7 +35,7 @@ function App() {
   useEffect(() => {
     if (!user || !profile) return;
 
-    const today = new Date().toLocaleDateString('en-GB');
+    const today = new Date().toLocaleDateString("en-GB");
 
     if (profile.usage.aiPromptUsage?.date !== today) {
       authService.updateUserProfile(user.uid, {
@@ -55,31 +51,20 @@ function App() {
   }, [user?.uid, profile?.usage.aiPromptUsage?.date]);
 
   useEffect(() => {
-    // authService.migrateUserProfiles();
-    const unsubscribe = authService.onAuthStateChange(async (user) => {
-      if (user) {
-        const idTokenResult = await user.getIdTokenResult();
-        const isAdmin = idTokenResult.claims.role === 'admin';
-        dispatch(setAdmin(isAdmin));
-      } else {
-        dispatch(logout());
-      }
-    });
-
     fetch(`${AI_URL}/`)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`AI service responded with status ${response.status}`);
+          throw new Error(
+            `AI service responded with status ${response.status}`
+          );
         }
         response.text().then((text) => {
-          console.log(text)
-        })
+          console.log(text);
+        });
       })
       .catch((error) => {
-        console.error('Error connecting to AI service:', error);
+        console.error("Error connecting to AI service:", error);
       });
-
-    return () => unsubscribe();
   }, []);
 
   return (
