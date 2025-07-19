@@ -19,15 +19,15 @@ const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        console.log("User is authenticated, Varifying admin status...", user);
+        // console.log("User is authenticated, Varifying admin status...", user);
         const token = await user.getIdTokenResult(true);
         if (token.claims.role === "admin") {
           setIsAdmin(true);
           dispatch(setAdmin(true));
-          console.log("User is an admin.");
+        //   console.log("User is an admin.");
         }
         else {
-          console.log("User is not an admin.");
+        //   console.log("User is not an admin.");
           dispatch(logoutAdmin());
         }
       }
