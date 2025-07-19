@@ -1,9 +1,4 @@
-import {
-  Routes,
-  Route,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import Navbar from ".././components/Navbar.tsx";
 import Home from ".././pages/Home.tsx";

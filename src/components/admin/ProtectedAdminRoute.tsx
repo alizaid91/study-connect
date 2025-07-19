@@ -31,6 +31,7 @@ const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({
           dispatch(logoutAdmin());
         }
       }
+      dispatch(logoutAdmin());
       setLoading(false);
     });
     return unsubscribe;
