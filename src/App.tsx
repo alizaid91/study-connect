@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, useLocation} from "react-router-dom";
+import { BrowserRouter as Router, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import AppRouter from "./Routes/AppRouter.tsx";
 import { useSelector } from "react-redux";
@@ -41,6 +41,7 @@ function App() {
       authService.updateUserProfile(user.uid, {
         ...profile,
         usage: {
+          ...profile.usage,
           aiPromptUsage: {
             date: today,
             count: 0,

@@ -114,42 +114,6 @@ const Dashboard = () => {
           variants={itemVariants}
           whileHover={{ y: -5 }}
         >
-          <Link to="/tasks" className="block">
-            <h3 className="text-lg font-semibold text-gray-700">Default List Tasks</h3>
-            {loading ? (
-              loader
-            ) : (
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-blue-600">{stats?.defaultListTasks ?? 0}</p>
-                <FaArrowRight className="text-blue-600 text-xl" />
-              </div>
-            )}
-          </Link>
-        </motion.div>
-
-        <motion.div
-          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
-          variants={itemVariants}
-          whileHover={{ y: -5 }}
-        >
-          <Link to="/tasks" className="block">
-            <h3 className="text-lg font-semibold text-gray-700">High Priority Tasks</h3>
-            {loading ? (
-              loader
-            ) : (
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-3xl font-bold text-red-600">{stats?.highPriorityTasks ?? 0}</p>
-                <FaArrowRight className="text-red-600 text-xl" />
-              </div>
-            )}
-          </Link>
-        </motion.div>
-
-        <motion.div
-          className="bg-white p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
-          variants={itemVariants}
-          whileHover={{ y: -5 }}
-        >
           <Link to="/pyqs" className="block">
             <h3 className="text-lg font-semibold text-gray-700">Available Papers</h3>
             {loading ? (
