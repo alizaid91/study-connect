@@ -3,10 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../store";
 import {
   listenToSessions,
-  listenToMessages,
   sendMessage,
   setActiveSession,
   setError,
+  fetchMessages,
 } from "../store/slices/chatSlice";
 import { ChatMessage } from "../types/chat";
 import Sidebar from "../components/AI-Assistant/Sidebar";
@@ -21,23 +21,25 @@ import { authService } from "../services/authService";
 import ChatPromptLimitReached from "../components/AI-Assistant/ChatPromptLimitReached";
 import ErrorMessageBox from "../components/AI-Assistant/ErrorMessageBox";
 import NoMessagesState from "../components/AI-Assistant/NoMessagesState";
+import Loader1 from "../components/Loaders/Loader1";
+import Loader2 from "../components/Loaders/Loader2";
 
 const AiAssistant = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user, profile } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { user, profile } = useSelector((state: RootState) => state.auth);
   const {
     sessions,
     messages,
     activeSessionId,
     loading,
-    error,
     loadingAi,
     loadingMessages,
   } = useSelector((state: RootState) => state.chat);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [sessionActionLoading, setSessionActionLoading] = useState({
@@ -46,15 +48,8 @@ const AiAssistant = () => {
   });
   const [isCreateSessionPopupOpen, setIsCreateSessionPopupOpen] =
     useState(false);
-  const visibleHeight = window.innerHeight - 64;
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [inputRefHeight, setInputRefHeight] = useState<number>(0);
-  useEffect(() => {
-    if (inputRef.current) {
-      setInputRefHeight(inputRef.current.clientHeight);
-    }
-  }, [inputRef.current?.clientHeight, activeSessionId]);
+  const visibleHeight = window.innerHeight - 64;
 
   // close sidebar initially on mobile view
   useEffect(() => {
@@ -71,18 +66,41 @@ const AiAssistant = () => {
   // Listen to messages for active session
   useEffect(() => {
     if (activeSessionId) {
-      dispatch(listenToMessages(activeSessionId));
+      dispatch(fetchMessages(activeSessionId));
     }
   }, [activeSessionId, dispatch]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, activeSessionId]);
+    scrollToLastPrompt();
+  }, [loadingAi]);
+
+  const scrollToLastPrompt = () => {
+    const parent = messagesEndRef.current;
+    if (!parent || parent.children.length < 2) return;
+
+    const secondLastChild = parent.children[parent.children.length - 2];
+    secondLastChild.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (!loadingAi) {
+      scrollToBottom();
+    }
+  }, [activeSessionId, messages]);
 
   // Scroll to bottom function
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
   };
 
   const handleScroll = () => {
@@ -90,7 +108,8 @@ const AiAssistant = () => {
     if (!container) return;
 
     const atBottom =
-      container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+      container.scrollHeight - container.scrollTop <=
+      container.clientHeight + 50;
 
     setShowScrollButton(!atBottom);
   };
@@ -123,8 +142,9 @@ const AiAssistant = () => {
       ...profile,
       usage: {
         ...profile.usage,
-        chatSessionCount: (profile.usage.chatSessionCount || 0) + 1
-    }});
+        chatSessionCount: (profile.usage.chatSessionCount || 0) + 1,
+      },
+    });
     dispatch(setActiveSession(sessionId));
     setIsCreateSessionPopupOpen(false);
     setIsSidebarCollapsed(window.innerWidth < 768);
@@ -146,12 +166,22 @@ const AiAssistant = () => {
   };
 
   const handleDeleteSession = async (sessionId: string) => {
+    if (!user?.uid) return;
     if (!profile) {
       dispatch(setError("Profile not loaded yet"));
       return;
     }
     setSessionActionLoading({ ...sessionActionLoading, deletingSession: true });
-    if (!user?.uid) return;
+    if (activeSessionId === sessionId) {
+      const newSessionList = sessionList.filter(
+        (session) => session.id !== sessionId
+      );
+      if (newSessionList.length > 0) {
+        dispatch(setActiveSession(newSessionList[0].id));
+      } else {
+        dispatch(setActiveSession(null));
+      }
+    }
     const { chatService } = await import("../services/chatService");
     try {
       await chatService.deleteSession(sessionId);
@@ -159,18 +189,9 @@ const AiAssistant = () => {
         ...profile,
         usage: {
           ...profile.usage,
-          chatSessionCount: (profile.usage.chatSessionCount || 0) - 1
-      }});
-      if (activeSessionId === sessionId) {
-        const newSessionList = sessionList.filter(
-          (session) => session.id !== sessionId
-        );
-        if (newSessionList.length > 0) {
-          dispatch(setActiveSession(newSessionList[0].id));
-        } else {
-          dispatch(setActiveSession(null));
-        }
-      }
+          chatSessionCount: (profile.usage.chatSessionCount || 0) - 1,
+        },
+      });
     } catch (error) {
       console.error("Error deleting session:", error);
       dispatch(setError("Failed to delete chat session"));
@@ -206,11 +227,7 @@ const AiAssistant = () => {
       )}
       {loading ? (
         <div className="flex justify-center items-center w-full min-h-screen bg-gray-50">
-          <div className="relative w-24 h-24">
-            <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
-            <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
-            <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
-          </div>
+          <Loader1 />
         </div>
       ) : sessionList.length === 0 ? (
         <EmptyChatState onCreateNewChat={() => handleNewSession("New Chat")} />
@@ -243,66 +260,68 @@ const AiAssistant = () => {
               )}
             </motion.div>
           )}
-          <div
-            className="flex flex-col justify-center w-full max-w-full md:max-w-[900px] mx-auto px-2 max-h-full overflow-hidden"
-          >
+          <div className="flex flex-col justify-center w-full max-w-full md:max-w-[900px] mx-auto px-2 max-h-full overflow-hidden">
             {loadingMessages ? (
               <div className="flex justify-center items-center w-full min-h-screen bg-gray-50">
-                <div className="relative w-24 h-24">
-                  <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
-                  <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
-                  <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
-                </div>
+                <Loader1 />
               </div>
             ) : (
               <>
                 <div
                   ref={chatContainerRef}
                   onScroll={handleScroll}
-                  style={{ maxHeight: `calc((${visibleHeight}px - ${inputRefHeight}px)` }}
-                  className={`flex flex-col flex-1 max-w-full overflow-auto`}>
-                  {!loading && renderedMessages.length === 0 ? (
+                  className={`flex flex-col flex-1 max-w-full overflow-auto`}
+                >
+                  {!loading && renderedMessages.length === 0 && !sessions[activeSessionId || ""]?.error ? (
                     <NoMessagesState />
                   ) : (
-                      <div className="min-w-full">
-                        {renderedMessages.map((msg, idx) => (
-                          <Message
-                            key={idx}
-                            message={msg}
-                            isUser={msg.sender === "user"}
-                            showLoading={
-                              !error &&
-                              msg.id === "ai-streaming" &&
-                              msg.content === ""
-                            }
+                    <div
+                      style={{
+                        paddingBottom: `${loadingAi ? 260 : 0}px`,
+                      }}
+                      ref={messagesEndRef}
+                      className="min-w-full"
+                    >
+                      {renderedMessages.map((msg, idx) => (
+                        <Message
+                          key={idx}
+                          message={msg}
+                          isUser={msg.sender === "user"}
+                          showLoading={
+                            !sessions[activeSessionId as string]?.error &&
+                            msg.sender === "ai" &&
+                            msg.content === ""
+                          }
+                        />
+                      ))}
+                      {!loading &&
+                        activeSessionId &&
+                        sessions[activeSessionId]?.error && (
+                          <ErrorMessageBox
+                            message={sessions[activeSessionId]?.error}
                           />
-                        ))}
-                        <div ref={messagesEndRef} />
-                        {!loading && error && (
-                          <ErrorMessageBox message={error} />
                         )}
-                      </div>
+                    </div>
                   )}
                 </div>
-                <div
-                ref={inputRef} 
-                  className={`w-full max-w-full`}
-                >
+                <div ref={inputRef} className={`w-full max-w-full`}>
                   <div className="w-full relative pb-2">
                     {showScrollButton && (
                       <div
-                      onClick={scrollToBottom}
-                      className={`absolute -top-12 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto cursor-pointer bg-black/50 backdrop-blur-sm text-white shadow-xl rounded-full p-1 flex items-center justify-center`}
-                    >
-                      <IoMdArrowDown size={28} />
-                    </div>
+                        onClick={scrollToBottom}
+                        className={`absolute -top-12 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto cursor-pointer bg-black/50 backdrop-blur-sm text-white shadow-xl rounded-full p-1 flex items-center justify-center`}
+                      >
+                        <IoMdArrowDown size={28} />
+                      </div>
                     )}
                     {!loading &&
                     (profile?.usage.aiPromptUsage?.count as number) ===
                       profile?.quotas.promptsPerDay ? (
                       <div ref={inputRef} className="w-full pb-2">
                         <ChatPromptLimitReached
-                          usedPrompts={profile?.usage.aiPromptUsage?.count as number}
+                          usedPrompts={
+                            profile?.usage.aiPromptUsage?.count as number
+                          }
                           promptLimit={profile?.quotas.promptsPerDay as number}
                           aiCredits={profile?.usage.aiCreditsUsed as number}
                           userPlan={profile?.role || "free"}

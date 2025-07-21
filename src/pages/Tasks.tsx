@@ -1,18 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { setBoards, setSelectedBoardId } from '../store/slices/taskSlice';
-import { Board } from '../types/content';
-import TaskBoard from '../components/Task-Board/TaskBoard';
-import BoardsOverview from '../components/Task-Board/BoardsOverview';
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../store";
+import { setBoards, setSelectedBoardId } from "../store/slices/taskSlice";
+import { Board } from "../types/content";
+import TaskBoard from "../components/Task-Board/TaskBoard";
+import BoardsOverview from "../components/Task-Board/BoardsOverview";
 import { IoArrowBackSharp } from "react-icons/io5";
-import { motion } from 'framer-motion';
-import { listenToBoards, createDefaultBoardIfNeeded } from '../services/taskServics';
+import { motion } from "framer-motion";
+import {
+  listenToBoards,
+  createDefaultBoardIfNeeded,
+} from "../services/taskServics";
+import Loader1 from "../components/Loaders/Loader1";
 
 const Tasks = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { boards, selectedBoardId } = useSelector((state: RootState) => state.tasks);
+  const { boards, selectedBoardId } = useSelector(
+    (state: RootState) => state.tasks
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch all boards
@@ -29,10 +35,10 @@ const Tasks = () => {
         createDefaultBoardIfNeeded(user.uid).then(() => {
           dispatch(setBoards(fetchedBoards));
           setIsLoading(false);
-        })
+        });
       },
       () => {
-        console.error('Error fetching boards');
+        console.error("Error fetching boards");
         setIsLoading(false);
       }
     );
@@ -52,23 +58,15 @@ const Tasks = () => {
   };
 
   const getSortedBoards = (boards: Board[]): Board[] => {
-    const boardWithPosition = boards.map(board => ({
+    const boardWithPosition = boards.map((board) => ({
       ...board,
-      position: typeof board.position === 'number' ? board.position : 0
+      position: typeof board.position === "number" ? board.position : 0,
     }));
     return boardWithPosition.sort((a, b) => a.position - b.position);
-  }
+  };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="relative w-24 h-24">
-          <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
-          <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
-          <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
-        </div>
-      </div>
-    );
+    return <Loader1 />;
   }
 
   return (
@@ -92,9 +90,10 @@ const Tasks = () => {
             <div className="flex items-center">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
                 <span className="mr-2">
-                  {boards.find(b => b.id === selectedBoardId)?.title || 'Board'}
+                  {boards.find((b) => b.id === selectedBoardId)?.title ||
+                    "Board"}
                 </span>
-                {boards.find(b => b.id === selectedBoardId)?.isDefault && (
+                {boards.find((b) => b.id === selectedBoardId)?.isDefault && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                     Default
                   </span>
@@ -103,7 +102,7 @@ const Tasks = () => {
             </div>
           </div>
           <div className="flex-1 overflow-hidden">
-              <TaskBoard boards={getSortedBoards(boards)} />
+            <TaskBoard boards={getSortedBoards(boards)} />
           </div>
         </div>
       ) : (
@@ -118,4 +117,4 @@ const Tasks = () => {
   );
 };
 
-export default Tasks; 
+export default Tasks;

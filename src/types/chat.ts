@@ -15,6 +15,7 @@ export interface ChatSession {
   id: string;
   userId: string;
   title: string;
+  error: string | null;
   createdAt: string;
   updatedAt: string;
 }

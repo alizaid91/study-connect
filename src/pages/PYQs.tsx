@@ -12,6 +12,7 @@ import { setPapers, setLoading } from '../store/slices/papersSlice';
 import { papersService, QuickFilter } from '../services/papersService';
 import { useNavigate } from 'react-router-dom';
 import { MdArrowForward } from "react-icons/md";
+import Loader1 from '../components/Loaders/Loader1';
 
 const sortQuickFilters = (qf: QuickFilter[]) => {
   return qf.sort((a, b) => {
@@ -440,13 +441,7 @@ const PYQs: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="relative w-24 h-24">
-          <div className="absolute top-0 w-full h-full rounded-full border-4 border-t-blue-500 border-r-transparent border-b-blue-300 border-l-transparent animate-spin"></div>
-          <div className="absolute top-2 left-2 w-20 h-20 rounded-full border-4 border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 animate-spin animation-delay-150"></div>
-          <div className="absolute top-4 left-4 w-16 h-16 rounded-full border-4 border-t-blue-300 border-r-transparent border-b-blue-500 border-l-transparent animate-spin animation-delay-300"></div>
-        </div>
-      </div>
+      <Loader1 />
     );
   }
 

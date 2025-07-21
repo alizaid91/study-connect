@@ -1,11 +1,11 @@
-import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { ChatState, ChatSession, ChatMessage } from '../../types/chat';
-import { chatService } from '../../services/chatService';
+import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
+import { ChatState, ChatSession, ChatMessage } from "../../types/chat";
+import { chatService } from "../../services/chatService";
 
 const initialState: ChatState = {
   sessions: {},
   messages: {},
-  activeSessionId: localStorage.getItem('activeSessionId') || null,
+  activeSessionId: localStorage.getItem("activeSessionId") || null,
   loading: true,
   loadingAi: false,
   loadingMessages: true,
@@ -14,33 +14,24 @@ const initialState: ChatState = {
 
 // Thunks
 export const sendMessage = createAsyncThunk(
-  'chat/sendMessage',
+  "chat/sendMessage",
   async (
-    { userId, sessionId, content }: { userId: string, sessionId: string; content: string },
-    { rejectWithValue, dispatch, getState }
+    {
+      userId,
+      sessionId,
+      content,
+    }: { userId: string; sessionId: string; content: string },
+    { rejectWithValue, dispatch }
   ) => {
     try {
-      const state = getState() as { chat: ChatState };
-      if (state.chat.error) {
-        const messages = state.chat.messages[sessionId] || [];
-
-        const trimmedMessages =
-          messages.length >= 2
-            ? messages.slice(0, messages.length - 2)
-            : [];
-
-        dispatch(chatSlice.actions.setMessages({
-          sessionId,
-          messages: trimmedMessages
-        }));
-      }
       dispatch(chatSlice.actions.setLoadingAi(true));
+      dispatch(chatSlice.actions.setSessionError({ sessionId, error: "" }));
       dispatch(chatSlice.actions.setError(null));
       return await chatService.sendMessage(userId, sessionId, content);
     } catch (error: any) {
-      console.log('regiecting with error: ', error)
+      console.log("regiecting with error: ", error);
       dispatch(chatSlice.actions.setLoadingAi(false));
-      return rejectWithValue('Something went wrong while generating AI response. Please try again!');
+      return rejectWithValue(sessionId);
     } finally {
       dispatch(chatSlice.actions.setLoadingAi(false));
     }
@@ -48,14 +39,18 @@ export const sendMessage = createAsyncThunk(
 );
 
 export const listenToSessions = createAsyncThunk(
-  'chat/listenToSessions',
+  "chat/listenToSessions",
   async (userId: string, { dispatch, rejectWithValue }) => {
     try {
       dispatch(chatSlice.actions.setLoading(true));
       chatService.listenToSessions(userId, (sessions) => {
         dispatch(chatSlice.actions.setSessions(sessions));
         if (sessions.length > 0) {
-          dispatch(chatSlice.actions.setActiveSession(localStorage.getItem('activeSessionId') || sessions[0].id));
+          dispatch(
+            chatSlice.actions.setActiveSession(
+              localStorage.getItem("activeSessionId") || sessions[0].id
+            )
+          );
         } else {
           dispatch(chatSlice.actions.setActiveSession(null));
         }
@@ -68,15 +63,14 @@ export const listenToSessions = createAsyncThunk(
   }
 );
 
-export const listenToMessages = createAsyncThunk(
-  'chat/listenToMessages',
+export const fetchMessages = createAsyncThunk(
+  "chat/fetchMessages",
   async (sessionId: string, { dispatch, rejectWithValue }) => {
     try {
       dispatch(chatSlice.actions.setLoadingMessages(true));
-      chatService.listenToMessages(sessionId, (messages) => {
-        dispatch(chatSlice.actions.setMessages({ sessionId, messages }));
-        dispatch(chatSlice.actions.setLoadingMessages(false));
-      });
+      const messages = await chatService.fetchMessages(sessionId);
+      dispatch(chatSlice.actions.setMessages({ sessionId, messages }));
+      dispatch(chatSlice.actions.setLoadingMessages(false));
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -84,33 +78,38 @@ export const listenToMessages = createAsyncThunk(
 );
 
 const chatSlice = createSlice({
-  name: 'chat',
+  name: "chat",
   initialState,
   reducers: {
     setSessions(state, action: PayloadAction<ChatSession[]>) {
-      state.sessions = Object.fromEntries(action.payload.map(s => [s.id, s]));
+      state.sessions = Object.fromEntries(action.payload.map((s) => [s.id, s]));
     },
-    setMessages(state, action: PayloadAction<{ sessionId: string; messages: ChatMessage[] }>) {
+    setMessages(
+      state,
+      action: PayloadAction<{ sessionId: string; messages: ChatMessage[] }>
+    ) {
       state.messages[action.payload.sessionId] = action.payload.messages;
     },
-    addMessage(state, action: PayloadAction<{ sessionId: string; message: ChatMessage }>) {
+    addMessage(
+      state,
+      action: PayloadAction<{ sessionId: string; message: ChatMessage }>
+    ) {
       state.messages[action.payload.sessionId].push(action.payload.message);
     },
-    setStreamedResponse(state, action: PayloadAction<{ sessionId: string; chunk: string }>) {
-      const messages = state.messages[action.payload.sessionId];
-      messages[messages.length - 1].content += action.payload.chunk;
-    },
-    updateMessage(state, action: PayloadAction<{ sessionId: string; content: string }>) {
-      const { sessionId, content } = action.payload;
-      const message = state.messages[sessionId][state.messages[sessionId].length - 1];
-      if (message) {
-        message.id = 'error';
-        message.content = content;
+    updateMessageContent: (
+      state,
+      action: PayloadAction<{ sessionId: string; id: string; chunk: string }>
+    ) => {
+      const msg = state.messages[action.payload.sessionId].find(
+        (m) => m.id === action.payload.id
+      );
+      if (msg) {
+        msg.content += action.payload.chunk;
       }
     },
     setActiveSession(state, action: PayloadAction<string | null>) {
       state.activeSessionId = action.payload;
-      localStorage.setItem('activeSessionId', action.payload || '');
+      localStorage.setItem("activeSessionId", action.payload || "");
     },
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
@@ -123,6 +122,15 @@ const chatSlice = createSlice({
     },
     setError(state, action: PayloadAction<string | null>) {
       state.error = action.payload;
+    },
+    setSessionError(
+      state,
+      action: PayloadAction<{ sessionId: string; error: string }>
+    ) {
+      const { sessionId, error } = action.payload;
+      if (state.sessions[sessionId]) {
+        state.sessions[sessionId].error = error;
+      }
     },
     resetChatState() {
       return initialState;
@@ -137,16 +145,20 @@ const chatSlice = createSlice({
         state.loadingAi = false;
       })
       .addCase(sendMessage.rejected, (state, action) => {
+        state.messages[action.payload as string] = state.messages[
+          action.payload as string
+        ].slice(0, -2);
         state.loadingAi = false;
-        state.error = action.payload as string;
-      })
+        state.sessions[action.payload as string].error =
+          "Something went wrong while generating AI response. Please try again!";
+      });
   },
 });
 
 export const {
   setSessions,
   setMessages,
-  setStreamedResponse,
+  updateMessageContent,
   setActiveSession,
   addMessage,
   setLoading,
@@ -156,4 +168,4 @@ export const {
   resetChatState,
 } = chatSlice.actions;
 
-export default chatSlice.reducer; 
+export default chatSlice.reducer;
