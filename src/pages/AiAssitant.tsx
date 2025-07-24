@@ -307,7 +307,7 @@ const AiAssistant = () => {
                 </div>
                 <div ref={inputRef} className={`w-full max-w-full`}>
                   <div className="w-full relative pb-2">
-                    {showScrollButton && (
+                    {renderedMessages && showScrollButton && (
                       <div
                         onClick={scrollToBottom}
                         className={`absolute -top-12 left-1/2 -translate-x-1/2 w-8 h-8 mx-auto cursor-pointer bg-black/50 backdrop-blur-sm text-white shadow-xl rounded-full p-1 flex items-center justify-center`}

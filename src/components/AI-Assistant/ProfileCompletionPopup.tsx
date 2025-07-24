@@ -6,12 +6,7 @@ import { RootState } from "../../store";
 import { authService } from "../../services/authService";
 import { UserProfile } from "../../types/user";
 import { closeProfileComplete } from "../../store/slices/globalPopups";
-import {
-  BookOpenText,
-  CalendarDays,
-  GraduationCap,
-  Bot,
-} from "lucide-react";
+import { BookOpenText, CalendarDays, GraduationCap, Bot } from "lucide-react";
 
 const steps = [
   "welcome",
@@ -55,6 +50,10 @@ const ProfileCompletionPopup = () => {
   };
 
   const handleChange = (field: Step, value: any) => {
+    if (field === "branch" && value === "FE") {
+      setData((prev) => ({ ...prev, [field]: value, year: "" }));
+      return;
+    }
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -94,17 +93,17 @@ const ProfileCompletionPopup = () => {
     if (currentStep === "welcome") {
       return (
         <motion.div {...selectAnimation} className="text-center">
-          <div className="flex justify-center text-[56px]">
-            🎉
-          </div>
+          <div className="flex justify-center text-[56px]">🎉</div>
 
           <h1 className="text-3xl font-bold text-gray-800">
-            Welcome to <span className="text-blue-600">Study Connect</span>
+            Welcome to <span className="text-blue-700">Study Connect</span>
           </h1>
 
           <p className="text-gray-500 max-w-xs mx-auto text-sm">
-            Unlock a smarter way to study. <span className="font-bold">Let’s complete your profile for a
-            personalized experience!</span>
+            Unlock a smarter way to study.{" "}
+            <span className="font-bold">
+              Let’s complete your profile for a personalized experience!
+            </span>
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 text-sm">
@@ -280,7 +279,10 @@ const ProfileCompletionPopup = () => {
                 Submit
               </motion.button>
             ) : currentStep === "welcome" ? (
-              <button onClick={handleNext} className="cssbuttons-io-button rounded-full">
+              <button
+                onClick={handleNext}
+                className="cssbuttons-io-button rounded-full"
+              >
                 {" "}
                 Get started
                 <div className="icon rounded-full">
@@ -303,7 +305,7 @@ const ProfileCompletionPopup = () => {
                 whileTap={{ scale: 0.95 }}
                 whileHover={{ scale: 1.02 }}
                 onClick={handleNext}
-                className="flex-1 px-4 py-2 rounded-3xl bg-blue-600 text-white hover:bg-blue-700 transition-all"
+                className="flex-1 px-4 py-2 rounded-3xl bg-blue-700 text-white hover:bg-blue-800 transition-all"
               >
                 Next
               </motion.button>
