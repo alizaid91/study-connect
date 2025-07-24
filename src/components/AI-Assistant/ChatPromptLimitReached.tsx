@@ -1,4 +1,4 @@
-import { Zap, ArrowUpRight, MessageSquareWarning, Clock } from 'lucide-react';
+import { Zap, MessageSquareWarning, Clock } from 'lucide-react';
 import { UpgradeToPremiumButton } from '../buttons/UpgradeToPremiumButton';
 
 const ChatPromptLimitReached = ({

@@ -79,11 +79,22 @@ const AppRouter = () => {
   useEffect(() => {
     if (!profile) return;
     if (!profile.branch) {
-      setTimeout(() => {
-        dispatch(openProfileComplete());
-      }, 3000);
+      dispatch(openProfileComplete());
     }
   }, [profile]);
+
+  useEffect(() => {
+    // Lock scroll
+    if (isProfileCompleteOpen) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+    return () => {
+      // Unlock scroll when component unmounts
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [isProfileCompleteOpen]);
 
   return (
     <div
