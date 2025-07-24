@@ -58,7 +58,7 @@ export const chatService = {
     const aiMessageId = generateId("ai");
 
     // === Step 1: Add temporary user message to UI ===
-    console.log("Adding temporary user message to UI");
+    // console.log("Adding temporary user message to UI");
     const tempUserMessage: ChatMessage = {
       id: userMessageId,
       sessionId,
@@ -79,15 +79,20 @@ export const chatService = {
     store.dispatch(addMessage({ sessionId, message: tempAIMessage }));
 
     // === Step 3: Send to AI Server with timeout ===
-    console.log("Sending message to AI server");
+    // console.log("Sending message to AI server");
     const response = await fetch(`${AI_URL}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: content }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`AI service error: ${errorText}`);
+    }
+
     // === Step 5: Stream AI response ===
-    console.log("Streaming AI response");
+    // console.log("Streaming AI response");
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullText = "";
@@ -102,7 +107,7 @@ export const chatService = {
 
       const chunk = decoder.decode(value, { stream: true });
       fullText += chunk;
-      console.log(`Chunk ${chunkCount}:`, chunk);
+      // console.log(`Chunk ${chunkCount}:`, chunk);
 
       store.dispatch(
         updateMessageContent({
@@ -115,7 +120,7 @@ export const chatService = {
     store.dispatch(setLoadingAi(false));
 
     // === Step 4: Batch Firestore write of user message ===
-    console.log("Writing user message to Firestore");
+    // console.log("Writing user message to Firestore");
     const messageRef = collection(db, `chatSessions/${sessionId}/messages`);
     const batch = writeBatch(db);
     const userDocRef = doc(messageRef);
@@ -123,7 +128,7 @@ export const chatService = {
     await batch.commit();
 
     // === Step 6: Save final AI message in Firestore ===
-    console.log("Saving final AI message to Firestore");
+    // console.log("Saving final AI message to Firestore");
     const aiMessage: ChatMessage = {
       id: aiMessageId,
       sessionId,
@@ -135,7 +140,7 @@ export const chatService = {
     await writeBatch(db).set(aiDocRef, aiMessage).commit();
 
     // === Step 7: Update usage count in transaction ===
-    console.log("Updating AI usage count in transaction");
+    // console.log("Updating AI usage count in transaction");
     await runTransaction(db, async (transaction) => {
       const userRef = doc(db, "users", userId);
       const userSnap = await transaction.get(userRef);
@@ -157,7 +162,7 @@ export const chatService = {
 
       transaction.update(userRef, { usage: updatedUsage });
     });
-    console.log("Message sent successfully");
+    // console.log("Message sent successfully");
   },
 
   async createSession(userId: string, title: string): Promise<string> {

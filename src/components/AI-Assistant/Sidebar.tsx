@@ -118,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   }`}
               >
                 {sessionActionLoading.deletingSession && session.id === deleteSeesionId && (
-                  <div className="absolute top-0 left-0 w-full h-full rounded-lg bg-red-500/50 flex items-center justify-center">
+                  <div className="absolute top-0 left-0 w-full h-full rounded-lg bg-red-500/50 flex items-center justify-center pointer-events-none">
                     <FiLoader size={20} className="animate-spin text-red-500" />
                   </div>
                 )}
@@ -149,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
 
                 <div className='relative'>
-                  <div className={`cursor-pointer ${menuOpenFor === session.id ? 'block' : 'block md:hidden md:group-hover:block'}`} onClick={() => setMenuOpenFor(session.id)}>
+                  <div className={`${sessionActionLoading.deletingSession && session.id === deleteSeesionId ? 'pointer-events-none' : ''} cursor-pointer ${menuOpenFor === session.id ? 'block' : 'block md:hidden md:group-hover:block'}`} onClick={() => setMenuOpenFor(session.id)}>
                     <CiMenuKebab size={18} />
                   </div>
                   {menuOpenFor && !isCollapsed && menuOpenFor === session.id && (

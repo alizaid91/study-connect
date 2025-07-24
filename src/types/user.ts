@@ -6,7 +6,7 @@ export interface UserProfile {
   avatarUrl: string;
   gender?: "male" | "female" | "other" | "prefer not to say" | "";
   branch?: "FE" | "CS" | "IT" | "Civil" | "Mechanical" | "";
-  pattern?: 2019 | 2024 | undefined;
+  pattern?: 2019 | 2024 | "";
   semester?: number;
   year?: "SE" | "TE" | "BE" | "";
   collegeName?: string | "";

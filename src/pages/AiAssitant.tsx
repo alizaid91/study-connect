@@ -22,7 +22,6 @@ import ChatPromptLimitReached from "../components/AI-Assistant/ChatPromptLimitRe
 import ErrorMessageBox from "../components/AI-Assistant/ErrorMessageBox";
 import NoMessagesState from "../components/AI-Assistant/NoMessagesState";
 import Loader1 from "../components/Loaders/Loader1";
-import Loader2 from "../components/Loaders/Loader2";
 
 const AiAssistant = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -272,7 +271,9 @@ const AiAssistant = () => {
                   onScroll={handleScroll}
                   className={`flex flex-col flex-1 max-w-full overflow-auto`}
                 >
-                  {!loading && renderedMessages.length === 0 && !sessions[activeSessionId || ""]?.error ? (
+                  {!loading &&
+                  renderedMessages.length === 0 &&
+                  !sessions[activeSessionId || ""]?.error ? (
                     <NoMessagesState />
                   ) : (
                     <div
@@ -315,8 +316,8 @@ const AiAssistant = () => {
                       </div>
                     )}
                     {!loading &&
-                    (profile?.usage.aiPromptUsage?.count as number) ===
-                      profile?.quotas.promptsPerDay ? (
+                    (profile?.usage.aiPromptUsage?.count as number) >=
+                      (profile?.quotas.promptsPerDay as number) ? (
                       <div ref={inputRef} className="w-full pb-2">
                         <ChatPromptLimitReached
                           usedPrompts={

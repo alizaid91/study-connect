@@ -22,9 +22,15 @@ import { authService } from "../services/authService.ts";
 import { logoutAdmin, setAdmin } from "../store/slices/adminSlice.ts";
 import { logout, setUser } from "../store/slices/authSlice.ts";
 import ProtectedAdminRoute from "../components/admin/ProtectedAdminRoute.tsx";
+import ProfileCompletionPopup from "../components/AI-Assistant/ProfileCompletionPopup.tsx";
+import { openProfileComplete } from "../store/slices/globalPopups.ts";
 
 const AppRouter = () => {
   const { pathname } = useLocation();
+  const { profile } = useSelector((state: RootState) => state.auth);
+  const { isProfileCompleteOpen } = useSelector(
+    (state: RootState) => state.globalPopups
+  );
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isOpen = useSelector(
@@ -69,6 +75,15 @@ const AppRouter = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (!profile.branch) {
+      setTimeout(() => {
+        dispatch(openProfileComplete());
+      }, 3000);
+    }
+  }, [profile]);
 
   return (
     <div
@@ -140,6 +155,7 @@ const AppRouter = () => {
       {pathname !== "/ai-assistant" && <Footer />}
 
       <PremiumComingSoonModal isOpen={isOpen} />
+      {isProfileCompleteOpen && <ProfileCompletionPopup />}
     </div>
   );
 };
