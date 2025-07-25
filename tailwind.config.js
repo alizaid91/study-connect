@@ -22,11 +22,16 @@ export default {
       },
       animation: {
         'fadeIn': 'fadeIn 0.2s ease-in-out',
+        shimmer: 'shimmer 2s infinite linear',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: 0, transform: 'translateY(-10px)' },
           '100%': { opacity: 1, transform: 'translateY(0)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition: '200% center' },
         },
       },
     },

@@ -24,6 +24,7 @@ import {
 } from "react-icons/fi";
 import { logoutAdmin } from "../store/slices/adminSlice";
 import AvatarWithProgress from "./profile/AvaterWithProgress";
+import NavBrand from "./AI-Assistant/NavBrand";
 
 interface NavbarProps {
   isHidden?: boolean;
@@ -91,19 +92,7 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2 relative">
-              <img src={logo} alt="Logo" className="h-8 w-auto object-cover mb-1 md:mb-0" />
-              <span className="text-xl font-bold text-gray-800 flex items-center">
-                <span>Study Connect</span>
-                {profile?.role === "premium" && (
-                  <img
-                    src={proBadge}
-                    alt="Pro Badge"
-                    className="w-12 object-cover md:mt-1"
-                  />
-                )}
-              </span>
-            </Link>
+            <NavBrand role={profile?.role} />
           </div>
 
           {/* Desktop Nav */}

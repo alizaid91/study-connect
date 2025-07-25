@@ -8,6 +8,27 @@
   }
 }
 
+@keyframes shimmerGlow {
+  0% {
+    left: -150%;
+  }
+
+  100% {
+    left: 150%;
+  }
+}
+
+.shimmer-bg {
+  background-color: #facc15;
+  /* fallback golden color */
+  background-image: linear-gradient(to right, #facc15, #fbbf24, #f59e0b);
+}
+
+.shimmer-glow {
+  animation: shimmerGlow 2s infinite linear;
+}
+
+
 @layer components {
   .btn {
     @apply px-4 py-2 rounded-md font-medium transition-colors;
