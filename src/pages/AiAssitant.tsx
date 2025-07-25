@@ -15,7 +15,7 @@ import PromptInput from "../components/AI-Assistant/PromptInput";
 import EmptyChatState from "../components/AI-Assistant/EmptyChatState";
 import { GoSidebarCollapse } from "react-icons/go";
 import { IoMdArrowDown } from "react-icons/io";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import NewSessionPopup from "../components/AI-Assistant/NewSessionPopup";
 import { authService } from "../services/authService";
 import ChatPromptLimitReached from "../components/AI-Assistant/ChatPromptLimitReached";
@@ -234,29 +234,36 @@ const AiAssistant = () => {
         <>
           {!loading && !isSidebarCollapsed && sessionList.length > 0 && (
             <motion.div
-              initial={{ x: -100, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -100, opacity: 0 }}
-              transition={{ duration: 0.1, ease: "easeOut" }}
-              className={`w-full absolute top-0 left-0 sm:static sm:max-w-[300px] h-full border-r border-gray-200 bg-black/50 z-20 overflow-y-auto`}
+              className={`w-full absolute top-0 left-0 sm:static sm:max-w-[300px] h-full bg-black/50 md:bg-transparent backdrop-blur-sm z-20 overflow-y-auto`}
             >
-              {sessionList.length > 0 && (
-                <Sidebar
-                  sessions={sessionList}
-                  activeSessionId={activeSessionId}
-                  onSelectSession={(id) => dispatch(setActiveSession(id))}
-                  onRenameSession={handleRenameSession}
-                  onDeleteSession={handleDeleteSession}
-                  setIsCreateSessionPopupOpen={(value: boolean) =>
-                    setIsCreateSessionPopupOpen(value)
-                  }
-                  isCollapsed={isSidebarCollapsed}
-                  setIsSidebarCollapsed={(value) =>
-                    setIsSidebarCollapsed(value)
-                  }
-                  sessionActionLoading={sessionActionLoading}
-                />
-              )}
+              <AnimatePresence>
+                {sessionList.length > 0 && (
+                  <motion.div
+                    key="sidebar"
+                    initial={{ x: -300, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -300, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 30 }}
+                    className="h-full max-w-[300px] p-2"
+                  >
+                    <Sidebar
+                      sessions={sessionList}
+                      activeSessionId={activeSessionId}
+                      onSelectSession={(id) => dispatch(setActiveSession(id))}
+                      onRenameSession={handleRenameSession}
+                      onDeleteSession={handleDeleteSession}
+                      setIsCreateSessionPopupOpen={(value: boolean) =>
+                        setIsCreateSessionPopupOpen(value)
+                      }
+                      isCollapsed={isSidebarCollapsed}
+                      setIsSidebarCollapsed={(value) =>
+                        setIsSidebarCollapsed(value)
+                      }
+                      sessionActionLoading={sessionActionLoading}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
           <div className="flex flex-col justify-center w-full max-w-full md:max-w-[900px] mx-auto px-2 max-h-full overflow-hidden">

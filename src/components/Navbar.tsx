@@ -85,7 +85,7 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
     <>
       <div
         className={clsx(
-          "transition-transform duration-300 px-4 sm:px-6 lg:px-8 bg-white shadow-md fixed top-0 left-0 right-0 z-40",
+          "transition-transform duration-300 py-0.5 rounded-b-3xl px-4 sm:px-6 lg:px-8 bg-white shadow-md fixed top-0 left-0 right-0 z-40",
           isHidden ? "-translate-y-full" : "translate-y-0"
         )}
       >
@@ -274,19 +274,30 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
           </div>
         </div>
       </div>
-      <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-40">
-        {/* Mobile menu */}
-        <div className={`${isMobileMenuOpen ? "block" : "hidden"} lg:hidden`}>
-          <div className="relative">
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
             {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 backdrop-blur-sm"
               onClick={() => setIsMobileMenuOpen(false)}
             />
 
-            {/* Menu content */}
-            <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50">
+            {/* Sliding Menu Panel */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50 m-2 rounded-3xl overflow-y-auto"
+            >
               <div className="pt-2 pb-3 space-y-1">
+                {/* Your links go here */}
+                {/* Example: */}
                 <Link
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -412,10 +423,10 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
                   </Link>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };

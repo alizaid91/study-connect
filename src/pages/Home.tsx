@@ -465,7 +465,7 @@ const Home = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-lg shadow-md overflow-hidden transform-gpu"
+                className="bg-white rounded-3xl shadow-md overflow-hidden transform-gpu"
               >
                 <motion.button
                   onClick={() => toggleFaq(index)}

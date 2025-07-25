@@ -286,7 +286,7 @@ const Profile = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 relative overflow-hidden"
+        className="max-w-md mx-auto bg-white rounded-b-3xl shadow-lg p-8 relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-600"></div>
         <motion.h2
