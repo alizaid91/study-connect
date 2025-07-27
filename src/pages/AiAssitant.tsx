@@ -237,32 +237,30 @@ const AiAssistant = () => {
               className={`w-full absolute top-0 left-0 sm:static sm:max-w-[300px] h-full bg-black/50 md:bg-transparent backdrop-blur-sm z-20 overflow-y-auto`}
             >
               <AnimatePresence>
-                {sessionList.length > 0 && (
-                  <motion.div
-                    key="sidebar"
-                    initial={{ x: -300, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -300, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 30 }}
-                    className="h-full max-w-[300px] p-2"
-                  >
-                    <Sidebar
-                      sessions={sessionList}
-                      activeSessionId={activeSessionId}
-                      onSelectSession={(id) => dispatch(setActiveSession(id))}
-                      onRenameSession={handleRenameSession}
-                      onDeleteSession={handleDeleteSession}
-                      setIsCreateSessionPopupOpen={(value: boolean) =>
-                        setIsCreateSessionPopupOpen(value)
-                      }
-                      isCollapsed={isSidebarCollapsed}
-                      setIsSidebarCollapsed={(value) =>
-                        setIsSidebarCollapsed(value)
-                      }
-                      sessionActionLoading={sessionActionLoading}
-                    />
-                  </motion.div>
-                )}
+                <motion.div
+                  key="sidebar"
+                  initial={{ x: -300, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -300, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 30 }}
+                  className="h-full max-w-[300px] p-2"
+                >
+                  <Sidebar
+                    sessions={sessionList}
+                    activeSessionId={activeSessionId}
+                    onSelectSession={(id) => dispatch(setActiveSession(id))}
+                    onRenameSession={handleRenameSession}
+                    onDeleteSession={handleDeleteSession}
+                    setIsCreateSessionPopupOpen={(value: boolean) =>
+                      setIsCreateSessionPopupOpen(value)
+                    }
+                    isCollapsed={isSidebarCollapsed}
+                    setIsSidebarCollapsed={(value) =>
+                      setIsSidebarCollapsed(value)
+                    }
+                    sessionActionLoading={sessionActionLoading}
+                  />
+                </motion.div>
               </AnimatePresence>
             </motion.div>
           )}

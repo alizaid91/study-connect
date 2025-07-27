@@ -99,13 +99,13 @@ const AppRouter = () => {
 
   return (
     <div
-      style={{
-        maxHeight: `${pathname === "/ai-assistant" ? visibleHeight : "auto"}`,
-      }}
+      style={{ maxHeight: `${pathname === '/ai-assistant' ? visibleHeight : 'auto'}` }}
       className="bg-gray-50 flex flex-col"
     >
       <Navbar isHidden={isNavbarHidden} />
-      <main className={`w-full flex-grow ${isNavbarHidden ? "pt-8" : "pt-16"}`}>
+      <main
+        className={`w-full flex-1 ${pathname !== '/ai-assistant' ? 'min-h-screen' : ''} ${isNavbarHidden ? "pt-8" : "pt-16"}`}
+      >
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
@@ -164,7 +164,6 @@ const AppRouter = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-
       {pathname !== "/ai-assistant" && <Footer />}
 
       <PremiumComingSoonModal isOpen={isOpen} />
