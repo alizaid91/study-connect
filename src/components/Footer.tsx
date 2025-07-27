@@ -162,11 +162,8 @@ const Footer = () => {
                             © {currentYear} Study Connect. All rights reserved.
                         </p>
                         <div className="flex space-x-6 mt-4 md:mt-0">
-                            <Link to="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
-                                Privacy Policy
-                            </Link>
-                            <Link to="/terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
-                                Terms of Service
+                            <Link to="/policies" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
+                                Terms & Conditions, Privacy & Refund Policy
                             </Link>
                         </div>
                     </div>

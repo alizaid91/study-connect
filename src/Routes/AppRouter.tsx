@@ -24,6 +24,7 @@ import { logout, setUser } from "../store/slices/authSlice.ts";
 import ProtectedAdminRoute from "../components/admin/ProtectedAdminRoute.tsx";
 import ProfileCompletionPopup from "../components/AI-Assistant/ProfileCompletionPopup.tsx";
 import { openProfileComplete } from "../store/slices/globalPopups.ts";
+import PoliciesPage from "../pages/Policies.tsx";
 
 const AppRouter = () => {
   const { pathname } = useLocation();
@@ -108,6 +109,7 @@ const AppRouter = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/policies" element={<PoliciesPage />} />
           <Route
             path="/admin/dashboard"
             element={
