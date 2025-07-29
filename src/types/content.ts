@@ -17,11 +17,12 @@ export interface Resource {
   id: string;
   title: string;
   description: string;
-  type: 'Book' | 'Notes' | 'Video' | 'Decodes' | 'Other';
+  type: 'book' | 'notes' | 'video' | 'decodes' | 'other';
   subjectCode: string;
   subjectName: string;
   branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
   year: 'FE' | 'SE' | 'TE' | 'BE';
+  semester: number;
   pattern: '2019' | '2024';
   driveLink: string;
   uploadedAt: string;
@@ -40,7 +41,7 @@ export interface Bookmark {
   contentId: string;
   type: 'Paper' | 'Resource';
   paperType: 'Insem' | 'Endsem' | null;
-  resourceType: 'Book' | 'Notes' | 'Video' | 'Decodes' | 'Other' | null;
+  resourceType: 'book' | 'notes' | 'video' | 'decodes' | 'other' | null;
   title: string;
   name: string;
   description: string;

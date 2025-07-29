@@ -1,23 +1,6 @@
-const features = {
-    taskBoard: {
-        free: 2,
-        premium: 5,
-    },
-    aiChat: {
-        free: 2,
-        premium: 10,
-    },
-    aiPrompts: {
-        free: 10,
-        premium: 50,
-    },
-    prioritySupport: {
-        free: false,
-        premium: true,
-    },
-    buyExtraCredits: {
-        free: true,
-        premium: true,
-    },
-}
-export default features;
+export const semesterMap: Record<string, number[]> = {
+  FE: [1, 2],
+  SE: [3, 4],
+  TE: [5, 6],
+  BE: [7, 8],
+};

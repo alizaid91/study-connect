@@ -22,6 +22,7 @@ import { papersService, QuickFilter } from "../services/papersService";
 import { useNavigate } from "react-router-dom";
 import { MdArrowForward } from "react-icons/md";
 import Loader1 from "../components/Loaders/Loader1";
+import { semesterMap } from "../types/constants";
 
 const sortQuickFilters = (qf: QuickFilter[]) => {
   return qf.sort((a, b) => {
@@ -683,27 +684,13 @@ const PYQs: React.FC = () => {
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
                   >
                     <option value="">All Semesters</option>
-                    {filters.branch === "FE" ? (
-                      <>
-                        <option value={1}>Semester 1</option>
-                        <option value={2}>Semester 2</option>
-                      </>
-                    ) : filters.year === "SE" ? (
-                      <>
-                        <option value={3}>Semester 3</option>
-                        <option value={4}>Semester 4</option>
-                      </>
-                    ) : filters.year === "TE" ? (
-                      <>
-                        <option value={5}>Semester 5</option>
-                        <option value={6}>Semester 6</option>
-                      </>
-                    ) : filters.year === "BE" ? (
-                      <>
-                        <option value={7}>Semester 7</option>
-                        <option value={8}>Semester 8</option>
-                      </>
-                    ) : null}
+                    {semesterMap[
+                      filters.branch === "FE" ? "FE" : filters.year
+                    ]?.map((sem) => (
+                      <option key={sem} value={sem}>
+                        Semester {sem}
+                      </option>
+                    ))}
                   </select>
                 </motion.div>
 

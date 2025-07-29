@@ -4,7 +4,6 @@ import Navbar from ".././components/Navbar.tsx";
 import Home from ".././pages/Home.tsx";
 import Dashboard from ".././pages/Dashboard.tsx";
 import Tasks from ".././pages/Tasks.tsx";
-import Resources from ".././pages/Resources.tsx";
 import Auth from ".././pages/Auth.tsx";
 import PYQs from ".././pages/PYQs.tsx";
 import AdminDashboard from ".././pages/AdminDashboard.tsx";
@@ -24,6 +23,7 @@ import { logout, setUser } from "../store/slices/authSlice.ts";
 import ProtectedAdminRoute from "../components/admin/ProtectedAdminRoute.tsx";
 import ProfileCompletionPopup from "../components/AI-Assistant/ProfileCompletionPopup.tsx";
 import { openProfileComplete } from "../store/slices/globalPopups.ts";
+import ResourcesMain from "../pages/ReourcesMain.tsx";
 import PoliciesPage from "../pages/Policies.tsx";
 
 const AppRouter = () => {
@@ -39,7 +39,6 @@ const AppRouter = () => {
   );
   const [isNavbarHidden, setIsNavbarHidden] = useState(false);
   const lastScrollY = useRef(0);
-  const visibleHeight = window.innerHeight - 64;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,19 +91,17 @@ const AppRouter = () => {
       document.body.classList.remove("overflow-hidden");
     }
     return () => {
-      // Unlock scroll when component unmounts
       document.body.classList.remove("overflow-hidden");
     };
   }, [isProfileCompleteOpen]);
 
   return (
-    <div
-      style={{ maxHeight: `${pathname === '/ai-assistant' ? visibleHeight : 'auto'}` }}
-      className="bg-gray-50 flex flex-col"
-    >
+    <div className="bg-gray-50 flex flex-col">
       <Navbar isHidden={isNavbarHidden} />
       <main
-        className={`w-full flex-1 ${pathname !== '/ai-assistant' ? 'min-h-screen' : ''} ${isNavbarHidden ? "pt-8" : "pt-16"}`}
+        className={`w-full flex-1 ${
+          pathname !== "/ai-assistant" ? "min-h-screen" : "min-h-full"
+        } ${isNavbarHidden ? "pt-8" : "pt-16"}`}
       >
         <Routes>
           <Route path="/" element={<Home />} />
@@ -135,7 +132,7 @@ const AppRouter = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/resources" element={<Resources />} />
+          <Route path="/resources" element={<ResourcesMain />} />
           <Route path="/pyqs" element={<PYQs />} />
           <Route
             path="/bookmarks"
