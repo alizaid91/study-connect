@@ -90,3 +90,78 @@ export const IT_SUBJECTS = {
     BE: [],
   },
 };
+
+export const CS_SUBJECTS = {
+  "2019Pattern": {
+    SE: [],
+    TE: [
+      // Semester 5
+      { name: "Database Management Systems", code: "DBMS", semester: 5 },
+      { name: "Theory of Computation", code: "TOC", semester: 5 },
+      {
+        name: "Systems Programming and Operating System",
+        code: "SPOS",
+        semester: 5,
+      },
+      { name: "Computer Networks and Security", code: "CNS", semester: 5 },
+      {
+        name: "Elective I - Software Project Management",
+        code: "SPM",
+        semester: 5,
+      },
+
+      // Semester 6
+      {
+        name: "Data Science and Big Data Analytics",
+        code: "DSBDA",
+        semester: 6,
+      },
+      { name: "Web Technology", code: "WT", semester: 6 },
+      { name: "Artificial Intelligence", code: "AI", semester: 6 },
+      { name: "Elective II - Cloud Computing", code: "CC", semester: 6 },
+    ],
+    BE: [],
+  },
+  "2024Pattern": {
+    SE: [],
+    TE: [],
+    BE: [],
+  },
+};
+
+type Branch = "FE" | "CS" | "IT" | "Civil" | "Mechanical";
+type Year = "SE" | "TE" | "BE";
+type Pattern = "2019Pattern" | "2024Pattern";
+
+interface Subject {
+  name: string;
+  code: string;
+  semester?: number;
+}
+
+export function getSubjects(
+  branch: Branch,
+  sem: number,
+  pattern: Pattern,
+  year?: Year
+): Subject[] {
+  if (branch === "FE") {
+    // Year is irrelevant for FE
+    const subjects = FE_SUBJECTS[pattern] || [];
+    if (sem === 1) return subjects.slice(0, 5);
+    if (sem === 2) return subjects.slice(5);
+    return [];
+  }
+
+  if (!year) {
+    throw new Error("Year must be provided for IT and CS branches.");
+  }
+
+  let subjectSource;
+  if (branch === "IT") subjectSource = IT_SUBJECTS;
+  else if (branch === "CS") subjectSource = CS_SUBJECTS;
+  else return [];
+
+  const allSubjects: Subject[] = subjectSource[pattern]?.[year] || [];
+  return allSubjects.filter((subj) => subj.semester == sem);
+}

@@ -9,7 +9,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { Paper } from "../types/content";
-import { FE_SUBJECTS, IT_SUBJECTS } from "../types/Subjects";
+import { CS_SUBJECTS, FE_SUBJECTS, IT_SUBJECTS } from "../types/Subjects";
 
 export interface QuickFilter {
   id: string;
@@ -92,6 +92,45 @@ class PapersService {
       }));
     } else if (branch === "IT") {
       filters = IT_SUBJECTS[pattern == "2024" ? "2024Pattern" : "2019Pattern"][
+        year as "SE" | "TE" | "BE"
+      ]
+        .map((subject) => {
+          let Endsem = {
+            id: `endrdmad${branch}-${pattern}-${year || ""}-${semester || ""}-${
+              subject.code
+            }`,
+            values: {
+              branch,
+              year: year || "",
+              semester: subject.semester,
+              pattern,
+              paperType: "Endsem",
+              subjectName: subject.name,
+              subjectCode: subject.code,
+              isReadyMade: true,
+            },
+          };
+          let Insem = {
+            id: `inrdmad${branch}-${pattern}-${year || ""}-${semester || ""}-${
+              subject.code
+            }`,
+            values: {
+              branch,
+              year: year || "",
+              semester: subject.semester,
+              pattern,
+              paperType: "Insem",
+              subjectName: subject.name,
+              subjectCode: subject.code,
+              isReadyMade: true,
+            },
+          };
+          return [Endsem, Insem];
+        })
+        .flat()
+        .filter((f) => f.values.semester == semester);
+    }else if (branch === "CS") {
+      filters = CS_SUBJECTS[pattern == "2024" ? "2024Pattern" : "2019Pattern"][
         year as "SE" | "TE" | "BE"
       ]
         .map((subject) => {

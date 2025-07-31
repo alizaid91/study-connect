@@ -370,7 +370,7 @@ const PYQs: React.FC = () => {
 
     const title =
       "Solve " +
-      (selectedPaper.year !== "FE" ? selectedPaper.year : "") +
+      (selectedPaper.branch !== "FE" ? selectedPaper.year : "") +
       "-" +
       selectedPaper.branch +
       " " +
@@ -871,7 +871,7 @@ const PYQs: React.FC = () => {
                       {paper.subjectName}
                     </h3>
                     <p className="text-sm md:text-md text-gray-600 mb-2">
-                      {paper.branch} - {paper.year !== "FE" ? paper.year : ""}{" "}
+                      {paper.branch} - {paper.branch !== "FE" ? paper.year : ""}{" "}
                       {paper.pattern} Pattern
                     </p>
                     <p className="text-sm md:text-md text-gray-700 mb-6">
