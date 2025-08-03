@@ -1,13 +1,17 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+
+type showPdfType = { pdfId: string | null; title: string };
 
 interface GlobalPopupsState {
   isPremiumComingSoonOpen: boolean;
   isProfileCompleteOpen: boolean;
+  showPdf: showPdfType | null;
 }
 
 const initialState: GlobalPopupsState = {
   isPremiumComingSoonOpen: false,
   isProfileCompleteOpen: false,
+  showPdf: null,
 };
 
 const globalPopups = createSlice({
@@ -26,6 +30,12 @@ const globalPopups = createSlice({
     closeProfileComplete: (state) => {
       state.isProfileCompleteOpen = false;
     },
+    setShowPdf: (state, { payload }: PayloadAction<showPdfType | null>) => {
+      state.showPdf = payload;
+    },
+    clearShowPdf: (state) => {
+      state.showPdf = null;
+    },
   },
 });
 
@@ -34,6 +44,8 @@ export const {
   closePremiumComingSoon,
   openProfileComplete,
   closeProfileComplete,
+  setShowPdf,
+  clearShowPdf,
 } = globalPopups.actions;
 
 export default globalPopups.reducer;

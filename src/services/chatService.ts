@@ -20,33 +20,11 @@ import {
 } from "../store/slices/chatSlice";
 import { store } from "../store";
 import { UserProfile } from "../types/user";
-
-const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
+import { apiService } from "./apiService";
 
 // Utility to generate safe unique IDs
 const generateId = (prefix: string = "msg") =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-
-// Timeout helper
-const fetchWithTimeout = async (
-  url: string,
-  options: RequestInit,
-  timeout = 15000
-): Promise<Response> => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-};
 
 export const chatService = {
   async sendMessage(
@@ -79,26 +57,9 @@ export const chatService = {
     store.dispatch(addMessage({ sessionId, message: tempAIMessage }));
 
     // === Step 3: Send to AI Server with timeout ===
-    // console.log("Sending message to AI server");
-    const response = await fetch(`${AI_URL}/ask`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: content }),
-    });
+    const { reader, decoder } = await apiService.askAI(content);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`AI service error: ${errorText}`);
-    }
-
-    // === Step 5: Stream AI response ===
-    // console.log("Streaming AI response");
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
     let fullText = "";
-
-    if (!reader) throw new Error("No stream reader available.");
-
     let chunkCount = 0;
     while (true) {
       chunkCount++;

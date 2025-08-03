@@ -6,7 +6,6 @@ import Dashboard from ".././pages/Dashboard.tsx";
 import Tasks from ".././pages/Tasks.tsx";
 import Auth from ".././pages/Auth.tsx";
 import PYQs from ".././pages/PYQs.tsx";
-import AdminDashboard from ".././pages/AdminDashboard.tsx";
 import PrivateRoute from ".././components/PrivateRoute.tsx";
 import Profile from ".././pages/Profile";
 import Bookmarks from ".././pages/Bookmarks";
@@ -18,18 +17,17 @@ import { RootState } from ".././store";
 import PremiumComingSoonModal from ".././components/PremiumComingSoon.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { authService } from "../services/authService.ts";
-import { logoutAdmin, setAdmin } from "../store/slices/adminSlice.ts";
 import { logout, setUser } from "../store/slices/authSlice.ts";
-import ProtectedAdminRoute from "../components/admin/ProtectedAdminRoute.tsx";
 import ProfileCompletionPopup from "../components/AI-Assistant/ProfileCompletionPopup.tsx";
 import { openProfileComplete } from "../store/slices/globalPopups.ts";
 import ResourcesMain from "../pages/ReourcesMain.tsx";
 import PoliciesPage from "../pages/Policies.tsx";
+import SecurePdfViewer from "../components/utils/SecurePdfViewer.tsx";
 
 const AppRouter = () => {
   const { pathname } = useLocation();
   const { profile } = useSelector((state: RootState) => state.auth);
-  const { isProfileCompleteOpen } = useSelector(
+  const { isProfileCompleteOpen, showPdf } = useSelector(
     (state: RootState) => state.globalPopups
   );
   const dispatch = useDispatch();
@@ -57,13 +55,9 @@ const AppRouter = () => {
 
     const unsubscribe = authService.onAuthStateChange(async (user) => {
       if (user) {
-        const idTokenResult = await user.getIdTokenResult();
-        const isAdmin = idTokenResult.claims.role === "admin";
-        dispatch(setAdmin(isAdmin)); // ✅ update admin state
         dispatch(setUser(user)); // ✅ your auth slice
         navigate("/");
       } else {
-        dispatch(logoutAdmin()); // ✅ clear admin state
         dispatch(logout()); // ✅ clear auth state
       }
     });
@@ -84,16 +78,15 @@ const AppRouter = () => {
   }, [profile]);
 
   useEffect(() => {
-    // Lock scroll
-    if (isProfileCompleteOpen) {
-      document.body.classList.add("overflow-hidden");
+    if (isProfileCompleteOpen || showPdf) {
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.classList.remove("overflow-hidden");
+      document.body.style.overflow = "auto";
     }
     return () => {
-      document.body.classList.remove("overflow-hidden");
+      document.body.style.overflow = "auto";
     };
-  }, [isProfileCompleteOpen]);
+  }, [isProfileCompleteOpen, showPdf]);
 
   return (
     <div className="bg-gray-50 flex flex-col">
@@ -107,14 +100,6 @@ const AppRouter = () => {
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/policies" element={<PoliciesPage />} />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedAdminRoute>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            }
-          />
           <Route path="/pricing" element={<Pricing />} />
           <Route
             path="/dashboard"
@@ -132,8 +117,16 @@ const AppRouter = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/resources" element={<ResourcesMain />} />
-          <Route path="/pyqs" element={<PYQs />} />
+          <Route path="/resources" element={
+            <PrivateRoute>
+              <ResourcesMain />
+            </PrivateRoute>
+          } />
+          <Route path="/pyqs" element={
+            <PrivateRoute>
+              <PYQs />
+            </PrivateRoute>
+          } />
           <Route
             path="/bookmarks"
             element={
@@ -164,6 +157,7 @@ const AppRouter = () => {
       {pathname !== "/ai-assistant" && <Footer />}
 
       <PremiumComingSoonModal isOpen={isOpen} />
+      {showPdf && <SecurePdfViewer />}
       {isProfileCompleteOpen && <ProfileCompletionPopup />}
     </div>
   );

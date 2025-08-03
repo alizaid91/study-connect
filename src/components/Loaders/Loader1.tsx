@@ -1,6 +1,10 @@
-const Loader1 = () => {
+interface Loader1Props {
+  className?: string;
+}
+
+const Loader1 = ({ className }: Loader1Props) => {
   return (
-    <div className="flex justify-center items-center w-full min-h-screen bg-gray-50">
+    <div className={`${className ? className : "min-h-screen"} flex items-center justify-center`}>
       <div className="loader">
         <div>
           <ul>

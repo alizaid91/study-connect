@@ -8,13 +8,16 @@ import { RootState } from "../store";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch } from "../store";
 import ResourceFilter from "../components/Study-Resources/ResourceFilter";
-import { FaExternalLinkAlt } from "react-icons/fa";
 import { FcFilledFilter } from "react-icons/fc";
 import {
   resetResourceFilters,
   updateResourceFilterField,
 } from "../store/slices/filtersSlice";
-import { addBookmark, removeBookmark } from "../store/slices/bookmarkSlice";
+import {
+  addBookmark,
+  fetchBookmarks,
+  removeBookmark,
+} from "../store/slices/bookmarkSlice";
 import { Bookmark, Resource } from "../types/content";
 import { IoArrowBackSharp } from "react-icons/io5";
 import { setLoading, setResources } from "../store/slices/resourceSlice";
@@ -22,6 +25,7 @@ import Loader1 from "../components/Loaders/Loader1";
 import NoStudyResources from "../components/Study-Resources/NoStudyResource";
 import SearchBar from "../components/Study-Resources/SearchBar";
 import { FiBookmark } from "react-icons/fi";
+import { setShowPdf } from "../store/slices/globalPopups";
 
 const resourcesCards = [
   {
@@ -76,6 +80,7 @@ const ResourcesMain = () => {
     useState<string>("");
 
   useEffect(() => {
+    if (!user?.uid) return;
     const fetchResources = async () => {
       dispatch(setLoading(true));
       try {
@@ -88,6 +93,7 @@ const ResourcesMain = () => {
       }
     };
     fetchResources();
+    dispatch(fetchBookmarks(user?.uid));
   }, []);
 
   useEffect(() => {
@@ -167,7 +173,7 @@ const ResourcesMain = () => {
           paperType: null,
           resourceType: resource.type,
           description: `${resource.branch} - ${resource.year} ${resource.pattern}`,
-          link: resource.driveLink,
+          resourceId: resource.resourceId,
           createdAt: new Date().toISOString(),
         })
       );
@@ -270,7 +276,7 @@ const ResourcesMain = () => {
           isFilterExpanded={isFilterExpanded}
           setIsFilterExpanded={setIsFilterExpanded}
         />
-        <div className="w-full max-h-screen border border-gray-300/90 overflow-y-scroll rounded-3xl px-2">
+        <div className="w-full max-h-screen border border-gray-300/90 overflow-y-auto rounded-3xl px-2">
           {filteredResources.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pt-4 pb-6">
               {filteredResources
@@ -318,15 +324,19 @@ const ResourcesMain = () => {
                       </div>
 
                       <div className="mt-6 flex items-center justify-between">
-                        <a
-                          href={resource.driveLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 bg-gray-100 text-blue-700 font-semibold px-4 py-2 rounded-xl transition-colors duration-300"
+                        <button
+                          onClick={() =>
+                            dispatch(
+                              setShowPdf({
+                                pdfId: resource.resourceId,
+                                title: resource.title,
+                              })
+                            )
+                          }
+                          className="px-6 py-1 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
                         >
-                          View {getTitle(resourceFilters.type)}{" "}
-                          <FaExternalLinkAlt className="text-sm" />
-                        </a>
+                          View
+                        </button>
                         {changingBookmarkState &&
                         resource.id === itemToChangeBookmarkState ? (
                           <div

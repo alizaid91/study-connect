@@ -28,7 +28,11 @@ const ResourceFilter = ({
   );
 
   const handleChange = (key: keyof ResourceFilterValues, value: string) => {
-    if ((key === "branch" && value === "FE") || key === "branch" || key === "year") {
+    if (
+      (key === "branch" && value === "FE") ||
+      key === "branch" ||
+      key === "year"
+    ) {
       dispatch(updateResourceFilterField({ field: "semester", value: "" }));
       dispatch(updateResourceFilterField({ field: "year", value: "" }));
     }
@@ -67,49 +71,48 @@ const ResourceFilter = ({
           ))}
         </select>
       </div>
-      {filterValues.branch !== "FE" && filterValues.branch !== "" && (
-        <div>
-          <label className="block text-sm font-medium text-blue-800 mb-1">
-            Year
-          </label>
-          <select
-            value={filterValues.year}
-            onChange={(e) => handleChange("year", e.target.value)}
-            className="w-full p-2 rounded-lg border border-blue-300 bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Year</option>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {filterValues.branch && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Semester
-          </label>
-          <select
-            name="semester"
-            value={filterValues.semester}
-            onChange={(e) => handleChange("semester", e.target.value)}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-          >
-            <option value="">All Semesters</option>
-            {semesterMap[
-              filterValues.branch === "FE" ? "FE" : filterValues.year
-            ]?.map((sem) => (
-              <option key={sem} value={sem}>
-                Semester {sem}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
+      <div>
+        <label className="block text-sm font-medium text-blue-800 mb-1">
+          Year
+        </label>
+        <select
+          value={filterValues.year}
+          disabled={filterValues.branch === "FE" || !filterValues.branch}
+          onChange={(e) => handleChange("year", e.target.value)}
+          className="w-full p-2 rounded-lg border border-blue-300 bg-white focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Select Year</option>
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-blue-800 mb-1">
+          Semester
+        </label>
+        <select
+          name="semester"
+          disabled={
+            !filterValues.branch ||
+            (filterValues.branch !== "FE" && !filterValues.year)
+          }
+          value={filterValues.semester}
+          onChange={(e) => handleChange("semester", e.target.value)}
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+        >
+          <option value="">All Semesters</option>
+          {semesterMap[
+            filterValues.branch === "FE" ? "FE" : filterValues.year
+          ]?.map((sem) => (
+            <option key={sem} value={sem}>
+              Semester {sem}
+            </option>
+          ))}
+        </select>
+      </div>
       <div>
         <label className="block text-sm font-medium text-blue-800 mb-1">
           Pattern

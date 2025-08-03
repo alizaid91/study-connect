@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setUser, logout } from '../store/slices/authSlice';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import logo from '../assets/logo.png';
 import { authService, AuthFormData } from '../services/authService';
-import { setAdmin } from '../store/slices/adminSlice';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(false);

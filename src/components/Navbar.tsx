@@ -4,10 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
 import { logout } from "../store/slices/authSlice";
 import { motion, AnimatePresence } from "framer-motion";
-import { DEFAULT_AVATAR } from "../types/user";
 import { authService } from "../services/authService";
-import logo from "../assets/logo.png";
-import proBadge from "../assets/Pro_logo.png";
 import clsx from "clsx";
 import {
   FiBook,
@@ -17,12 +14,10 @@ import {
   FiHome,
   FiLogOut,
   FiSettings,
-  FiShield,
   FiFileText,
   FiMessageSquare,
   FiCreditCard,
 } from "react-icons/fi";
-import { logoutAdmin } from "../store/slices/adminSlice";
 import AvatarWithProgress from "./profile/AvaterWithProgress";
 import NavBrand from "./AI-Assistant/NavBrand";
 
@@ -38,7 +33,6 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isAdmin } = useSelector((state: RootState) => state.admin);
   const { user, profile } = useSelector((state: RootState) => state.auth);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -72,7 +66,6 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
     try {
       await authService.signOut();
       dispatch(logout());
-      dispatch(logoutAdmin());
       navigate("/");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -175,19 +168,6 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
               <FiCreditCard className="h-4 w-4" />
               <span>Pricing</span>
             </Link>
-            {isAdmin && (
-              <Link
-                to="/admin/dashboard"
-                className={`text-sm font-medium flex items-center space-x-1 ${
-                  isActive("/admin/dashboard")
-                    ? "text-primary-600"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                <FiShield className="h-4 w-4" />
-                <span>Admin Dashboard</span>
-              </Link>
-            )}
           </div>
 
           <div className="flex items-center space-x-1">
@@ -394,20 +374,6 @@ const Navbar: React.FC<NavbarProps> = ({ isHidden = false }) => {
                   <FiCreditCard className="h-5 w-5" />
                   <span>Pricing</span>
                 </Link>
-                {isAdmin && (
-                  <Link
-                    to="/admin/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center space-x-2 pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                      isActive("/admin/dashboard")
-                        ? "bg-primary-50 border-primary-500 text-primary-700"
-                        : "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    <FiShield className="h-5 w-5" />
-                    <span>Admin Dashboard</span>
-                  </Link>
-                )}
                 {user && (
                   <Link
                     to="/profile"

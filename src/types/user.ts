@@ -13,6 +13,7 @@ export interface UserProfile {
   createdAt: string;
   updatedAt: string;
   role: "free" | "premium";
+  subscriptionProcessing: boolean;
 
   quotas: {
     aiCredits: number;

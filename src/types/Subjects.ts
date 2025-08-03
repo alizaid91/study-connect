@@ -143,7 +143,7 @@ export function getSubjects(
   branch: Branch,
   sem: number,
   pattern: Pattern,
-  year?: Year
+  year?: Year | ""
 ): Subject[] {
   if (branch === "FE") {
     // Year is irrelevant for FE

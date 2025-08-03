@@ -22,7 +22,6 @@ const ScrollToTop = () => {
 
 function App() {
   const { user, profile } = useSelector((state: RootState) => state.auth);
-  const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -50,23 +49,6 @@ function App() {
       } as UserProfile);
     }
   }, [user?.uid, profile?.usage.aiPromptUsage?.date]);
-
-  useEffect(() => {
-    fetch(`${AI_URL}/`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            `AI service responded with status ${response.status}`
-          );
-        }
-        response.text().then((text) => {
-          console.log(text);
-        });
-      })
-      .catch((error) => {
-        console.error("Error connecting to AI service:", error);
-      });
-  }, []);
 
   return (
     <Router>

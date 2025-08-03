@@ -23,6 +23,8 @@ import { useNavigate } from "react-router-dom";
 import { MdArrowForward } from "react-icons/md";
 import Loader1 from "../components/Loaders/Loader1";
 import { semesterMap } from "../types/constants";
+import { setShowPdf } from "../store/slices/globalPopups";
+import { urlParsers } from "../utils/urlParsers";
 
 const sortQuickFilters = (qf: QuickFilter[]) => {
   return qf.sort((a, b) => {
@@ -46,6 +48,7 @@ const sortQuickFilters = (qf: QuickFilter[]) => {
 const PYQs: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+
   const { user, profile } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
   const { papers, loading, error } = useSelector(
@@ -55,11 +58,12 @@ const PYQs: React.FC = () => {
     (state: RootState) => state.tasks
   );
 
-  const [saving, setSaving] = useState(false);
+  // Bookmark state
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] =
     useState<string>("");
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Papers and filters state
   const [filteredPapers, setFilteredPapers] = useState<Paper[]>([]);
   const [filters, setFilters] = useState({
     branch: "",
@@ -81,13 +85,15 @@ const PYQs: React.FC = () => {
 
   // Quick filters state
   const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
+  const [savingQuickFilter, setSavingQuickFilter] = useState(false);
+  const [isDeletingQuickFilter, setIsDeletingQuickFilter] = useState(false);
   const [deletingQFId, setDeletingQFId] = useState<string | null>(null);
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
   const [showMoreQuickFilters, setShowMoreQuickFilters] = useState(false);
 
   const pyqsRef = useRef<HTMLDivElement>(null);
 
-  // Effect to prevent background scrolling when modal is open
+  // Effect
   useEffect(() => {
     if (isTaskModalOpen) {
       document.body.style.overflow = "hidden";
@@ -101,6 +107,7 @@ const PYQs: React.FC = () => {
   }, [isTaskModalOpen]);
 
   useEffect(() => {
+    if (!user?.uid) return;
     const fetchPapers = async () => {
       try {
         dispatch(setLoading(true));
@@ -113,8 +120,6 @@ const PYQs: React.FC = () => {
       }
     };
     fetchPapers();
-
-    if (!user?.uid) return;
 
     const fetchQuickFilters = async () => {
       const filters = await papersService.getQuickFilters(user.uid);
@@ -201,6 +206,7 @@ const PYQs: React.FC = () => {
     }
   }, [lists]);
 
+  // Filter change handlers
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters((prev) => {
@@ -235,27 +241,6 @@ const PYQs: React.FC = () => {
     });
   };
 
-  const setDefaultTaskInfo = (paper: Paper) => {
-    setSelectedPaper(paper);
-    setIsTaskModalOpen(true);
-  };
-
-  const handleSaveTask = async (taskData: TaskForm) => {
-    if (!user?.uid || !defaultListId) return;
-
-    setIsSubmitting(true);
-    try {
-      const boardId = taskData.boardId;
-      await saveTask(taskData, user.uid, boardId, undefined, tasks);
-      setIsTaskModalOpen(false);
-    } catch (error) {
-      console.error("Error saving task:", error);
-      alert("Error adding task");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const clearFilters = () => {
     setFilters({
       branch: "",
@@ -286,7 +271,7 @@ const PYQs: React.FC = () => {
       return;
     }
     try {
-      setSaving(true);
+      setSavingQuickFilter(true);
       const docRef = await papersService.saveQuickFilter({
         ...filters,
         userId: user.uid,
@@ -298,7 +283,7 @@ const PYQs: React.FC = () => {
     } catch (err) {
       console.error("Error saving quick filter", err);
     } finally {
-      setSaving(false);
+      setSavingQuickFilter(false);
     }
   };
 
@@ -308,18 +293,19 @@ const PYQs: React.FC = () => {
 
   const handleDeleteQuickFilter = async (id: string) => {
     try {
-      setIsDeleting(true);
+      setIsDeletingQuickFilter(true);
       setDeletingQFId(id);
       await papersService.deleteQuickFilter(id);
       setQuickFilters((prev) => prev.filter((q) => q.id !== id));
     } catch (err) {
       console.error("Error deleting quick filter", err);
     } finally {
-      setIsDeleting(false);
+      setIsDeletingQuickFilter(false);
       setDeletingQFId(null);
     }
   };
 
+  // Bookmark handlers
   const handleBookmark = async (paper: Paper) => {
     if (!user) return;
 
@@ -342,7 +328,7 @@ const PYQs: React.FC = () => {
           title: paper.subjectName,
           name: paper.paperName,
           description: `${paper.branch} - ${paper.year} ${paper.pattern}`,
-          link: paper.driveLink,
+          resourceId: urlParsers.extractDriveId(paper.driveLink) || "",
           createdAt: new Date().toISOString(),
         })
       );
@@ -357,11 +343,28 @@ const PYQs: React.FC = () => {
     );
   };
 
-  const getAvailableSubjects = () => {
-    return papersService.getAvailableSubjects(papers, filters);
+  // Add paper as task handler
+  const setDefaultTaskInfo = (paper: Paper) => {
+    setSelectedPaper(paper);
+    setIsTaskModalOpen(true);
   };
 
-  // Create a mock task for the modal when a paper is selected
+  const handleSaveTask = async (taskData: TaskForm) => {
+    if (!user?.uid || !defaultListId) return;
+
+    setIsSubmitting(true);
+    try {
+      const boardId = taskData.boardId;
+      await saveTask(taskData, user.uid, boardId, undefined, tasks);
+      setIsTaskModalOpen(false);
+    } catch (error) {
+      console.error("Error saving task:", error);
+      alert("Error adding task");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const taskForModal = useMemo(() => {
     if (!selectedPaper || !defaultListId) return null;
 
@@ -398,6 +401,12 @@ const PYQs: React.FC = () => {
     } as Task;
   }, [selectedPaper, defaultListId, lists, user]);
 
+  // Utilities
+  const getAvailableSubjects = () => {
+    return papersService.getAvailableSubjects(papers, filters);
+  };
+
+  // UI rendering
   if (loading) {
     return <Loader1 />;
   }
@@ -428,6 +437,7 @@ const PYQs: React.FC = () => {
         PYQ Papers
       </motion.h1>
 
+      {/* Quick Filters */}
       <AnimatePresence initial={false}>
         {!user && (
           <div
@@ -530,7 +540,7 @@ const PYQs: React.FC = () => {
                     </div>
                     {!qf.values.isReadyMade && (
                       <div className="flex items-center space-x-4">
-                        {isDeleting && deletingQFId === qf.id ? (
+                        {isDeletingQuickFilter && deletingQFId === qf.id ? (
                           <div
                             role="status"
                             className="inline-flex items-center"
@@ -584,6 +594,7 @@ const PYQs: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* Paper Filter */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -622,7 +633,9 @@ const PYQs: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
+              {/* Filter Options */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {/* Select Branch */}
                 <motion.div
                   initial={{ x: -10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -646,6 +659,7 @@ const PYQs: React.FC = () => {
                   </select>
                 </motion.div>
 
+                {/* Select Year */}
                 {filters.branch && filters.branch !== "FE" && (
                   <motion.div
                     initial={{ x: -10, opacity: 0 }}
@@ -669,6 +683,7 @@ const PYQs: React.FC = () => {
                   </motion.div>
                 )}
 
+                {/* Select Semester */}
                 <motion.div
                   initial={{ x: -10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -694,6 +709,7 @@ const PYQs: React.FC = () => {
                   </select>
                 </motion.div>
 
+                {/* Select Pattern */}
                 <motion.div
                   initial={{ x: -10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -714,6 +730,7 @@ const PYQs: React.FC = () => {
                   </select>
                 </motion.div>
 
+                {/* Select Subject */}
                 <motion.div
                   initial={{ x: -10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -741,6 +758,7 @@ const PYQs: React.FC = () => {
                   </select>
                 </motion.div>
 
+                {/* Select Paper Type */}
                 <motion.div
                   initial={{ x: -10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -762,6 +780,7 @@ const PYQs: React.FC = () => {
                 </motion.div>
               </div>
 
+              {/* CLear and Reset Button */}
               <div className="mt-6 flex flex-col md:flex-row gap-3">
                 <motion.button
                   whileHover={{ scale: 1.03 }}
@@ -777,7 +796,7 @@ const PYQs: React.FC = () => {
                   filters.pattern ||
                   filters.paperType ||
                   filters.subjectName) &&
-                  (saving ? (
+                  (savingQuickFilter ? (
                     <button
                       disabled
                       type="button"
@@ -825,8 +844,10 @@ const PYQs: React.FC = () => {
         </AnimatePresence>
       </motion.div>
 
+      {/* Papers List */}
       <AnimatePresence initial={false}>
         {papers.length && filteredPapers.length === 0 && !loading ? (
+          // No papers found message
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -851,12 +872,14 @@ const PYQs: React.FC = () => {
             </div>
           </motion.div>
         ) : (
+          // Papers Grid
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div
               ref={pyqsRef}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {filteredPapers.map((paper, index) => (
+                // Paper Card
                 <motion.div
                   key={paper.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -866,30 +889,36 @@ const PYQs: React.FC = () => {
                   className="bg-white rounded-b-3xl  shadow-md overflow-hidden relative group"
                 >
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-                  <div className="p-6">
-                    <h3 className="text-md md:text-lg font-semibold mb-2 text-gray-800 pr-4">
-                      {paper.subjectName}
-                    </h3>
-                    <p className="text-sm md:text-md text-gray-600 mb-2">
-                      {paper.branch} - {paper.branch !== "FE" ? paper.year : ""}{" "}
-                      {paper.pattern} Pattern
-                    </p>
-                    <p className="text-sm md:text-md text-gray-700 mb-6">
-                      <span className="font-medium">{paper.paperType} </span>{" "}
-                      <span> Paper </span>{" "}
-                      <span className="font-medium">{paper.paperName} </span>
-                    </p>
+                  <div className="p-6 flex flex-col justify-between h-full">
+                    <div>
+                      <h3 className="text-md md:text-lg font-semibold mb-2 text-gray-800 pr-4">
+                        {paper.subjectName}
+                      </h3>
+                      <p className="text-sm md:text-md text-gray-600 mb-2">
+                        {paper.branch} -{" "}
+                        {paper.branch !== "FE" ? paper.year : ""}{" "}
+                        {paper.pattern} Pattern
+                      </p>
+                      <p className="text-sm md:text-md text-gray-700 mb-6">
+                        <span className="font-medium">{paper.paperType} </span>{" "}
+                        <span> Paper </span>{" "}
+                        <span className="font-medium">{paper.paperName} </span>
+                      </p>
+                    </div>
                     <div className="flex flex-col sm:flex-row gap-3 text-center">
-                      <motion.a
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        href={paper.driveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
+                      <button
+                        onClick={() => {
+                          dispatch(
+                            setShowPdf({
+                              pdfId: urlParsers.extractDriveId(paper.driveLink),
+                              title: `${paper.subjectName} ${paper.paperName} ${paper.year} ${paper.pattern} Pattern`,
+                            })
+                          );
+                        }}
+                        className="px-6 py-1 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
                       >
-                        View Paper
-                      </motion.a>
+                        View
+                      </button>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

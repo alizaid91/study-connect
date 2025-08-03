@@ -37,10 +37,6 @@ class ResourcesService {
     })) as Resource[];
   }
 
-  async addResource(resourceData: Omit<Resource, "id">) {
-    return await addDoc(collection(db, "resources"), resourceData);
-  }
-
   async getQuickFilters(userId: string) {
     const q = query(
       collection(db, "resourceQuickFilters"),

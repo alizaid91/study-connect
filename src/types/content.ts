@@ -21,10 +21,10 @@ export interface Resource {
   subjectCode: string;
   subjectName: string;
   branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
-  year: 'FE' | 'SE' | 'TE' | 'BE';
+  year: 'SE' | 'TE' | 'BE' | '';
   semester: number;
   pattern: '2019' | '2024';
-  driveLink: string;
+  resourceId: string;
   uploadedAt: string;
   uploadedBy: string;
 }
@@ -45,7 +45,7 @@ export interface Bookmark {
   title: string;
   name: string;
   description: string;
-  link: string;
+  resourceId: string;
   createdAt: string;
 }
 
