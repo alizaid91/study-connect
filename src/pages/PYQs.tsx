@@ -24,7 +24,6 @@ import { MdArrowForward } from "react-icons/md";
 import Loader1 from "../components/Loaders/Loader1";
 import { semesterMap } from "../types/constants";
 import { setShowPdf } from "../store/slices/globalPopups";
-import { urlParsers } from "../utils/urlParsers";
 
 const sortQuickFilters = (qf: QuickFilter[]) => {
   return qf.sort((a, b) => {
@@ -112,6 +111,7 @@ const PYQs: React.FC = () => {
       try {
         dispatch(setLoading(true));
         const papers = await papersService.getPapers();
+        console.log("Fetched papers:", papers);
         dispatch(setPapers(papers));
       } catch (error) {
         console.error("Error fetching papers:", error);
@@ -328,7 +328,7 @@ const PYQs: React.FC = () => {
           title: paper.subjectName,
           name: paper.paperName,
           description: `${paper.branch} - ${paper.year} ${paper.pattern}`,
-          resourceId: urlParsers.extractDriveId(paper.driveLink) || "",
+          resourceId: paper.resourceId,
           createdAt: new Date().toISOString(),
         })
       );
@@ -393,9 +393,7 @@ const PYQs: React.FC = () => {
       dueDate: "",
       userId: user?.uid || "",
       position: 0,
-      attachments: selectedPaper.driveLink
-        ? [selectedPaper.driveLink]
-        : undefined,
+      attachments: selectedPaper.resourceId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     } as Task;
@@ -910,7 +908,7 @@ const PYQs: React.FC = () => {
                         onClick={() => {
                           dispatch(
                             setShowPdf({
-                              pdfId: urlParsers.extractDriveId(paper.driveLink),
+                              pdfId: paper.resourceId,
                               title: `${paper.subjectName} ${paper.paperName} ${paper.year} ${paper.pattern} Pattern`,
                             })
                           );
@@ -920,14 +918,12 @@ const PYQs: React.FC = () => {
                         View
                       </button>
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
                         onClick={
                           !user
                             ? () => navigate("/auth#login")
                             : () => setDefaultTaskInfo(paper)
                         }
-                        className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-md flex-1 inline-block transition-all duration-200 shadow-md"
+                        className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-xl inline-block duration-200 transition-all"
                       >
                         Add to Tasks
                       </motion.button>

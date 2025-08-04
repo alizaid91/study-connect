@@ -294,6 +294,7 @@ const AiAssistant = () => {
                           message={msg}
                           isUser={msg.sender === "user"}
                           showLoading={
+                            loadingAi &&
                             !sessions[activeSessionId as string]?.error &&
                             msg.sender === "ai" &&
                             msg.content === ""

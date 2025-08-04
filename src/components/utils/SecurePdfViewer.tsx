@@ -28,7 +28,7 @@ const SecurePdfViewer = () => {
   const { renderDefaultToolbar, Toolbar } = toolbarPluginInstance;
 
   useEffect(() => {
-    if (!showPdf?.pdfId) return;
+    if (!showPdf?.pdfId || pdfUrl) return;
 
     const loadPdf = async (pdfId: string) => {
       try {
@@ -42,12 +42,12 @@ const SecurePdfViewer = () => {
       }
     };
 
-    if (showPdf?.pdfId) {
+    if (showPdf?.pdfId && !pdfUrl) {
       loadPdf(showPdf.pdfId);
     }
 
     return () => {
-      if (showPdf?.pdfId && pdfUrl) URL.revokeObjectURL(pdfUrl);
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
   }, [showPdf]);
 

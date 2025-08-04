@@ -8,7 +8,7 @@ export interface Paper {
   pattern: '2019' | '2024';
   paperType: 'Insem' | 'Endsem';
   paperName: string;
-  driveLink: string;
+  resourceId: string;
   uploadedAt: string;
   uploadedBy: string;
 }
@@ -61,7 +61,7 @@ export interface Task {
   dueDate?: string;
   userId: string;
   position: number;
-  attachments?: string[];
+  attachments?: string;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
