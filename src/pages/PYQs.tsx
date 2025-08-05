@@ -107,7 +107,6 @@ const PYQs: React.FC = () => {
   }, [isTaskModalOpen]);
 
   useEffect(() => {
-    if (!user?.uid) return;
     const fetchPapers = async () => {
       try {
         dispatch(setLoading(true));
@@ -121,6 +120,7 @@ const PYQs: React.FC = () => {
       }
     };
     fetchPapers();
+    if (!user?.uid) return;
 
     const fetchQuickFilters = async () => {
       const filters = await papersService.getQuickFilters(user.uid);
@@ -448,10 +448,8 @@ const PYQs: React.FC = () => {
                   filters.
                 </h2>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
                   onClick={() => navigate("/auth#signup")}
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-md font-medium transition-all duration-200 flex items-center justify-center"
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-3xl font-medium transition-all duration-200 flex items-center justify-center"
                 >
                   Signup
                 </motion.button>

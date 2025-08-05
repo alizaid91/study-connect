@@ -117,16 +117,8 @@ const AppRouter = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/resources" element={
-            <PrivateRoute>
-              <ResourcesMain />
-            </PrivateRoute>
-          } />
-          <Route path="/pyqs" element={
-            <PrivateRoute>
-              <PYQs />
-            </PrivateRoute>
-          } />
+          <Route path="/resources" element={<ResourcesMain />} />
+          <Route path="/pyqs" element={<PYQs />} />
           <Route
             path="/bookmarks"
             element={

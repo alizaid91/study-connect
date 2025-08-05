@@ -46,11 +46,8 @@ export const apiService = {
    * Fetch a protected PDF file by resourceId (auth required)
    */
   async fetchProtectedPdf(resourceId: string): Promise<string> {
-    const headers = await getAuthHeader();
 
-    const response = await fetch(`${AI_URL}/resources/${resourceId}`, {
-      headers,
-    });
+    const response = await fetch(`${AI_URL}/resources/${resourceId}`);
 
     if (!response.ok) {
       throw new Error("Failed to fetch protected PDF");
