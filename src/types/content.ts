@@ -95,7 +95,7 @@ export interface TaskForm {
   priority: Priority;
   dueDate?: string;
   position?: number;
-  attachments?: string[];
+  attachments?: string;
   completed?: boolean;
 }
 

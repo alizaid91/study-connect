@@ -100,9 +100,9 @@ const TaskModal = ({
     }
 
     // Remove attachments if undefined or empty array
-    if (!formData.attachments || formData.attachments.length === 0) {
-      delete formData.attachments;
-    }
+    // if (!formData.attachments || formData.attachments.length === 0) {
+    //   delete formData.attachments;
+    // }
 
     onSave(formData);
   };
@@ -297,7 +297,7 @@ const TaskModal = ({
                     </div>
 
                     {/* Attachments Section */}
-                    {form.attachments && form.attachments.length > 0 && (
+                    {/* {form.attachments && form.attachments.length > 0 && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Attachments
@@ -325,7 +325,7 @@ const TaskModal = ({
                           ))}
                         </div>
                       </div>
-                    )}
+                    )} */}
                     <div className="mt-6 flex justify-end space-x-3">
                       <button
                         type="button"
