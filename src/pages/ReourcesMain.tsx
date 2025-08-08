@@ -80,6 +80,7 @@ const ResourcesMain = () => {
     useState<string>("");
 
   useEffect(() => {
+    if (!user?.uid) return;
     const fetchResources = async () => {
       dispatch(setLoading(true));
       try {
@@ -92,7 +93,6 @@ const ResourcesMain = () => {
       }
     };
     fetchResources();
-    if (!user?.uid) return;
     dispatch(fetchBookmarks(user?.uid));
   }, []);
 
