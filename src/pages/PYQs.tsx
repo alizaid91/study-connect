@@ -901,7 +901,7 @@ const PYQs: React.FC = () => {
                                 dispatch(
                                   setShowPdf({
                                     pdfId: paper.resourceId,
-                                    title: `${paper.subjectName} ${paper.paperName} ${paper.year} ${paper.pattern} Pattern`,
+                                    title: `${paper.subjectName} ${paper.paperName} ${paper.year ? paper.year : ""} ${paper.pattern} Pattern`,
                                   })
                                 );
                               }}

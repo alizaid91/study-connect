@@ -108,7 +108,7 @@ const SecurePdfViewer = () => {
           <Loader1 className="h-full" />
         ) : pdfUrl ? (
           <>
-            <div className="max-w-[200px] sm:max-w-[400px] flex justify-between items-center mb-4 pl-2">
+            <div className="max-w-[200px] sm:max-w-[400px] md:max-w-[600px] flex justify-between items-center mb-4 pl-2">
               <h2
                 className="text-lg font-semibold px-3 py-1 bg-gray-200/40 rounded-xl max-w-full truncate"
                 title={showPdf.title || "PDF Document"}
