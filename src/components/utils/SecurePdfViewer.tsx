@@ -92,7 +92,7 @@ const SecurePdfViewer = () => {
       }}
     >
       <motion.div
-        className="w-full max-w-full h-[100vh] md:h-[90vh] md:max-w-[90%] md:rounded-3xl bg-white p-4 relative overflow-hidden"
+        className="w-full max-w-[95%] h-[95vh] md:max-w-[90%] rounded-3xl bg-white p-4 relative overflow-hidden"
         variants={modalVariants}
       >
         <div
