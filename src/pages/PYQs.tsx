@@ -8,7 +8,13 @@ import {
   fetchBookmarks,
 } from "../store/slices/bookmarkSlice";
 import { FiTrash2, FiFilter, FiChevronsDown, FiBookmark } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  LazyMotion,
+  m,
+  domAnimation,
+} from "framer-motion";
 import TaskModal from "../components/Task-Board/TaskModal";
 import { setBoards, setLists, setTasks } from "../store/slices/taskSlice";
 import {
@@ -825,30 +831,32 @@ const PYQs: React.FC = () => {
             // For strings, check if not empty
             return value !== "";
           }) && (
-              <button
-                onClick={clearFilters}
-                className="border border-gray-300/60 rounded-3xl px-4 py-2 mb-1 ml-2 flex justify-between items-center w-fit hover:bg-gray-100 text-sm text-gray-600 hover:text-gray-800"
-              >
-                Clear Filters
-              </button>
+            <button
+              onClick={clearFilters}
+              className="border border-gray-300/60 rounded-3xl px-4 py-2 mb-1 ml-2 flex justify-between items-center w-fit hover:bg-gray-100 text-sm text-gray-600 hover:text-gray-800"
+            >
+              Clear Filters
+            </button>
           )}
-          <div className="md:flex-1 md:max-h-screen md:overflow-y-auto scroll-smooth border border-gray-300/60 rounded-3xl p-4">
-            <AnimatePresence initial={false}>
+          <div
+            className="md:flex-1 md:max-h-screen md:overflow-y-auto border border-gray-300/60 rounded-3xl p-4 will-change-transform"
+            style={{ transform: "translateZ(0)" }}
+          >
+            <LazyMotion features={domAnimation}>
               {papers.length && filteredPapers.length === 0 && !loading ? (
-                // No papers found message
-                <motion.div
+                // No papers found
+                <m.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow-md"
+                  className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow-sm"
                 >
                   <div className="flex items-center">
                     <svg
                       className="w-6 h-6 mr-2"
                       fill="currentColor"
                       viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
                         fillRule="evenodd"
@@ -858,108 +866,114 @@ const PYQs: React.FC = () => {
                     </svg>
                     <p>No papers found matching the selected filters.</p>
                   </div>
-                </motion.div>
+                </m.div>
               ) : (
                 // Papers Grid
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <div
-                    ref={pyqsRef}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-                  >
-                    {filteredPapers.map((paper, index) => (
-                      // Paper Card
-                      <motion.div
-                        key={paper.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="bg-white rounded-3xl shadow-md hover:shadow-lg transition-all duration-500 overflow-hidden relative group"
-                      >
-                        <div className="p-6 flex flex-col justify-between h-full">
-                          <div>
-                            <h3 className="text-md md:text-lg font-semibold mb-2 text-gray-800 pr-4">
-                              {paper.subjectName}
-                            </h3>
-                            <p className="text-sm md:text-md text-gray-600 mb-2">
-                              {paper.branch} -{" "}
-                              {paper.branch !== "FE" ? paper.year : ""}{" "}
-                              {paper.pattern} Pattern
-                            </p>
-                            <p className="text-sm md:text-md text-gray-700 mb-6">
-                              <span className="font-medium">
-                                {paper.paperType}{" "}
-                              </span>{" "}
-                              <span> Paper </span>{" "}
-                              <span className="font-medium">
-                                {paper.paperName}{" "}
-                              </span>
-                            </p>
-                          </div>
-                          <div className="flex flex-col sm:flex-row gap-3 text-center">
-                            <button
-                              onClick={() => {
-                                dispatch(
-                                  setShowPdf({
-                                    pdfId: paper.resourceId,
-                                    title: `${paper.subjectName} ${paper.paperName} ${paper.year ? paper.year : ""} ${paper.pattern} Pattern`,
-                                  })
-                                );
-                              }}
-                              className="px-4 py-2 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
-                            >
-                              View
-                            </button>
-                            <motion.button
-                              onClick={
-                                !user
-                                  ? () => navigate("/auth#login")
-                                  : () => setDefaultTaskInfo(paper)
-                              }
-                              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl inline-block duration-200 transition-all"
-                            >
-                              Add to Tasks
-                            </motion.button>
-                          </div>
+                <div
+                  ref={pyqsRef}
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                >
+                  {filteredPapers.map((paper) => (
+                    <m.div
+                      key={paper.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.1 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-white rounded-3xl shadow-[0_2px_6px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow duration-300 overflow-hidden relative group"
+                    >
+                      <div className="p-6 flex flex-col justify-between h-full">
+                        <div>
+                          <h3 className="text-md md:text-lg font-semibold mb-2 text-gray-800 pr-4">
+                            {paper.subjectName}
+                          </h3>
+                          <p className="text-sm md:text-md text-gray-600 mb-2">
+                            {paper.branch} -{" "}
+                            {paper.branch !== "FE" ? paper.year : ""}{" "}
+                            {paper.pattern} Pattern
+                          </p>
+                          <p className="text-sm md:text-md text-gray-700 mb-6">
+                            <span className="font-medium">
+                              {paper.paperType}{" "}
+                            </span>
+                            <span> Paper </span>
+                            <span className="font-medium">
+                              {paper.paperName}{" "}
+                            </span>
+                          </p>
                         </div>
-                        <div className="absolute top-3 right-3 p-1 flex justify-center items-center">
-                          {changingBookmarkState &&
-                          paper.id === itemToChangeBookmarkState ? (
-                            <div
-                              role="status"
-                              className="inline-flex items-center justify-center p-2"
-                            >
-                              <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                              <span className="sr-only">Changing...</span>
-                            </div>
-                          ) : (
-                            <motion.button
-                              whileHover={{ scale: 1.2 }}
-                              whileTap={{ scale: 0.8 }}
-                              onClick={
-                                !user
-                                  ? () => navigate("/auth#login")
-                                  : () => handleBookmark(paper)
-                              }
-                              className={`rounded-full p-2 ${
-                                isBookmarked(paper.id)
-                                  ? "text-yellow-500 bg-yellow-50"
-                                  : "text-gray-400 bg-gray-50"
-                              } transition-all duration-200`}
-                            >
-                              <FiBookmark
-                                className={`w-5 h-5 ${
-                                  isBookmarked(paper.id) ? "fill-current" : ""
-                                }`}
-                              />
-                            </motion.button>
-                          )}
+
+                        {/* Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-3 text-center">
+                          <button
+                            onClick={() => {
+                              dispatch(
+                                setShowPdf({
+                                  pdfId: paper.resourceId,
+                                  title: `${paper.subjectName} ${
+                                    paper.paperName
+                                  } ${paper.year ? paper.year : ""} ${
+                                    paper.pattern
+                                  } Pattern`,
+                                })
+                              );
+                            }}
+                            className="px-4 py-2 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
+                          >
+                            View
+                          </button>
+                          <m.button
+                            onClick={
+                              !user
+                                ? () => navigate("/auth#login")
+                                : () => setDefaultTaskInfo(paper)
+                            }
+                            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl inline-block duration-200 transition-all"
+                          >
+                            Add to Tasks
+                          </m.button>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
+                      </div>
+
+                      {/* Bookmark */}
+                      <div className="absolute top-3 right-3 p-1 flex justify-center items-center">
+                        {changingBookmarkState &&
+                        paper.id === itemToChangeBookmarkState ? (
+                          <div
+                            role="status"
+                            className="inline-flex items-center justify-center p-2"
+                          >
+                            <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                            <span className="sr-only">Changing...</span>
+                          </div>
+                        ) : (
+                          <m.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.8 }}
+                            onClick={
+                              !user
+                                ? () => navigate("/auth#login")
+                                : () => handleBookmark(paper)
+                            }
+                            className={`rounded-full p-2 ${
+                              isBookmarked(paper.id)
+                                ? "text-yellow-500 bg-yellow-50"
+                                : "text-gray-400 bg-gray-50"
+                            } transition-all duration-200`}
+                          >
+                            <FiBookmark
+                              className={`w-5 h-5 ${
+                                isBookmarked(paper.id) ? "fill-current" : ""
+                              }`}
+                            />
+                          </m.button>
+                        )}
+                      </div>
+                    </m.div>
+                  ))}
+                </div>
               )}
-            </AnimatePresence>
+            </LazyMotion>
           </div>
         </div>
       </div>
