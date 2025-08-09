@@ -194,7 +194,7 @@ class PapersService {
     }
 
     if (filters.pattern) {
-      filtered = filtered.filter((paper) => paper.pattern === filters.pattern);
+      filtered = filtered.filter((paper) => paper.pattern === filters.pattern.toString());
     }
 
     if (filters.paperType) {

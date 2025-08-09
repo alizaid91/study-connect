@@ -92,7 +92,7 @@ const SecurePdfViewer = () => {
       }}
     >
       <motion.div
-        className="w-full max-w-[90%] h-[90vh] bg-white p-4 relative overflow-hidden rounded-3xl"
+        className="w-full max-w-full h-[100vh] md:h-[90vh] md:max-w-[90%] md:rounded-3xl bg-white p-4 relative overflow-hidden"
         variants={modalVariants}
       >
         <div
@@ -122,7 +122,7 @@ const SecurePdfViewer = () => {
               </div>
               <div className="flex-1 overflow-hidden">
                 <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                  <Viewer fileUrl={pdfUrl} plugins={[toolbarPluginInstance]} />
+                  <Viewer fileUrl={pdfUrl} plugins={[toolbarPluginInstance]}  defaultScale={window.innerWidth < 768 ? 0.6 : 1.5} />
                 </Worker>
               </div>
             </div>
