@@ -128,22 +128,6 @@ const PYQs: React.FC = () => {
     fetchPapers();
     if (!user?.uid) return;
 
-    const fetchQuickFilters = async () => {
-      const filters = await papersService.getQuickFilters(user.uid);
-      if (user && profile?.semester != 0) {
-        const readyMadeFilters = papersService.createReadymadeFilters(
-          profile?.branch as string,
-          profile?.pattern as string,
-          profile?.year,
-          profile?.semester
-        );
-
-        setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
-      } else {
-        setQuickFilters(filters);
-      }
-    };
-    fetchQuickFilters();
     dispatch(fetchBookmarks(user.uid));
 
     let boardsUnsubscribe: (() => void) | undefined;
@@ -194,6 +178,27 @@ const PYQs: React.FC = () => {
       if (listsTasksUnsubscribe) listsTasksUnsubscribe();
     };
   }, [dispatch, user?.uid]);
+
+  useEffect(() => {
+    if (!user || !profile || !profile?.branch) return;
+
+    const fetchQuickFilters = async () => {
+      const filters = await papersService.getQuickFilters(user.uid);
+      if (user && profile?.semester != 0) {
+        const readyMadeFilters = papersService.createReadymadeFilters(
+          profile?.branch as string,
+          profile?.pattern as string,
+          profile?.year,
+          profile?.semester
+        );
+
+        setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
+      } else {
+        setQuickFilters(filters);
+      }
+    };
+    fetchQuickFilters();
+  }, [profile, profile?.branch]);
 
   useEffect(() => {
     if (!papers.length) return;
@@ -442,7 +447,7 @@ const PYQs: React.FC = () => {
         PYQ Papers
       </motion.h1>
       <div className="container mx-auto px-4 md:px-0 pb-8 min-h-screen flex flex-col md:flex-row gap-6">
-        <div className="md:w-[300px]">
+        <div className="md:w-[320px]">
           {/* Quick Filters */}
           <AnimatePresence initial={false}>
             {!user && (
@@ -483,7 +488,7 @@ const PYQs: React.FC = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mb-8 overflow-hidden bg-white rounded-3xl shadow-lg px-2 pb-2 pt-4 border border-gray-100"
+                className="md:max-w-[320px] mb-8 overflow-hidden bg-white rounded-3xl shadow-lg px-2 pb-2 pt-4 border border-gray-100"
               >
                 <h2 className="text-xl font-semibold mb-2 text-gray-700 flex flex-col justify-center sm:flex-row sm:items-center sm:justify-start ml-4">
                   <div className="flex items-center">
@@ -576,7 +581,7 @@ const PYQs: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100"
+            className="md:w-[320px] bg-white rounded-3xl shadow-lg p-6 border border-gray-100"
           >
             <div
               className={`flex justify-between items-center ${

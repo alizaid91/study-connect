@@ -45,8 +45,7 @@ const ProfileCompletionPopup = () => {
   };
 
   const handleBack = () => {
-    if (stepIndex === 0) return;
-    setStepIndex((prev) => prev - 1);
+    if (stepIndex > 0) setStepIndex((prev) => prev - 1);
   };
 
   const handleChange = (field: Step, value: any) => {
@@ -60,7 +59,6 @@ const ProfileCompletionPopup = () => {
   const onSubmit = () => {
     if (!user?.uid) return;
     authService.updateUserProfile(user.uid, data as UserProfile);
-    console.log("Profile data submitted:", data);
     dispatch(closeProfileComplete());
   };
 
@@ -72,13 +70,6 @@ const ProfileCompletionPopup = () => {
     return [];
   };
 
-  const selectAnimation = {
-    initial: { scale: 0.95, opacity: 0 },
-    animate: { scale: 1, opacity: 1 },
-    exit: { scale: 0.95, opacity: 0 },
-    transition: { duration: 0.3, ease: "easeOut" },
-  };
-
   const isSubmitDisabled =
     !data.branch ||
     (data.branch !== "FE" && !data.year) ||
@@ -86,53 +77,53 @@ const ProfileCompletionPopup = () => {
     !data.semester ||
     !data.collegeName;
 
+  const baseClass =
+    "w-full p-3 border rounded-3xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm";
+
+  const stepVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
+  };
+
   const renderStep = () => {
-    const baseClass =
-      "w-full p-3 border rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm";
-
-    if (currentStep === "welcome") {
-      return (
-        <motion.div {...selectAnimation} className="text-center">
-          <div className="flex justify-center text-[56px]">🎉</div>
-
-          <h1 className="text-3xl font-bold text-gray-800">
-            Welcome to <span className="text-blue-700">Study Connect</span>
-          </h1>
-
-          <p className="text-gray-500 max-w-xs mx-auto text-sm">
-            Unlock a smarter way to study.{" "}
-            <span className="font-bold">
-              Let’s complete your profile for a personalized experience!
-            </span>
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 text-sm">
-            <div className="bg-blue-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
-              <CalendarDays className="text-blue-600 w-5 h-5" />
-              PYQs at your fingertips
-            </div>
-            <div className="bg-green-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
-              <BookOpenText className="text-green-600 w-5 h-5" />
-              Top Study Resources
-            </div>
-            <div className="bg-purple-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
-              <Bot className="text-purple-600 w-5 h-5" />
-              Smart AI Assistant
-            </div>
-            <div className="bg-orange-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
-              <GraduationCap className="text-orange-500 w-5 h-5" />
-              Task Management
-            </div>
-          </div>
-        </motion.div>
-      );
-    }
-
     switch (currentStep) {
+      case "welcome":
+        return (
+          <motion.div variants={stepVariants} className="text-center">
+            <div className="flex justify-center text-[56px]">🎉</div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Welcome to <span className="text-blue-700">Study Connect</span>
+            </h1>
+            <p className="text-gray-500 max-w-xs mx-auto text-sm mt-2">
+              Unlock a smarter way to study.{" "}
+              <span className="font-bold">
+                Let’s complete your profile for a personalized experience!
+              </span>
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 text-sm">
+              <div className="bg-blue-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
+                <CalendarDays className="text-blue-600 w-5 h-5" /> PYQs at your
+                fingertips
+              </div>
+              <div className="bg-green-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
+                <BookOpenText className="text-green-600 w-5 h-5" /> Top Study
+                Resources
+              </div>
+              <div className="bg-purple-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
+                <Bot className="text-purple-600 w-5 h-5" /> Smart AI Assistant
+              </div>
+              <div className="bg-orange-50 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
+                <GraduationCap className="text-orange-500 w-5 h-5" /> Task
+                Management
+              </div>
+            </div>
+          </motion.div>
+        );
       case "branch":
         return (
           <motion.select
-            {...selectAnimation}
+            variants={stepVariants}
             className={baseClass}
             value={data.branch || ""}
             onChange={(e) => handleChange("branch", e.target.value)}
@@ -148,7 +139,7 @@ const ProfileCompletionPopup = () => {
       case "year":
         return (
           <motion.select
-            {...selectAnimation}
+            variants={stepVariants}
             className={baseClass}
             value={data.year || ""}
             onChange={(e) => handleChange("year", e.target.value)}
@@ -162,7 +153,7 @@ const ProfileCompletionPopup = () => {
       case "pattern":
         return (
           <motion.select
-            {...selectAnimation}
+            variants={stepVariants}
             className={baseClass}
             value={data.pattern || ""}
             onChange={(e) => handleChange("pattern", parseInt(e.target.value))}
@@ -173,16 +164,15 @@ const ProfileCompletionPopup = () => {
           </motion.select>
         );
       case "semester":
-        const semOptions = getSemesterOptions();
         return (
           <motion.select
-            {...selectAnimation}
+            variants={stepVariants}
             className={baseClass}
             value={data.semester || ""}
             onChange={(e) => handleChange("semester", parseInt(e.target.value))}
           >
             <option value="">Select Semester</option>
-            {semOptions.map((sem) => (
+            {getSemesterOptions().map((sem) => (
               <option key={sem} value={sem}>
                 {sem}
               </option>
@@ -192,7 +182,7 @@ const ProfileCompletionPopup = () => {
       case "collegeName":
         return (
           <motion.input
-            {...selectAnimation}
+            variants={stepVariants}
             type="text"
             placeholder="E.g., MIT WPU, Pune"
             className={baseClass}
@@ -200,8 +190,6 @@ const ProfileCompletionPopup = () => {
             onChange={(e) => handleChange("collegeName", e.target.value)}
           />
         );
-      default:
-        return null;
     }
   };
 
@@ -214,11 +202,12 @@ const ProfileCompletionPopup = () => {
         exit={{ opacity: 0 }}
       >
         <motion.div
+          layout
           className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center relative mx-3 max-h-[90vh] overflow-y-auto"
-          initial={{ y: 50, opacity: 0 }}
+          initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 50, opacity: 0 }}
-          transition={{ duration: 0.3, type: "spring" }}
+          exit={{ y: 40, opacity: 0 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
         >
           <button
             onClick={() => dispatch(closeProfileComplete())}
@@ -241,10 +230,11 @@ const ProfileCompletionPopup = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="space-y-4"
             >
               {renderStep()}
@@ -254,8 +244,8 @@ const ProfileCompletionPopup = () => {
           <div className="mt-6 flex justify-between gap-4">
             {currentStep !== "welcome" ? (
               <motion.button
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.03 }}
                 onClick={handleBack}
                 disabled={stepIndex === 0}
                 className="flex-1 px-4 py-2 rounded-3xl bg-white border border-blue-500 text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition-all"
@@ -269,8 +259,8 @@ const ProfileCompletionPopup = () => {
             {isLastStep ? (
               <motion.button
                 disabled={isSubmitDisabled}
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.03 }}
                 onClick={onSubmit}
                 className={`${
                   isSubmitDisabled ? "opacity-50 cursor-not-allowed" : ""
@@ -283,27 +273,21 @@ const ProfileCompletionPopup = () => {
                 onClick={handleNext}
                 className="cssbuttons-io-button rounded-full"
               >
-                {" "}
                 Get started
                 <div className="icon rounded-full">
-                  <svg
-                    height="24"
-                    width="24"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M0 0h24v24H0z" fill="none"></path>
+                  <svg height="24" width="24" viewBox="0 0 24 24">
+                    <path fill="none" d="M0 0h24v24H0z" />
                     <path
-                      d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z"
                       fill="currentColor"
-                    ></path>
+                      d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z"
+                    />
                   </svg>
                 </div>
               </button>
             ) : (
               <motion.button
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.03 }}
                 onClick={handleNext}
                 className="flex-1 px-4 py-2 rounded-3xl bg-blue-700 text-white hover:bg-blue-800 transition-all"
               >
