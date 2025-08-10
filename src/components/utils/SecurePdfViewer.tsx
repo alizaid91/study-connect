@@ -18,6 +18,9 @@ import { RootState } from "../../store";
 import { apiService } from "../../services/apiService";
 import Loader1 from "../Loaders/Loader1";
 
+// get visible height
+const maxHeight = window.innerHeight - 26;
+
 const SecurePdfViewer = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -92,7 +95,8 @@ const SecurePdfViewer = () => {
       }}
     >
       <motion.div
-        className="w-full max-w-[95%] h-[95vh] md:max-w-[90%] rounded-3xl bg-white p-4 relative overflow-hidden"
+        style={{ height: `${maxHeight}px` }}
+        className="w-full max-w-[95%] md:max-w-[90%] rounded-3xl bg-white p-4 relative overflow-hidden"
         variants={modalVariants}
       >
         <div
@@ -122,7 +126,11 @@ const SecurePdfViewer = () => {
               </div>
               <div className="flex-1 overflow-hidden">
                 <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                  <Viewer fileUrl={pdfUrl} plugins={[toolbarPluginInstance]}  defaultScale={window.innerWidth < 768 ? 0.6 : 1.5} />
+                  <Viewer
+                    fileUrl={pdfUrl}
+                    plugins={[toolbarPluginInstance]}
+                    defaultScale={window.innerWidth < 768 ? 0.6 : 1.5}
+                  />
                 </Worker>
               </div>
             </div>
