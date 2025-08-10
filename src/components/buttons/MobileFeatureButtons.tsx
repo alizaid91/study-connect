@@ -1,37 +1,49 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { FileText, BookOpen, Bot, LayoutDashboard } from "lucide-react";
+import {
+  FileText,
+  BookOpen,
+  BotMessageSquare,
+  LayoutDashboard,
+  ListTodo,
+} from "lucide-react";
 
 const buttons = [
   {
     label: "PYQs",
     icon: <FileText className="w-5 h-5" />,
     to: "/pyqs",
-    colors: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+    colors: "linear-gradient(135deg, #6d28d9 0%, #a855f7 100%)",
   },
   {
     label: "Resources",
     icon: <BookOpen className="w-5 h-5" />,
     to: "/resources",
-    colors: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+    colors: "linear-gradient(135deg, #1e40af 0%, #06b6d4 100%)",
   },
   {
     label: "AI Assistant",
-    icon: <Bot className="w-5 h-5" />,
+    icon: <BotMessageSquare className="w-5 h-5" />,
     to: "/ai-assistant",
-    colors: "linear-gradient(135deg, #3b82f6 0%, #0d9488 100%)",
+    colors: "linear-gradient(135deg, #fb923c 0%, #f43f5e 100%)",
+  },
+  {
+    label: "Tasks",
+    icon: <ListTodo className="w-5 h-5" />,
+    to: "/tasks",
+    colors: "linear-gradient(135deg, #14b8a6 0%, #84cc16 100%)",
   },
   {
     label: "Dashboard",
     icon: <LayoutDashboard className="w-5 h-5" />,
     to: "/dashboard",
-    colors: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
-  }
+    colors: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
+  },
 ];
 
 export default function MobileFeatureButtons() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 mx-auto max-w-fit">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 px-6 mx-auto max-w-fit">
       {buttons.map((btn, idx) => (
         <motion.div
           key={idx}

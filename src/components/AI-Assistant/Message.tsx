@@ -6,6 +6,9 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { motion } from "framer-motion";
 import { FiCopy, FiCheck } from "react-icons/fi";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import TypingIndicator from "./TypingLoader";
 
 interface MessageProps {
@@ -27,16 +30,13 @@ const Message: React.FC<MessageProps> = ({ message, isUser, showLoading }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`w-full flex ${
-        isUser ? "justify-end pt-6 mb-3" : "justify-start"
-      } items-start`}
+      className={`w-full flex ${isUser ? "justify-end pt-6 mb-3" : "justify-start"} items-start`}
     >
       <div
         className={`relative py-3 rounded-3xl transition-all duration-200 break-words overflow-x-auto
-          ${
-            isUser
-              ? "max-w-[80%] px-6 bg-gray-200/70 text-gray-900"
-              : "max-w-full mb-6 px-3 border-b border-gray-200 bg-white text-gray-800 "
+          ${isUser
+            ? "max-w-[80%] px-6 bg-gray-200/70 text-gray-900"
+            : "max-w-full mb-6 px-3 border-b border-gray-200 bg-white text-gray-800"
           }`}
       >
         {isUser ? (
@@ -46,7 +46,8 @@ const Message: React.FC<MessageProps> = ({ message, isUser, showLoading }) => {
         ) : (
           <div className="prose prose-sm max-w-none break-words overflow-x-auto">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]} // ✅ Enable tables and task lists
+              remarkPlugins={[remarkGfm, remarkMath]} // ✅ math support
+              rehypePlugins={[rehypeKatex]} // ✅ render math with KaTeX
               components={{
                 code({ inline, className, children, ...props }: any) {
                   const match = /language-(\w+)/.exec(className || "");
@@ -60,11 +61,7 @@ const Message: React.FC<MessageProps> = ({ message, isUser, showLoading }) => {
                             onClick={() => handleCopy(code)}
                             className="p-1.5 bg-gray-700 rounded hover:bg-gray-600 text-white"
                           >
-                            {copied ? (
-                              <FiCheck size={14} />
-                            ) : (
-                              <FiCopy size={14} />
-                            )}
+                            {copied ? <FiCheck size={14} /> : <FiCopy size={14} />}
                           </button>
                         </div>
                         <div className="overflow-x-auto">
@@ -99,48 +96,24 @@ const Message: React.FC<MessageProps> = ({ message, isUser, showLoading }) => {
                   );
                 },
                 p: ({ children }) => (
-                  <p className="mb-4 last:mb-0 whitespace-pre-wrap break-words">
-                    {children}
-                  </p>
+                  <p className="mb-4 last:mb-0 whitespace-pre-wrap break-words">{children}</p>
                 ),
                 ul: ({ children }) => (
-                  <ul className="list-disc pl-4 mb-4 space-y-1 break-words">
-                    {children}
-                  </ul>
+                  <ul className="list-disc pl-4 mb-4 space-y-1 break-words">{children}</ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="list-decimal pl-4 mb-4 space-y-1 break-words">
-                    {children}
-                  </ol>
+                  <ol className="list-decimal pl-4 mb-4 space-y-1 break-words">{children}</ol>
                 ),
-                li: ({ children }) => (
-                  <li className="mb-1 break-words">{children}</li>
-                ),
-                h1: ({ children }) => (
-                  <h1 className="text-2xl font-bold mb-4 break-words">
-                    {children}
-                  </h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 className="text-xl font-bold mb-3 break-words">
-                    {children}
-                  </h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="text-lg font-bold mb-2 break-words">
-                    {children}
-                  </h3>
-                ),
+                li: ({ children }) => <li className="mb-1 break-words">{children}</li>,
+                h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 break-words">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-xl font-bold mb-3 break-words">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-lg font-bold mb-2 break-words">{children}</h3>,
                 blockquote: ({ children }) => (
                   <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4 break-words">
                     {children}
                   </blockquote>
                 ),
-                pre: ({ children }) => (
-                  <pre className="overflow-x-auto max-w-full">{children}</pre>
-                ),
-
-                // ✅ Table support starts here
+                pre: ({ children }) => <pre className="overflow-x-auto max-w-full">{children}</pre>,
                 table: ({ children }) => (
                   <div className="overflow-x-auto my-4">
                     <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
@@ -148,24 +121,14 @@ const Message: React.FC<MessageProps> = ({ message, isUser, showLoading }) => {
                     </table>
                   </div>
                 ),
-                thead: ({ children }) => (
-                  <thead className="bg-gray-100">{children}</thead>
-                ),
-                tbody: ({ children }) => (
-                  <tbody className="divide-y divide-gray-200">{children}</tbody>
-                ),
-                tr: ({ children }) => (
-                  <tr className="hover:bg-gray-50">{children}</tr>
-                ),
+                thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
+                tbody: ({ children }) => <tbody className="divide-y divide-gray-200">{children}</tbody>,
+                tr: ({ children }) => <tr className="hover:bg-gray-50">{children}</tr>,
                 th: ({ children }) => (
-                  <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border">
-                    {children}
-                  </th>
+                  <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border">{children}</th>
                 ),
                 td: ({ children }) => (
-                  <td className="px-4 py-2 text-sm text-gray-800 border">
-                    {children}
-                  </td>
+                  <td className="px-4 py-2 text-sm text-gray-800 border">{children}</td>
                 ),
               }}
             >

@@ -235,16 +235,18 @@ const Home = () => {
         </motion.div>
 
         <div className="relative z-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 max-w-[650px] mx-auto px-4 sm:px-0">
-            {user
-              ? "Welcome Back!"
-              : "Ace Engineering with Papers, Resources & Smart Tasks Board."}
-          </h1>
-          <p className="text-md md:text-lg text-blue-100 mb-8 max-w-2xl mx-auto px-4 sm:px-0">
-            {user
-              ? "Continue your academic journey with our comprehensive platform."
-              : "From PYQs to Task Lists, everything you need is now in one place — just for SPPU students."}
-          </p>
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 max-w-[650px] mx-auto px-4 sm:px-0">
+              {user
+                ? "Welcome Back!"
+                : "Ace Engineering with Papers, Resources & Smart Tasks Board."}
+            </h1>
+            <p className="text-md md:text-lg text-blue-100 max-w-2xl mx-auto px-4 sm:px-0">
+              {user
+                ? "Continue your academic journey with our comprehensive platform."
+                : "From PYQs to Task Lists, everything you need is now in one place — just for SPPU students."}
+            </p>
+          </div>
           {!user ? (
             <motion.div className="flex flex-col mx-6 gap-2 sm:gap-6 sm:flex-row sm:items-center sm:justify-center sm:mx-0">
               <motion.div
