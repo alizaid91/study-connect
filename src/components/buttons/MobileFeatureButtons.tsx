@@ -19,25 +19,25 @@ const buttons = [
     label: "Resources",
     icon: <BookOpen className="w-5 h-5" />,
     to: "/resources",
-    colors: "linear-gradient(135deg, #1e40af 0%, #06b6d4 100%)",
+    colors: "linear-gradient(135deg, #14b8a6 0%, #84cc16 100%)",
   },
   {
     label: "AI Assistant",
     icon: <BotMessageSquare className="w-5 h-5" />,
     to: "/ai-assistant",
-    colors: "linear-gradient(135deg, #fb923c 0%, #f43f5e 100%)",
+    colors: "linear-gradient(135deg, #3730a3 0%, #6366f1 40%, #22d3ee 100%)",
   },
   {
     label: "Tasks",
     icon: <ListTodo className="w-5 h-5" />,
     to: "/tasks",
-    colors: "linear-gradient(135deg, #14b8a6 0%, #84cc16 100%)",
+    colors: "linear-gradient(135deg, #fb923c 0%, #f43f5e 100%)",
   },
   {
     label: "Dashboard",
     icon: <LayoutDashboard className="w-5 h-5" />,
     to: "/dashboard",
-    colors: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
+    colors: "linear-gradient(135deg, #1e4fb6 0%, #0591a8 100%)",
   },
 ];
 
