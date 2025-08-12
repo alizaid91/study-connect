@@ -55,6 +55,11 @@ export default function HeroHeading({ user }: { user: any }) {
           </span>
         )}
       </h1>
+      <p className="text-md md:text-lg text-blue-100 max-w-2xl mx-auto px-4 sm:px-0 text-center">
+        {user
+          ? "Continue your academic journey with our comprehensive platform."
+          : "From PYQs to Task Lists, everything you need is now in one place - just for SPPU students."}
+      </p>
     </div>
   );
 }
