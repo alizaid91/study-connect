@@ -19,6 +19,7 @@ import featureImage2 from "../assets/feature-2.svg";
 import featureImage3 from "../assets/feature-3.svg";
 import comingSoonImage from "../assets/Demo_banner.png";
 import MobileFeatureButtons from "../components/buttons/MobileFeatureButtons";
+import HeroHeading from "../components/HeroHeading";
 
 const Home = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -153,7 +154,7 @@ const Home = () => {
   };
 
   return (
-    <div className="space-y-16 pb-16 pt-8">
+    <div className="space-y-8 pb-16 pt-8">
       {/* Hero Section with Animation */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
@@ -219,7 +220,7 @@ const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-4"
+          className="mb-6 md:mb-4"
         >
           <Link
             to="/ai-assistant"
@@ -235,20 +236,10 @@ const Home = () => {
         </motion.div>
 
         <div className="relative z-10">
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 max-w-[650px] mx-auto px-4 sm:px-0">
-              {user
-                ? "Welcome Back!"
-                : "Ace Engineering with Papers, Resources & Smart Tasks Board."}
-            </h1>
-            <p className="text-md md:text-lg text-blue-100 max-w-2xl mx-auto px-4 sm:px-0">
-              {user
-                ? "Continue your academic journey with our comprehensive platform."
-                : "From PYQs to Task Lists, everything you need is now in one place — just for SPPU students."}
-            </p>
-          </div>
+          <HeroHeading user={user} />
           {!user ? (
-            <motion.div className="flex flex-col mx-6 gap-2 sm:gap-6 sm:flex-row sm:items-center sm:justify-center sm:mx-0">
+            <motion.div className="flex w-full items-center justify-center gap-3 md:gap-6 mx-auto">
+              {/* Login Button */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -292,6 +283,8 @@ const Home = () => {
                   </motion.span>
                 </Link>
               </motion.div>
+
+              {/* Signup Button */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -343,8 +336,8 @@ const Home = () => {
       </motion.section>
 
       {/* Features Section with Animation */}
-      <div className="bg-blue-50 px-4">
-        <section className="space-y-8 container mx-auto px-2 py-16">
+      <div className="bg-blue-100 px-4">
+        <section className="space-y-6 container mx-auto px-2 py-8">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
