@@ -45,7 +45,11 @@ const ProfileCompletionPopup = () => {
   };
 
   const handleBack = () => {
-    if (stepIndex > 0) setStepIndex((prev) => prev - 1);
+    if (currentStep === "pattern" && data.branch === "FE") {
+      setStepIndex(steps.indexOf("branch"));
+    } else {
+      setStepIndex((prev) => Math.max(prev - 1, 0));
+    }
   };
 
   const handleChange = (field: Step, value: any) => {
@@ -139,6 +143,7 @@ const ProfileCompletionPopup = () => {
       case "year":
         return (
           <motion.select
+            disabled={data.branch === "FE"}
             variants={stepVariants}
             className={baseClass}
             value={data.year || ""}
@@ -203,7 +208,7 @@ const ProfileCompletionPopup = () => {
       >
         <motion.div
           layout
-          className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center relative mx-3 max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center relative mx-3 max-h-[90vh] overflow-y-auto transition-all duration-300"
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 40, opacity: 0 }}
@@ -228,17 +233,7 @@ const ProfileCompletionPopup = () => {
           )}
 
           <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              variants={stepVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="space-y-4"
-            >
-              {renderStep()}
-            </motion.div>
+            <motion.div className="space-y-4">{renderStep()}</motion.div>
           </AnimatePresence>
 
           <div className="mt-6 flex justify-between gap-4">
