@@ -29,7 +29,7 @@ const ChatLimitReached = ({ onClose }: ChatLimitReachedProps) => {
                     </div>
                     <h2 className="text-xl font-semibold text-gray-800">You've reached your chat limit</h2>
                     <p className="mt-2 text-gray-600">
-                        {profile?.role === 'free' ? 'Free' : 'Premium'} users can start up to <strong>{profile?.role === 'free' ? '2' : '10'} AI chats</strong>. To create more chats, you can upgrade to premium.
+                        {profile?.role === 'free' ? 'Free' : 'Pro'} users can start up to <strong>{profile?.quotas.chatSessions} AI chats</strong>. To create more chats, you can upgrade to pro.
                     </p>
 
                     <div className="mt-6 flex flex-col gap-4">
@@ -40,7 +40,7 @@ const ChatLimitReached = ({ onClose }: ChatLimitReachedProps) => {
                         }
                         <button
                             onClick={onClose}
-                            className="w-full rounded-xl px-4 py-2 border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+                            className="w-full rounded-3xl px-4 py-2 border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
                         >
                             Cancel
                         </button>

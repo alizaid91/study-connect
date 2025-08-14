@@ -46,6 +46,7 @@ const BoardFormModal = ({
                     isOpen={isOpen}
                     onClose={onClose}
                     userType={profile.role as 'free' | 'premium'}
+                    maxBoards={profile.quotas.taskBoards as number}
                 />
                 : isOpen && (
                     <Dialog

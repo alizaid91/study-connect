@@ -7,9 +7,10 @@ interface BoardLimitModalProps {
     isOpen: boolean;
     onClose: () => void;
     userType: 'free' | 'premium';
+    maxBoards: number;
 }
 
-export default function BoardLimitModal({ isOpen, onClose, userType }: BoardLimitModalProps) {
+export default function BoardLimitModal({ isOpen, onClose, userType, maxBoards }: BoardLimitModalProps) {
     return (
         <Dialog
             as={motion.div}
@@ -33,7 +34,7 @@ export default function BoardLimitModal({ isOpen, onClose, userType }: BoardLimi
                         Board Limit Reached
                     </h2>
                     <p id="modal-description" className="text-gray-600">
-                        You've reached your current board limit ({userType === 'free' ? '2' : '5'} boards for {userType === 'free' ? 'free' : 'premium'} users). {userType === 'free' && 'Upgrade to premium to create more boards.'}
+                        You've reached your current board limit ({maxBoards} boards for {userType === 'free' ? 'free' : 'pro'} users). {userType === 'free' && 'Upgrade to pro to create more boards.'}
                     </p>
 
                     <div className="flex flex-col space-y-2 pt-4">
@@ -44,13 +45,13 @@ export default function BoardLimitModal({ isOpen, onClose, userType }: BoardLimi
                             onClick={() => {
                                 onClose();
                             }}
-                            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 transition"
+                            className="w-full rounded-3xl border border-gray-300 px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 transition"
                         >
                             Manage Boards
                         </button>
                         <button
                             onClick={onClose}
-                            className="w-full rounded-xl px-4 py-2 border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+                            className="w-full rounded-3xl px-4 py-2 border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
                         >
                             Cancel
                         </button>
