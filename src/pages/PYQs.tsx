@@ -915,11 +915,16 @@ const PYQs: React.FC = () => {
                               dispatch(
                                 setShowPdf({
                                   pdfId: paper.resourceId,
-                                  title: `${paper.subjectName} ${
-                                    paper.paperName
-                                  } ${paper.year ? paper.year : ""} ${
-                                    paper.pattern
-                                  } Pattern`,
+                                  title: `${paper.subjectName
+                                    .split(" ")
+                                    .map((word) =>
+                                      word !== "and"
+                                        ? word.charAt(0).toUpperCase()
+                                        : ""
+                                    )
+                                    .join("")} ${paper.paperName} ${
+                                    paper.year ? paper.year : ""
+                                  } ${paper.pattern} Pattern`,
                                 })
                               );
                             }}

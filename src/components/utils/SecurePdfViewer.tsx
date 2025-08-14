@@ -96,7 +96,7 @@ const SecurePdfViewer = () => {
     >
       <motion.div
         style={{ height: `${maxHeight}px` }}
-        className="w-full max-w-[95%] md:max-w-[90%] rounded-3xl bg-white p-4 relative overflow-hidden"
+        className="flex flex-col w-full max-w-[95%] md:max-w-[90%] rounded-3xl bg-white pt-4 relative overflow-hidden"
         variants={modalVariants}
       >
         <div
@@ -112,7 +112,7 @@ const SecurePdfViewer = () => {
           <Loader1 className="h-full" />
         ) : pdfUrl ? (
           <>
-            <div className="max-w-[200px] sm:max-w-[400px] md:max-w-[600px] flex justify-between items-center mb-4 pl-2">
+            <div className="pl-4 max-w-[230px] sm:max-w-[400px] md:max-w-[600px] flex justify-between items-center mb-4">
               <h2
                 className="text-lg font-semibold px-3 py-1 bg-gray-200/40 rounded-xl max-w-full truncate"
                 title={showPdf.title || "PDF Document"}
@@ -120,7 +120,7 @@ const SecurePdfViewer = () => {
                 {showPdf.title || "PDF Document"}
               </h2>
             </div>
-            <div className="rpv-core__viewer flex flex-col h-[90%] border border-gray-500/40">
+            <div className="rpv-core__viewer flex flex-col flex-1 overflow-auto border border-gray-500/40">
               <div className="items-center flex border-b border-gray-300 bg-[#eeeeee]">
                 <Toolbar>{renderDefaultToolbar(transform)}</Toolbar>
               </div>
