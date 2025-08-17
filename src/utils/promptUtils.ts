@@ -16,9 +16,9 @@ export const getPromptsForUser = ({
 
   return [
     `Give classified list of subjects in ${branch} ${patternDisplay} ${year} Semester ${semDisplay}.`,
-    `Give me list of units in {Subject name} from ${branch} ${patternDisplay} ${year} Semester ${semDisplay}.`,
-    `How to prepare for Unit-{Unit number} of {Subject name} from ${branch} ${patternDisplay} ${year} Semester ${semDisplay}?`,
-    `How to perform Experiment-{Experiment number} of {Lab Name} Lab from ${branch} ${patternDisplay} ${year} Semester ${semDisplay}?`,
-    `Give classified list of topics in Unit-{Unit number} of {Subject name} from ${branch} ${patternDisplay} ${year} Semester ${semDisplay}.`,
+    `Give me list of units of {Subject name} in ${branch}.`,
+    `Give classified list of topics in Unit-{Unit number} of {Subject Name} in ${branch}.`,
+    `How to prepare Unit-{Unit number} of {Subject name} in ${branch}?`,
+    `How to perform Experiment-{Experiment number} of {Lab Name} Lab in ${branch}?`,
   ];
-};  
+};

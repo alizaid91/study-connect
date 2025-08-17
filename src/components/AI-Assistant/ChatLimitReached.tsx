@@ -29,7 +29,7 @@ const ChatLimitReached = ({ onClose }: ChatLimitReachedProps) => {
                     </div>
                     <h2 className="text-xl font-semibold text-gray-800">You've reached your chat limit</h2>
                     <p className="mt-2 text-gray-600">
-                        {profile?.role === 'free' ? 'Free' : 'Pro'} users can start up to <strong>{profile?.quotas.chatSessions} AI chats</strong>. To create more chats, you can upgrade to pro.
+                        {profile?.role === 'free' ? 'Free' : 'Pro'} users can start up to <strong>{profile?.quotas.chatSessions} AI chats</strong>.{profile?.role === 'free' ? ' Upgrade to Pro to start more chats.' : ''}
                     </p>
 
                     <div className="mt-6 flex flex-col gap-4">
