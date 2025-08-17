@@ -82,7 +82,7 @@ class PapersService {
         values: {
           branch,
           year: year || "",
-          semester: semester || 1,
+          semester: semester || 0,
           pattern,
           paperType: "Endsem",
           subjectName: subject.name,
