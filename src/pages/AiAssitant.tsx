@@ -234,15 +234,19 @@ const AiAssistant = () => {
         <>
           {!loading && !isSidebarCollapsed && sessionList.length > 0 && (
             <motion.div
-              className={`w-full absolute top-0 left-0 sm:static sm:max-w-[300px] h-full bg-black/50 md:bg-transparent backdrop-blur-sm z-20 overflow-y-auto`}
+              className={`w-full h-full bg-black/50 absolute top-0 left-0 sm:static sm:max-w-[300px] md:bg-transparent backdrop-blur-sm z-20 overflow-y-auto`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
             >
               <AnimatePresence>
                 <motion.div
                   key="sidebar"
-                  initial={{ x: -300, opacity: 0 }}
+                  initial={{ x: -200, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -300, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 280, damping: 30 }}
+                  exit={{ x: -200, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="h-full max-w-[300px] p-2"
                 >
                   <Sidebar

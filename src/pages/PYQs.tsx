@@ -189,7 +189,6 @@ const PYQs: React.FC = () => {
           profile?.branch as string,
           profile?.pattern as string,
           profile?.year,
-          profile?.semester
         );
 
         setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
