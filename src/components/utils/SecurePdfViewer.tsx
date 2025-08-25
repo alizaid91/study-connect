@@ -14,6 +14,8 @@ import { clearShowPdf } from "../../store/slices/globalPopups";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
+import { auth } from "../../config/firebase";
+import { useEffect, useState } from "react";
 
 // get visible height
 const maxHeight = window.innerHeight - 26;
@@ -21,6 +23,7 @@ const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
 const SecurePdfViewer = () => {
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
+  const [headers, setHeaders] = useState<Record<string, string>>({});
   const dispatch = useDispatch();
 
   const toolbarPluginInstance = toolbarPlugin();
@@ -51,7 +54,20 @@ const SecurePdfViewer = () => {
     },
   };
 
-  if (!showPdf) return null;
+  useEffect(() => {
+    const fetchHeaders = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const token = await user.getIdToken();
+      setHeaders({
+        Authorization: `Bearer ${token}`,
+        Range: "bytes=0-",
+      });
+    };
+    fetchHeaders();
+  }, []);
+
+  if (!showPdf || !headers) return null;
 
   return (
     <motion.div
@@ -80,7 +96,7 @@ const SecurePdfViewer = () => {
           <CgCloseO size={26} />
         </div>
 
-        {showPdf.pdfId && (
+        {showPdf.pdfId && headers && (
           <>
             <div className="pl-4 max-w-[230px] sm:max-w-[400px] md:max-w-[600px] flex justify-between items-center mb-4">
               <h2
@@ -100,9 +116,7 @@ const SecurePdfViewer = () => {
                     fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
                       showPdf.pdfId
                     )}`}
-                    httpHeaders={{
-                      Range: "bytes=0-",
-                    }}
+                    httpHeaders={headers}
                     plugins={[toolbarPluginInstance]}
                     defaultScale={window.innerWidth < 768 ? 0.6 : 1.5}
                   />
