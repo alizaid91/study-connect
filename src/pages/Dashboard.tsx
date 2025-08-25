@@ -210,7 +210,7 @@ const Dashboard = () => {
                   onClick={() => {
                     dispatch(
                       setShowPdf({
-                        pdfId: bookmark.resourceId,
+                        pdfId: bookmark.resourceDOKey,
                         title: `${bookmark.title}`,
                       })
                     );
@@ -340,7 +340,7 @@ const Dashboard = () => {
                   onClick={() => {
                     dispatch(
                       setShowPdf({
-                        pdfId: resource.resourceId,
+                        pdfId: resource.resourceDOKey,
                         title: `${resource.subjectName} ${resource.title}`,
                       })
                     );

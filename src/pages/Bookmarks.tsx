@@ -222,7 +222,7 @@ const Bookmarks = () => {
                       onClick={() => {
                         dispatch(
                           setShowPdf({
-                            pdfId: bookmark.resourceId,
+                            pdfId: bookmark.resourceDOKey,
                             title: bookmark.title,
                           })
                         );

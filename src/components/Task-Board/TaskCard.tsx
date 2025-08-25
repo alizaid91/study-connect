@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Task, Priority } from '../../types/content';
 import { FiClock, FiMoreHorizontal, FiEdit2, FiTrash2, FiPaperclip, FiExternalLink, FiCheck, FiSquare } from 'react-icons/fi';
 import { toggleTaskCompletion } from '../../services/taskServics';
+import { setShowPdf } from '../../store/slices/globalPopups';
+import { useDispatch } from 'react-redux';
 
 interface TaskCardProps {
   task: Task;
@@ -25,6 +27,7 @@ const getPriorityColor = (priority: Priority) => {
 };
 
 const TaskCard = ({ task, index, onEditTask, onDeleteTask }: TaskCardProps) => {
+  const dispatch = useDispatch();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(task.completed || false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -46,15 +49,6 @@ const TaskCard = ({ task, index, onEditTask, onDeleteTask }: TaskCardProps) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuRef]);
-
-  // Function to open the first attachment (paper) in a new tab
-  const openPaperAttachment = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (task.attachments && task.attachments.length > 0) {
-      window.open(task.attachments[0], '_blank');
-    }
-    setIsMenuOpen(false);
-  };
 
   // Function to toggle task completion
   const handleToggleCompletion = async (e: React.MouseEvent) => {
@@ -145,7 +139,10 @@ const TaskCard = ({ task, index, onEditTask, onDeleteTask }: TaskCardProps) => {
                       >
                         {hasPaperAttachment && (
                           <button
-                            onClick={openPaperAttachment}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              dispatch(setShowPdf({ pdfId: task.attachments as string, title: task.title }));
+                            }}
                             className="flex w-full items-center px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
                           >
                             <FiExternalLink className="mr-2" size={14} />
@@ -199,7 +196,10 @@ const TaskCard = ({ task, index, onEditTask, onDeleteTask }: TaskCardProps) => {
                   
                   {hasPaperAttachment && (
                     <button
-                      onClick={openPaperAttachment}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch(setShowPdf({ pdfId: task.attachments as string, title: task.title }));
+                      }}
                       className="flex items-center text-xs text-blue-600 hover:text-blue-800"
                       title="View attached paper"
                     >

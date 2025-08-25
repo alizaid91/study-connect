@@ -173,7 +173,7 @@ const ResourcesMain = () => {
           paperType: null,
           resourceType: resource.type,
           description: `${resource.branch} - ${resource.year} ${resource.pattern}`,
-          resourceId: resource.resourceDOKey,
+          resourceDOKey: resource.resourceDOKey,
           createdAt: new Date().toISOString(),
         })
       );

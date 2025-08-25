@@ -1,30 +1,38 @@
 export interface Paper {
   id: string;
-  subjectId: string;
-  subjectName: string;
+
+  paperType: 'Insem' | 'Endsem';
   branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
+  pattern: '2019' | '2024';
   year?: 'SE' | 'TE' | 'BE';
   semester: number;
-  pattern: '2019' | '2024';
-  paperType: 'Insem' | 'Endsem';
+  subjectName: string;
+  subjectId: string;
+
   paperName: string;
-  resourceId: string;
+
+  paperDOKey: string;
+
   uploadedAt: string;
   uploadedBy: string;
 }
 
 export interface Resource {
   id: string;
-  title: string;
-  description: string;
+
   type: 'book' | 'notes' | 'video' | 'decodes' | 'other';
-  subjectCode: string;
-  subjectName: string;
   branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
+  pattern: '2019' | '2024';
   year: 'SE' | 'TE' | 'BE' | '';
   semester: number;
-  pattern: '2019' | '2024';
-  resourceId: string;
+  subjectName: string;
+  subjectCode: string;
+
+  title: string;
+  description: string;
+
+  resourceDOKey: string;
+
   uploadedAt: string;
   uploadedBy: string;
 }
@@ -38,14 +46,19 @@ export interface Subject {
 export interface Bookmark {
   id: string;
   userId: string;
-  contentId: string;
+
+  contentId: string; //specific paper or study-resource id
+
   type: 'Paper' | 'Resource';
   paperType: 'Insem' | 'Endsem' | null;
   resourceType: 'book' | 'notes' | 'video' | 'decodes' | 'other' | null;
+
   title: string;
   name: string;
   description: string;
-  resourceId: string;
+
+  resourceDOKey: string;
+  
   createdAt: string;
 }
 

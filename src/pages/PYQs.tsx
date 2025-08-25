@@ -339,7 +339,7 @@ const PYQs: React.FC = () => {
           title: paper.subjectName,
           name: paper.paperName,
           description: `${paper.branch} - ${paper.year} ${paper.pattern}`,
-          resourceId: paper.paperDOKey,
+          resourceDOKey: paper.paperDOKey,
           createdAt: new Date().toISOString(),
         })
       );
@@ -404,7 +404,7 @@ const PYQs: React.FC = () => {
       dueDate: "",
       userId: user?.uid || "",
       position: 0,
-      attachments: selectedPaper.resourceId,
+      attachments: selectedPaper.paperDOKey,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     } as Task;
