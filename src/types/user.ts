@@ -3,15 +3,14 @@ export interface UserProfile {
   email: string;
   fullName: string;
   username?: string;
-  avatarUrl: string;
   gender?: "male" | "female" | "other" | "prefer not to say" | "";
+  avatarUrl: string;
+
+  collegeName?: string | "";
   branch?: "FE" | "CS" | "IT" | "Civil" | "Mechanical" | "";
   pattern?: 2019 | 2024 | "";
   semester?: number;
   year?: "SE" | "TE" | "BE" | "";
-  collegeName?: string | "";
-  createdAt: string;
-  updatedAt: string;
   role: "free" | "premium";
   subscriptionProcessing: boolean;
 
@@ -31,6 +30,9 @@ export interface UserProfile {
       count: number;
     };
   };
+
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const DEFAULT_AVATAR = {

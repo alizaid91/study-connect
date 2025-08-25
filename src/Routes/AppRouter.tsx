@@ -23,6 +23,7 @@ import { openProfileComplete } from "../store/slices/globalPopups.ts";
 import ResourcesMain from "../pages/ReourcesMain.tsx";
 import PoliciesPage from "../pages/Policies.tsx";
 import SecurePdfViewer from "../components/utils/SecurePdfViewer.tsx";
+import { Checkout } from "../pages/Checkout.tsx";
 
 const AppRouter = () => {
   const { pathname } = useLocation();
@@ -101,6 +102,11 @@ const AppRouter = () => {
           <Route path="/auth" element={<Auth />} />
           <Route path="/policies" element={<PoliciesPage />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/checkout" element={
+            <PrivateRoute>
+              <Checkout />
+            </PrivateRoute>
+          } />
           <Route
             path="/dashboard"
             element={

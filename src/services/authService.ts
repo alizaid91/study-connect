@@ -21,10 +21,14 @@ import {
   collection,
   onSnapshot,
   deleteField,
+  query,
+  where,
+  deleteDoc,
 } from "firebase/firestore";
 import { UserProfile, DEFAULT_AVATAR } from "../types/user";
 import { setProfile } from "../store/slices/authSlice";
 import { store } from "../store/index";
+import { apiService } from "./apiService";
 
 export interface AuthFormData {
   email: string;
@@ -61,6 +65,7 @@ class AuthService {
       year: "",
       collegeName: "",
       role: "free",
+      subscriptionProcessing: false,
       quotas: {
         aiCredits: 0,
         taskBoards: 2,
@@ -101,6 +106,7 @@ class AuthService {
         username: user.email?.split("@")[0] || "",
         avatarUrl: user.photoURL || DEFAULT_AVATAR.male,
         role: "free",
+        subscriptionProcessing: false,
         quotas: {
           aiCredits: 0,
           taskBoards: 2,
@@ -140,42 +146,6 @@ class AuthService {
       return userDoc.data() as UserProfile;
     }
     return null;
-  }
-
-  async handleSubscribe(userId: string, email: string, fullName: string) {
-    const res = await fetch(
-      `https://91fb-27-59-102-2.ngrok-free.app/api/razorpay/create-subscription`,
-      {
-        method: "POST",
-        body: JSON.stringify({ userId: userId }),
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    const { subscriptionId, razorpayKey } = await res.json();
-
-    const options = {
-      key: razorpayKey,
-      subscription_id: subscriptionId,
-      name: "Study Connect",
-      description: "Premium Plan",
-      handler: function (response: any) {
-        alert("Payment success! You will be upgraded shortly.");
-      },
-      prefill: {
-        email: email,
-        name: fullName,
-      },
-      notes: {
-        userId: userId,
-      },
-      theme: {
-        color: "#6366f1",
-      },
-    };
-
-    const rzp = new (window as any).Razorpay(options);
-    rzp.open();
   }
 
   listenUserProfile(userId: string) {
@@ -221,6 +191,42 @@ class AuthService {
     }
   }
 
+  async sendPasswordResetEmail(email: string) {
+    try {
+      await firebaseSendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to send password reset email.");
+    }
+  }
+
+  async handleSubscribe(userId: string, email: string, fullName: string) {
+    const { subscriptionId, razorpayKey } =
+      await apiService.getSubscriptionDetails(userId);
+
+    const options = {
+      key: razorpayKey,
+      subscription_id: subscriptionId,
+      name: "Study Connect",
+      description: "Premium Plan",
+      handler: function () {
+        alert("Payment success! You will be upgraded shortly.");
+      },
+      prefill: {
+        email: email,
+        name: fullName,
+      },
+      notes: {
+        userId: userId,
+      },
+      theme: {
+        color: "#6366f1",
+      },
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
+  }
+
   async addFieldToCollection(
     collectionName: string,
     newFieldName: string,
@@ -247,15 +253,7 @@ class AuthService {
     }
   }
 
-  async sendPasswordResetEmail(email: string) {
-    try {
-      await firebaseSendPasswordResetEmail(auth, email);
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to send password reset email.");
-    }
-  }
-
-   async migrateUserProfiles() {
+  async migrateUserProfiles() {
     const usersRef = collection(db, "users");
     const snapshot = await getDocs(usersRef);
 
@@ -314,7 +312,19 @@ class AuthService {
         console.error(`❌ Failed to update user: ${uid}`, err);
       }
     }
-  };
+  }
+
+  async deleteDocsFromCollection(collectionName: string) {
+    const colRef = collection(db, collectionName);
+    const querySnapshot = await getDocs(query(colRef));
+
+    const deletePromises = querySnapshot.docs.map((docSnap) => {
+      return deleteDoc(doc(db, collectionName, docSnap.id));
+    });
+
+    await Promise.all(deletePromises);
+    console.log(`Deleted documents from ${collectionName}`);
+  }
 }
 
 export const authService = new AuthService();

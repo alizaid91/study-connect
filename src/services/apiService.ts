@@ -43,21 +43,6 @@ export const apiService = {
   },
 
   /**
-   * Fetch a protected PDF file by resourceId (auth required)
-   */
-  async fetchProtectedPdf(resourceId: string): Promise<string> {
-
-    const response = await fetch(`${AI_URL}/resources/${resourceId}`);
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch protected PDF");
-    }
-
-    const blob = await response.blob();
-    return URL.createObjectURL(blob);
-  },
-
-  /**
    * Create a Razorpay subscription for a user (auth required)
    */
   async getSubscriptionDetails(userId: string): Promise<{
@@ -83,5 +68,33 @@ export const apiService = {
     }
 
     return await response.json();
+  },
+
+  /**
+   * Verify coupon code (auth required)
+   */
+  async verifyCoupon(coupon: string): Promise<{
+    code: string;
+    discountPercent?: number;
+    message?: string;
+  }> {
+    const headers = await getAuthHeader();
+
+    const response = await fetch(`${AI_URL}/verify-coupon`, {
+      method: "POST",
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ coupon }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to verify coupon");
+    }
+
+    return await data;
   },
 };
