@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Viewer, Worker } from "@react-pdf-viewer/core";
 import { toolbarPlugin } from "@react-pdf-viewer/toolbar";
 import type {
@@ -15,44 +14,17 @@ import { clearShowPdf } from "../../store/slices/globalPopups";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { apiService } from "../../services/apiService";
-import Loader1 from "../Loaders/Loader1";
 
 // get visible height
 const maxHeight = window.innerHeight - 26;
+const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
 const SecurePdfViewer = () => {
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
   const dispatch = useDispatch();
 
   const toolbarPluginInstance = toolbarPlugin();
   const { renderDefaultToolbar, Toolbar } = toolbarPluginInstance;
-
-  useEffect(() => {
-    if (!showPdf?.pdfId || pdfUrl) return;
-
-    const loadPdf = async (pdfId: string) => {
-      try {
-        setLoading(true);
-        const blobUrl = await apiService.fetchProtectedPdf(pdfId);
-        setPdfUrl(blobUrl);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (showPdf?.pdfId && !pdfUrl) {
-      loadPdf(showPdf.pdfId);
-    }
-
-    return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
-  }, [showPdf]);
 
   const transform: TransformToolbarSlot = (slot: ToolbarSlot) => ({
     ...slot,
@@ -108,9 +80,7 @@ const SecurePdfViewer = () => {
           <CgCloseO size={26} />
         </div>
 
-        {loading ? (
-          <Loader1 className="h-full" />
-        ) : pdfUrl ? (
+        {showPdf.pdfId && (
           <>
             <div className="pl-4 max-w-[230px] sm:max-w-[400px] md:max-w-[600px] flex justify-between items-center mb-4">
               <h2
@@ -127,7 +97,12 @@ const SecurePdfViewer = () => {
               <div className="flex-1 overflow-hidden">
                 <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                   <Viewer
-                    fileUrl={pdfUrl}
+                    fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
+                      showPdf.pdfId
+                    )}`}
+                    httpHeaders={{
+                      Range: "bytes=0-",
+                    }}
                     plugins={[toolbarPluginInstance]}
                     defaultScale={window.innerWidth < 768 ? 0.6 : 1.5}
                   />
@@ -135,10 +110,6 @@ const SecurePdfViewer = () => {
               </div>
             </div>
           </>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">Unable to load PDF</p>
-          </div>
         )}
       </motion.div>
     </motion.div>

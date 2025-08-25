@@ -117,7 +117,6 @@ const PYQs: React.FC = () => {
       try {
         dispatch(setLoading(true));
         const papers = await papersService.getPapers();
-        console.log("Fetched papers:", papers);
         dispatch(setPapers(papers));
       } catch (error) {
         console.error("Error fetching papers:", error);
@@ -189,6 +188,7 @@ const PYQs: React.FC = () => {
           profile?.branch as string,
           profile?.pattern as string,
           profile?.year,
+          profile?.semester
         );
 
         setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
@@ -339,7 +339,7 @@ const PYQs: React.FC = () => {
           title: paper.subjectName,
           name: paper.paperName,
           description: `${paper.branch} - ${paper.year} ${paper.pattern}`,
-          resourceId: paper.resourceId,
+          resourceId: paper.paperDOKey,
           createdAt: new Date().toISOString(),
         })
       );
@@ -913,7 +913,7 @@ const PYQs: React.FC = () => {
                             onClick={() => {
                               dispatch(
                                 setShowPdf({
-                                  pdfId: paper.resourceId,
+                                  pdfId: paper.paperDOKey,
                                   title: `${paper.subjectName
                                     .split(" ")
                                     .map((word) =>

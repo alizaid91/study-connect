@@ -173,7 +173,7 @@ const ResourcesMain = () => {
           paperType: null,
           resourceType: resource.type,
           description: `${resource.branch} - ${resource.year} ${resource.pattern}`,
-          resourceId: resource.resourceId,
+          resourceId: resource.resourceDOKey,
           createdAt: new Date().toISOString(),
         })
       );
@@ -328,7 +328,7 @@ const ResourcesMain = () => {
                           onClick={() =>
                             dispatch(
                               setShowPdf({
-                                pdfId: resource.resourceId,
+                                pdfId: resource.resourceDOKey,
                                 title: resource.title,
                               })
                             )

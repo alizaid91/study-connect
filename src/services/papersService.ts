@@ -82,7 +82,7 @@ class PapersService {
         values: {
           branch,
           year: year || "",
-          semester: semester || 0,
+          semester: 0,
           pattern,
           paperType: "Endsem",
           subjectName: subject.name,
@@ -128,8 +128,8 @@ class PapersService {
           return [Endsem, Insem];
         })
         .flat()
-        .filter((f) => f.values.semester == semester);
-    }else if (branch === "CS") {
+        .filter((f) => !semester || f.values.semester == semester); // ✅ return all if semester not provided
+    } else if (branch === "CS") {
       filters = CS_SUBJECTS[pattern == "2024" ? "2024Pattern" : "2019Pattern"][
         year as "SE" | "TE" | "BE"
       ]
@@ -167,8 +167,9 @@ class PapersService {
           return [Endsem, Insem];
         })
         .flat()
-        .filter((f) => f.values.semester == semester);
+        .filter((f) => !semester || f.values.semester == semester); // ✅ same fix
     }
+
     return filters;
   }
 
@@ -194,7 +195,9 @@ class PapersService {
     }
 
     if (filters.pattern) {
-      filtered = filtered.filter((paper) => paper.pattern === filters.pattern.toString());
+      filtered = filtered.filter(
+        (paper) => paper.pattern === filters.pattern.toString()
+      );
     }
 
     if (filters.paperType) {
