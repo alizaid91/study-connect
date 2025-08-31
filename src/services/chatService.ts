@@ -99,31 +99,6 @@ export const chatService = {
     };
     const aiDocRef = doc(messageRef);
     await writeBatch(db).set(aiDocRef, aiMessage).commit();
-
-    // === Step 7: Update usage count in transaction ===
-    // console.log("Updating AI usage count in transaction");
-    await runTransaction(db, async (transaction) => {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await transaction.get(userRef);
-      const profile = userSnap.data() as UserProfile;
-
-      const today = new Date().toLocaleDateString("en-GB");
-      const currentUsage = profile?.usage?.aiPromptUsage || {
-        date: today,
-        count: 0,
-      };
-
-      const updatedUsage = {
-        ...profile.usage,
-        aiPromptUsage: {
-          date: currentUsage.date === today ? today : today,
-          count: currentUsage.date === today ? currentUsage.count + 1 : 1,
-        },
-      };
-
-      transaction.update(userRef, { usage: updatedUsage });
-    });
-    // console.log("Message sent successfully");
   },
 
   async createSession(userId: string, title: string): Promise<string> {

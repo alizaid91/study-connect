@@ -1,25 +1,23 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { User } from 'firebase/auth';
-import { UserProfile } from '../../types/user';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { User } from "firebase/auth";
+import { UserProfile } from "../../types/user";
 
 interface AuthState {
   user: {
     uid: string;
   } | null;
   profile: UserProfile | null;
-  isAIActive: boolean;
   loading: boolean;
   error: string | null;
 }
 
 // Load initial state from localStorage
 const loadInitialState = (): AuthState => {
-  const savedState = localStorage.getItem('authState');
+  const savedState = localStorage.getItem("authState");
   if (savedState) {
     return {
       user: JSON.parse(savedState),
       profile: null,
-      isAIActive: false,
       loading: false,
       error: null,
     };
@@ -27,7 +25,6 @@ const loadInitialState = (): AuthState => {
   return {
     user: null,
     profile: null,
-    isAIActive: false,
     loading: false,
     error: null,
   };
@@ -36,7 +33,7 @@ const loadInitialState = (): AuthState => {
 const initialState: AuthState = loadInitialState();
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     setUser: (state, action: PayloadAction<User | null>) => {
@@ -48,10 +45,7 @@ const authSlice = createSlice({
         state.user = null;
       }
       // Save to localStorage
-      localStorage.setItem('authState', JSON.stringify(state.user));
-    },
-    setIsAiActive: (state, action: PayloadAction<boolean>) => {
-      state.isAIActive = action.payload;
+      localStorage.setItem("authState", JSON.stringify(state.user));
     },
     setProfile: (state, action: PayloadAction<UserProfile>) => {
       state.profile = action.payload;
@@ -61,18 +55,19 @@ const authSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-      localStorage.setItem('authState', JSON.stringify(state));
+      localStorage.setItem("authState", JSON.stringify(state));
     },
     logout: (state) => {
       state.user = null;
       state.error = null;
       state.profile = null;
-      localStorage.removeItem('authState');
-      localStorage.removeItem('activeSessionId');
-      localStorage.removeItem('selectedBoardId');
+      localStorage.removeItem("authState");
+      localStorage.removeItem("activeSessionId");
+      localStorage.removeItem("selectedBoardId");
     },
   },
 });
 
-export const { setUser, setIsAiActive, setProfile, setLoading, setError, logout } = authSlice.actions;
-export default authSlice.reducer; 
+export const { setUser, setProfile, setLoading, setError, logout } =
+  authSlice.actions;
+export default authSlice.reducer;

@@ -1,20 +1,22 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { DEFAULT_AVATAR, UserProfile } from '../types/user';
-import { motion, AnimatePresence } from 'framer-motion';
-import Cropper from 'react-easy-crop';
-import { FiUser, FiEdit, FiSave, FiX, FiCheck, FiLock } from 'react-icons/fi';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "../store";
+import { DEFAULT_AVATAR, UserProfile } from "../types/user";
+import { motion, AnimatePresence } from "framer-motion";
+import Cropper from "react-easy-crop";
+import { FiUser, FiEdit, FiSave, FiX, FiCheck, FiLock, FiAlertCircle, FiCheckCircle, FiLoader } from "react-icons/fi";
 import { MdDataUsage } from "react-icons/md";
-import { authService } from '../services/authService';
-import UsageTracker from '../components/profile/UsageTracker';
-import Loader1 from '../components/Loaders/Loader1';
+import { authService } from "../services/authService";
+import UsageTracker from "../components/profile/UsageTracker";
+import Loader1 from "../components/Loaders/Loader1";
+import { FaCaretDown } from "react-icons/fa";
+import { apiService } from "../services/apiService";
 
 // Function to create image from canvas for cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous'; // important for CORS and canvas
+    img.crossOrigin = "anonymous"; // important for CORS and canvas
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = url;
@@ -26,11 +28,11 @@ const getCroppedImg = async (
   pixelCrop: { x: number; y: number; width: number; height: number }
 ): Promise<Blob> => {
   const image = await createImage(imageSrc);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
   if (!ctx) {
-    throw new Error('Could not create canvas context');
+    throw new Error("Could not create canvas context");
   }
 
   const scaleX = image.naturalWidth / image.width;
@@ -52,51 +54,92 @@ const getCroppedImg = async (
   );
 
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Canvas is empty'));
-        return;
-      }
-      resolve(blob);
-    }, 'image/jpeg', 0.95);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Canvas is empty"));
+          return;
+        }
+        resolve(blob);
+      },
+      "image/jpeg",
+      0.95
+    );
   });
 };
 
-
 // Profile page
 const Profile = () => {
-  const { user, profile, loading } = useSelector((state: RootState) => state.auth);
+  const { user, profile, loading } = useSelector(
+    (state: RootState) => state.auth
+  );
   const [tempProfile, setTempProfile] = useState<UserProfile | null>(profile);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  // raw inputs to avoid losing user typing after comma
+  const [subjectsHandledInput, setSubjectsHandledInput] = useState("");
+  const [qualificationsInput, setQualificationsInput] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPersonal, setShowPersonal] = useState(false);
+  const [showAcademic, setShowAcademic] = useState(false);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'usage'>('general');
+  const [activeTab, setActiveTab] = useState<"general" | "security" | "usage">(
+    "general"
+  );
 
   // Security tab state
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [securityError, setSecurityError] = useState('');
-  const [securitySuccess, setSecuritySuccess] = useState('');
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityError, setSecurityError] = useState("");
+  const [securitySuccess, setSecuritySuccess] = useState("");
   const [securityLoading, setSecurityLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState('');
-  const [resetSuccess, setResetSuccess] = useState('');
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
 
   // Image cropping state
   const [showCropper, setShowCropper] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [isProfileChanged, setIsProfileChanged] = useState(false);
+
+  // Username validation state
+  const [usernameStatus, setUsernameStatus] = useState<{
+    loading: boolean;
+    available: boolean | null;
+    errors: string[];
+    originalUsername: string;
+  }>({
+    loading: false,
+    available: null,
+    errors: [],
+    originalUsername: profile?.username || "",
+  });
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setTempProfile(profile);
+    // sync raw inputs from profile arrays
+    setSubjectsHandledInput(profile?.subjectsHandled?.join(", ") || "");
+    setQualificationsInput(profile?.qualifications?.join(", ") || "");
+    // Set original username for comparison
+    setUsernameStatus(prev => ({ 
+      ...prev, 
+      originalUsername: profile?.username || "",
+      available: null,
+      errors: []
+    }));
   }, [profile]);
 
   useEffect(() => {
@@ -105,27 +148,155 @@ const Profile = () => {
       return JSON.stringify(tempProfile) !== JSON.stringify(profile);
     };
     setIsProfileChanged(handelProfileChange());
-  }, [tempProfile, profile])
+  }, [tempProfile, profile]);
+
+  // Username validation function
+  const validateUsername = async (username: string) => {
+    if (!username.trim()) {
+      setUsernameStatus(prev => ({ 
+        ...prev, 
+        loading: false, 
+        available: null, 
+        errors: [] 
+      }));
+      return;
+    }
+
+    // If username hasn't changed, mark as available
+    if (username === usernameStatus.originalUsername) {
+      setUsernameStatus(prev => ({ 
+        ...prev, 
+        loading: false, 
+        available: true, 
+        errors: [] 
+      }));
+      return;
+    }
+
+    setUsernameStatus(prev => ({ ...prev, loading: true }));
+
+    try {
+      const result = await apiService.validateUsername(username);
+      
+      if (result.success) {
+        setUsernameStatus(prev => ({ 
+          ...prev,
+          loading: false, 
+          available: true, 
+          errors: [] 
+        }));
+      } else {
+        setUsernameStatus(prev => ({ 
+          ...prev,
+          loading: false, 
+          available: false, 
+          errors: result.errors?.map(e => e.message) || ['Invalid username'] 
+        }));
+      }
+    } catch (err) {
+      setUsernameStatus(prev => ({ 
+        ...prev,
+        loading: false, 
+        available: false, 
+        errors: ['Failed to validate username'] 
+      }));
+    }
+  };
 
   // Handle input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    if (name === 'branch') {
+    
+    // Handle username validation with debouncing
+    if (name === "username") {
+      setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
+      
+      if(!value.trim() || value === usernameStatus.originalUsername) {
+        setUsernameStatus(prev => ({ 
+          ...prev, 
+          loading: false, 
+          available: null, 
+          errors: [] 
+        }));
+        if(debounceTimer) clearTimeout(debounceTimer);
+        return;
+      }
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+
+      const timer = setTimeout(() => {
+        if (value.trim()) {
+          validateUsername(value);
+        }
+      }, 500);
+
+      setDebounceTimer(timer);
+      return;
+    }
+
+    if (name === "gender") {
+      if (
+        tempProfile?.avatarUrl &&
+        !Object.values(DEFAULT_AVATAR).includes(tempProfile?.avatarUrl)
+      ) {
+        setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
+        return;
+      }
+      if (value === "male") {
+        setTempProfile({
+          ...tempProfile,
+          [name]: value,
+          avatarUrl: tempProfile?.accountType === "educator" ? DEFAULT_AVATAR.maleEducator : DEFAULT_AVATAR.male,
+        } as UserProfile);
+      } else if (value === "female") {
+        setTempProfile({
+          ...tempProfile,
+          [name]: value,
+          avatarUrl: profile?.accountType === "educator" ? DEFAULT_AVATAR.femaleEducator : DEFAULT_AVATAR.female,
+        } as UserProfile);
+      } else {
+        setTempProfile({
+          ...tempProfile,
+          [name]: value,
+          avatarUrl: DEFAULT_AVATAR["prefer not to say"],
+        } as UserProfile);
+      }
+      return;
+    }
+    if (name === "branch") {
       if (value === "") {
-        setTempProfile({ ...tempProfile, [name]: value, pattern: "", year: "", semester: 0 } as UserProfile);
+        setTempProfile({
+          ...tempProfile,
+          [name]: value,
+          pattern: "",
+          year: "",
+          semester: 0,
+        } as UserProfile);
       } else if (value === "FE") {
-        setTempProfile({ ...tempProfile, [name]: value, pattern: 2024, year: "", semester: 1 } as UserProfile);
+        setTempProfile({
+          ...tempProfile,
+          [name]: value,
+          pattern: 2024,
+          year: "",
+          semester: 1,
+        } as UserProfile);
       } else {
         setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
       }
-      return
+      return;
     }
     setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
   };
 
   // Handle crop complete
   const onCropComplete = useCallback(
-    (_: any, croppedAreaPixels: { x: number; y: number; width: number; height: number }) => {
+    (
+      _: any,
+      croppedAreaPixels: { x: number; y: number; width: number; height: number }
+    ) => {
       setCroppedAreaPixels(croppedAreaPixels);
     },
     []
@@ -137,18 +308,18 @@ const Profile = () => {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload an image file");
       return;
     }
 
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      setError('Image size should be less than 2MB');
+      setError("Image size should be less than 2MB");
       return;
     }
 
-    setError('');
+    setError("");
     const reader = new FileReader();
     reader.onload = () => {
       setImageSrc(reader.result as string);
@@ -162,7 +333,7 @@ const Profile = () => {
     setShowCropper(false);
     setImageSrc(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -172,39 +343,52 @@ const Profile = () => {
 
     try {
       setUploading(true);
-      setError('');
+      setError("");
 
       // Get the cropped image blob
       const croppedImage = await getCroppedImg(
         imageSrc,
-        croppedAreaPixels as { x: number; y: number; width: number; height: number }
+        croppedAreaPixels as {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        }
       );
 
       // Create form data for Cloudinary upload
       const formData = new FormData();
-      formData.append('file', croppedImage);
-      formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-      formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
+      formData.append("file", croppedImage);
+      formData.append(
+        "upload_preset",
+        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+      );
+      formData.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
 
       // Upload to Cloudinary
       const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        `https://api.cloudinary.com/v1_1/${
+          import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+        }/image/upload`,
         {
-          method: 'POST',
+          method: "POST",
           body: formData,
         }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error("Failed to upload image");
       }
 
       const data = await response.json();
       const imageUrl = data.secure_url;
 
       // Update profile with new avatar URL
-      await authService.updateUserProfile(user.uid, { ...tempProfile, avatarUrl: imageUrl } as UserProfile);
-      setSuccess('Avatar updated successfully');
+      await authService.updateUserProfile(user.uid, {
+        ...tempProfile,
+        avatarUrl: imageUrl,
+      } as UserProfile);
+      setSuccess("Avatar updated successfully");
       setShowCropper(false);
       setImageSrc(null);
     } catch (error: any) {
@@ -214,19 +398,55 @@ const Profile = () => {
     }
   };
 
+  const getUsernameInputClass = () => {
+    const baseClass = "mt-1 block w-full rounded-md border shadow-sm focus:ring-blue-500 transition-all";
+    if (usernameStatus.loading) return `${baseClass} border-blue-300 focus:border-blue-500`;
+    if (usernameStatus.available === true) return `${baseClass} border-green-300 focus:border-green-500`;
+    if (usernameStatus.available === false) return `${baseClass} border-red-300 focus:border-red-500`;
+    return `${baseClass} border-gray-300 focus:border-blue-500`;
+  };
+
+  const getUsernameIcon = () => {
+    if (usernameStatus.loading) return <FiLoader className="animate-spin text-blue-500" size={16} />;
+    if (usernameStatus.available === true) return <FiCheckCircle className="text-green-500" size={16} />;
+    if (usernameStatus.available === false) return <FiAlertCircle className="text-red-500" size={16} />;
+    return null;
+  };
+
+  const isFormValid = () => {
+    // Check if username is valid (either unchanged or validated as available)
+    const usernameValid = usernameStatus.available === true || 
+                         tempProfile?.username === usernameStatus.originalUsername;
+    return usernameValid && usernameStatus.errors.length === 0;
+  };
+
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     if (!user) return;
+    
+    // Additional validation before submit
+    if (!isFormValid()) {
+      setError("Please fix the username validation errors before updating.");
+      return;
+    }
+
     setUpdating(true);
     try {
       await authService.updateUserProfile(user.uid, tempProfile as UserProfile);
-      setSuccess('Profile updated successfully');
+      setSuccess("Profile updated successfully");
+      // Reset username status after successful update
+      setUsernameStatus(prev => ({ 
+        ...prev, 
+        originalUsername: tempProfile?.username || "",
+        available: null,
+        errors: []
+      }));
     } catch (error: any) {
-      setError('Failed to update profile');
+      setError("Failed to update profile");
     } finally {
       setUpdating(false);
     }
@@ -235,26 +455,30 @@ const Profile = () => {
   // Handle password update
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSecurityError('');
-    setSecuritySuccess('');
+    setSecurityError("");
+    setSecuritySuccess("");
     if (!user) return;
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setSecurityError('Please fill all fields.');
+      setSecurityError("Please fill all fields.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      setSecurityError('New passwords do not match.');
+      setSecurityError("New passwords do not match.");
       return;
     }
     setSecurityLoading(true);
     try {
-      await authService.updateUserPassword(profile?.email || '', oldPassword, newPassword);
-      setSecuritySuccess('Password updated successfully.');
-      setOldPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      await authService.updateUserPassword(
+        profile?.email || "",
+        oldPassword,
+        newPassword
+      );
+      setSecuritySuccess("Password updated successfully.");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (err: any) {
-      setSecurityError(err.message || 'Failed to update password.');
+      setSecurityError(err.message || "Failed to update password.");
     } finally {
       setSecurityLoading(false);
     }
@@ -262,21 +486,21 @@ const Profile = () => {
 
   // Handle forgot password in security tab
   const handleForgotPassword = async () => {
-    setResetError('');
-    setResetSuccess('');
+    setResetError("");
+    setResetSuccess("");
     setResetLoading(true);
     try {
-      await authService.sendPasswordResetEmail(profile?.email || '');
-      setResetSuccess('Password reset email sent! Please check your inbox.');
+      await authService.sendPasswordResetEmail(profile?.email || "");
+      setResetSuccess("Password reset email sent! Please check your inbox.");
     } catch (err: any) {
-      setResetError(err.message || 'Failed to send password reset email.');
+      setResetError(err.message || "Failed to send password reset email.");
     } finally {
       setResetLoading(false);
     }
   };
 
   if (loading || !profile) {
-    return <Loader1 />
+    return <Loader1 />;
   }
 
   // Profile page
@@ -298,20 +522,32 @@ const Profile = () => {
         </motion.h2>
         <div className="flex mb-8 border-b border-gray-200">
           <button
-            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${activeTab === 'general' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-blue-500'}`}
-            onClick={() => setActiveTab('general')}
+            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${
+              activeTab === "general"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-blue-500"
+            }`}
+            onClick={() => setActiveTab("general")}
           >
             <FiUser className="inline mr-1" /> General
           </button>
           <button
-            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${activeTab === 'security' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-blue-500'}`}
-            onClick={() => setActiveTab('security')}
+            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${
+              activeTab === "security"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-blue-500"
+            }`}
+            onClick={() => setActiveTab("security")}
           >
             <FiLock className="inline mr-1" /> Security
           </button>
           <button
-            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${activeTab === 'usage' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-blue-500'}`}
-            onClick={() => setActiveTab('usage')}
+            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${
+              activeTab === "usage"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-blue-500"
+            }`}
+            onClick={() => setActiveTab("usage")}
           >
             <MdDataUsage className="inline mr-1" /> Usage
           </button>
@@ -319,9 +555,8 @@ const Profile = () => {
 
         {/* Tab Content */}
         <>
-          {activeTab === 'general' && (
+          {activeTab === "general" && (
             <>
-
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -361,7 +596,9 @@ const Profile = () => {
                       exit={{ scale: 0.9 }}
                       className="bg-white rounded-lg p-6 w-full max-w-md"
                     >
-                      <h3 className="text-xl font-semibold mb-4">Crop Your Avatar</h3>
+                      <h3 className="text-xl font-semibold mb-4">
+                        Crop Your Avatar
+                      </h3>
                       <div className="relative h-60 w-full mb-4">
                         <Cropper
                           image={imageSrc}
@@ -374,7 +611,9 @@ const Profile = () => {
                         />
                       </div>
                       <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Zoom</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Zoom
+                        </label>
                         <input
                           type="range"
                           min="1"
@@ -400,9 +639,26 @@ const Profile = () => {
                         >
                           {uploading ? (
                             <>
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              <svg
+                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 
+                   3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
                               </svg>
                               Uploading...
                             </>
@@ -423,7 +679,15 @@ const Profile = () => {
                 >
                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 shadow-md">
                     <img
-                      src={tempProfile?.avatarUrl || DEFAULT_AVATAR[tempProfile?.gender || 'prefer not to say']}
+                      src={
+                        !tempProfile?.avatarUrl
+                          ? tempProfile?.gender === "male"
+                            ? DEFAULT_AVATAR.male
+                            : tempProfile?.gender === "female"
+                            ? DEFAULT_AVATAR.female
+                            : DEFAULT_AVATAR["prefer not to say"]
+                          : tempProfile?.avatarUrl
+                      }
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -453,224 +717,483 @@ const Profile = () => {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                      Full Name
-                    </label>
-                    <input
-                      id="fullName"
-                      name="fullName"
-                      type="text"
-                      required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={tempProfile?.fullName || ''}
-                      onChange={handleInputChange}
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                      Username
-                    </label>
-                    <input
-                      id="username"
-                      name="username"
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={tempProfile?.username || ''}
-                      onChange={handleInputChange}
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
-                      Branch
-                    </label>
-                    <select
-                      id="branch"
-                      name="branch"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={tempProfile?.branch || ""}
-                      onChange={handleInputChange}
+                  {/* PERSONAL DETAILS */}
+                  <div className="bg-white rounded-2xl shadow p-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowPersonal((p) => !p)}
+                      className="flex justify-between items-center w-full mb-2"
                     >
-                      <option value="">Select Branch</option>
-                      <option value="FE">First Year Engineering</option>
-                      <option value="CS">Computer Science</option>
-                      <option value="IT">Information Technology</option>
-                      <option value="Civil">Civil Engineering</option>
-                      <option value="Mechanical">Mechanical Engineering</option>
-                    </select>
-                  </motion.div>
-
-                  {
-                    tempProfile?.branch !== '' && (
+                      <h1 className="text-lg font-semibold text-gray-800">
+                        Personal Details
+                      </h1>
                       <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ delay: 0.4 }}
+                        animate={{ rotate: showPersonal ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
                       >
-                        <label htmlFor="pattern" className="block text-sm font-medium text-gray-700">
-                          Pattern
-                        </label>
-                        <select
-                          id="pattern"
-                          name="pattern"
-                          required
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                          value={tempProfile?.pattern || ""}
-                          onChange={handleInputChange}
-                        >
-                          <option value="">Select Pattern</option>
-                          <option value="2019">2019</option>
-                          <option value="2024">2024</option>
-                        </select>
+                        <FaCaretDown className="w-5 h-5 text-gray-800" />
                       </motion.div>
-                    )
-                  }
+                    </button>
 
-                  {(tempProfile?.branch !== 'FE' && tempProfile?.branch !== '') && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ delay: 0.4 }}
+                    <AnimatePresence initial={false}>
+                      {showPersonal && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="overflow-hidden space-y-4 pl-1"
+                        >
+                          {/* Account Type */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                          >
+                            <label
+                              htmlFor="accountType"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Account Type
+                            </label>
+                            <input
+                              id="accountType"
+                              type="text"
+                              disabled
+                              className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm cursor-not-allowed"
+                              value={
+                                tempProfile?.accountType === "student"
+                                  ? "Student"
+                                  : "Educator"
+                              }
+                            />
+                          </motion.div>
+
+                          {/* Full Name */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <label
+                              htmlFor="fullName"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Full Name
+                            </label>
+                            <input
+                              id="fullName"
+                              name="fullName"
+                              type="text"
+                              required
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                              value={tempProfile?.fullName || ""}
+                              onChange={handleInputChange}
+                            />
+                          </motion.div>
+
+                          {/* Username */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                          >
+                            <label
+                              htmlFor="username"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Username
+                            </label>
+                            <div className="relative">
+                              <input
+                                id="username"
+                                name="username"
+                                type="text"
+                                className={getUsernameInputClass()}
+                                value={tempProfile?.username || ""}
+                                onChange={handleInputChange}
+                              />
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                {getUsernameIcon()}
+                              </div>
+                            </div>
+                            
+                            {/* Username validation messages */}
+                            {usernameStatus.errors.length > 0 && (
+                              <div className="mt-2 space-y-1">
+                                {usernameStatus.errors.map((error, idx) => (
+                                  <p key={idx} className="text-xs text-red-500 flex items-center gap-1">
+                                    <FiAlertCircle size={12} /> {error}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                            {usernameStatus.available === true && tempProfile?.username !== usernameStatus.originalUsername && (
+                              <p className="mt-2 text-xs text-green-600 flex items-center gap-1">
+                                <FiCheckCircle size={12} /> Username is available
+                              </p>
+                            )}
+                          </motion.div>
+
+                          {/* Gender */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 }}
+                          >
+                            <label
+                              htmlFor="gender"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Gender
+                            </label>
+                            <select
+                              id="gender"
+                              name="gender"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                              value={tempProfile?.gender || ""}
+                              onChange={handleInputChange}
+                            >
+                              <option value="">Select Gender</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="other">Other</option>
+                              <option value="prefer not to say">
+                                Prefer not to say
+                              </option>
+                            </select>
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* ACADEMIC DETAILS */}
+                  <div className="bg-white rounded-2xl shadow p-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowAcademic((p) => !p)}
+                      className="flex justify-between items-center w-full mb-2"
                     >
-                      <label htmlFor="year" className="block text-sm font-medium text-gray-700">
-                        Year
-                      </label>
-                      <select
-                        id="year"
-                        name="year"
-                        required
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                        value={tempProfile?.year || ""}
-                        onChange={handleInputChange}
-                      >
-                        <option value="">Select Year</option>
-                        <option value="SE">Second Year</option>
-                        <option value="TE">Third Year</option>
-                        <option value="BE">Final Year</option>
-                      </select>
-                    </motion.div>
-                  )}
-
-                  {
-                    tempProfile?.branch !== '' && (
+                      <h1 className="text-lg font-semibold text-gray-800">
+                        Academic Details
+                      </h1>
                       <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 }}
+                        animate={{ rotate: showAcademic ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
                       >
-                        <label htmlFor="semester" className="block text-sm font-medium text-gray-700">
-                          Semester
-                        </label>
-                        <select
-                          id="semester"
-                          name="semester"
-                          required
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                          value={tempProfile?.semester || ""}
-                          onChange={handleInputChange}
-                        >
-                          <option value="">Select Semester</option>
-                          {
-                            tempProfile?.branch === 'FE' ? (
-                              <>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                              </>
-                            ) : tempProfile?.year === 'SE' ? (
-                              <>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                              </>
-                            ) : tempProfile?.year === 'TE' ? (
-                              <>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                              </>
-                            ) : (
-                              <>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                              </>
-                            )
-                          }
-                        </select>
+                        <FaCaretDown className="w-5 h-5 text-gray-800" />
                       </motion.div>
-                    )
-                  }
+                    </button>
 
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <label htmlFor="collegeName" className="block text-sm font-medium text-gray-700">
-                      College Name
-                    </label>
-                    <input
-                      id="collegeName"
-                      name="collegeName"
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={tempProfile?.collegeName || ''}
-                      onChange={handleInputChange}
-                    />
-                  </motion.div>
+                    <AnimatePresence initial={false}>
+                      {showAcademic && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="overflow-hidden space-y-4 pl-1"
+                        >
+                          {/* College Name */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                          >
+                            <label
+                              htmlFor="collegeName"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              College Name
+                            </label>
+                            <input
+                              id="collegeName"
+                              name="collegeName"
+                              type="text"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                              value={tempProfile?.collegeName || ""}
+                              onChange={handleInputChange}
+                            />
+                          </motion.div>
 
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                      Gender
-                    </label>
-                    <select
-                      id="gender"
-                      name="gender"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      value={tempProfile?.gender || ""}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                      <option value="prefer not to say">Prefer not to say</option>
-                    </select>
-                  </motion.div>
+                          {/* Branch */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <label
+                              htmlFor="branch"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Branch
+                            </label>
+                            <select
+                              id="branch"
+                              name="branch"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                              value={tempProfile?.branch || ""}
+                              onChange={handleInputChange}
+                            >
+                              <option value="">Select Branch</option>
+                              <option value="FE">First Year Engineering</option>
+                              <option value="CS">Computer Science</option>
+                              <option value="IT">Information Technology</option>
+                              <option value="Civil">Civil Engineering</option>
+                              <option value="Mechanical">
+                                Mechanical Engineering
+                              </option>
+                            </select>
+                          </motion.div>
+
+                          {profile.accountType === "student" && (
+                            <>
+                              {/* Pattern */}
+                              {profile.accountType === "student" &&
+                                tempProfile?.branch !== "" && (
+                                  <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                  >
+                                    <label
+                                      htmlFor="pattern"
+                                      className="block text-sm font-medium text-gray-700"
+                                    >
+                                      Pattern
+                                    </label>
+                                    <select
+                                      id="pattern"
+                                      name="pattern"
+                                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                      value={tempProfile?.pattern || ""}
+                                      onChange={handleInputChange}
+                                      required={tempProfile?.branch !== undefined}
+                                    >
+                                      <option value="">Select Pattern</option>
+                                      <option value="2019">2019</option>
+                                      <option value="2024">2024</option>
+                                    </select>
+                                  </motion.div>
+                                )}
+
+                              {/* Year */}
+                              {profile.accountType === "student" &&
+                                tempProfile?.branch !== "FE" &&
+                                tempProfile?.branch !== "" && (
+                                  <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                  >
+                                    <label
+                                      htmlFor="year"
+                                      className="block text-sm font-medium text-gray-700"
+                                    >
+                                      Year
+                                    </label>
+                                    <select
+                                      id="year"
+                                      name="year"
+                                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                      value={tempProfile?.year || ""}
+                                      onChange={handleInputChange}
+                                      required={tempProfile?.branch !== undefined}
+                                    >
+                                      <option value="">Select Year</option>
+                                      <option value="SE">Second Year</option>
+                                      <option value="TE">Third Year</option>
+                                      <option value="BE">Final Year</option>
+                                    </select>
+                                  </motion.div>
+                                )}
+
+                              {/* Semester */}
+                              {profile.accountType === "student" &&
+                                tempProfile?.branch !== "" && (
+                                  <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                  >
+                                    <label
+                                      htmlFor="semester"
+                                      className="block text-sm font-medium text-gray-700"
+                                    >
+                                      Semester
+                                    </label>
+                                    <select
+                                      id="semester"
+                                      name="semester"
+                                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                      value={tempProfile?.semester || ""}
+                                      onChange={handleInputChange}
+                                      required={tempProfile?.branch !== undefined}
+                                    >
+                                      <option value="">Select Semester</option>
+                                      {tempProfile?.branch === "FE" ? (
+                                        <>
+                                          <option value="1">1</option>
+                                          <option value="2">2</option>
+                                        </>
+                                      ) : tempProfile?.year === "SE" ? (
+                                        <>
+                                          <option value="3">3</option>
+                                          <option value="4">4</option>
+                                        </>
+                                      ) : tempProfile?.year === "TE" ? (
+                                        <>
+                                          <option value="5">5</option>
+                                          <option value="6">6</option>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <option value="7">7</option>
+                                          <option value="8">8</option>
+                                        </>
+                                      )}
+                                    </select>
+                                  </motion.div>
+                                )}
+                            </>
+                          )}
+
+                          {profile.accountType === "educator" && (
+                            <>
+                              {/* Designation */}
+                              <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.5 }}
+                              >
+                                <label
+                                  htmlFor="designation"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Designation
+                                </label>
+                                <input
+                                  id="designation"
+                                  name="designation"
+                                  type="text"
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                  value={tempProfile?.designation || ""}
+                                  onChange={handleInputChange}
+                                />
+                              </motion.div>
+
+                              {/* Subjects Handled */}
+                              <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.6 }}
+                              >
+                                <label
+                                  htmlFor="subjectsHandled"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Subjects Handled
+                                </label>
+                                <input
+                                  id="subjectsHandled"
+                                  name="subjectsHandled"
+                                  type="text"
+                                  placeholder="Comma separated subjects"
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                  value={subjectsHandledInput}
+                                  onChange={(e) => {
+                                    const raw = e.target.value;
+                                    setSubjectsHandledInput(raw);
+                                    const list = raw
+                                      .split(",")
+                                      .map((s) => s.trim())
+                                      .filter(Boolean);
+                                    setTempProfile((prev) =>
+                                      prev
+                                        ? ({ ...prev, subjectsHandled: list } as UserProfile)
+                                        : prev
+                                    );
+                                  }}
+                                />
+                              </motion.div>
+
+                              {/* Qualifications */}
+                              <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.7 }}
+                              >
+                                <label
+                                  htmlFor="qualifications"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Qualifications
+                                </label>
+                                <input
+                                  id="qualifications"
+                                  name="qualifications"
+                                  type="text"
+                                  placeholder="Comma separated qualifications"
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                  value={qualificationsInput}
+                                  onChange={(e) => {
+                                    const raw = e.target.value;
+                                    setQualificationsInput(raw);
+                                    const list = raw
+                                      .split(",")
+                                      .map((s) => s.trim())
+                                      .filter(Boolean);
+                                    setTempProfile((prev) =>
+                                      prev
+                                        ? ({ ...prev, qualifications: list } as UserProfile)
+                                        : prev
+                                    );
+                                  }}
+                                />
+                              </motion.div>
+                            </>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
+                {/* Update Button */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="mt-8"
+                  transition={{ delay: 0.5 }}
+                  className="mt-6"
                 >
                   {updating ? (
                     <button
                       disabled
                       type="button"
-                      className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600"
+                      className="w-full flex justify-center items-center py-3 px-4 rounded-md text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600"
                     >
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 
+                   5.291A7.962 7.962 0 014 12H0c0 
+                   3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Updating Profile...
                     </button>
@@ -680,7 +1203,8 @@ const Profile = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         type="submit"
-                        className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                        disabled={!isFormValid()}
+                        className="w-full flex justify-center items-center py-3 px-4 rounded-md text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <FiSave className="mr-2" /> Update Profile
                       </motion.button>
@@ -690,7 +1214,7 @@ const Profile = () => {
               </form>
             </>
           )}
-          {activeTab === 'security' && (
+          {activeTab === "security" && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -719,47 +1243,64 @@ const Profile = () => {
                 )}
               </AnimatePresence>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
                 <input
                   type="email"
-                  value={profile?.email || ''}
+                  value={profile?.email || ""}
                   readOnly
                   className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 cursor-not-allowed"
                 />
               </div>
               <form onSubmit={handlePasswordUpdate} className="space-y-4">
                 <div>
-                  <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700">Old Password</label>
+                  <label
+                    htmlFor="oldPassword"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Old Password
+                  </label>
                   <input
                     id="oldPassword"
                     name="oldPassword"
                     type="password"
                     value={oldPassword}
-                    onChange={e => setOldPassword(e.target.value)}
+                    onChange={(e) => setOldPassword(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">New Password</label>
+                  <label
+                    htmlFor="newPassword"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    New Password
+                  </label>
                   <input
                     id="newPassword"
                     name="newPassword"
                     type="password"
                     value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
+                    onChange={(e) => setNewPassword(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Confirm New Password
+                  </label>
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
@@ -770,9 +1311,25 @@ const Profile = () => {
                   className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                 >
                   {securityLoading ? (
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                   ) : (
                     <>Update Password</>
@@ -787,14 +1344,20 @@ const Profile = () => {
                   disabled={resetLoading}
                   className="text-sm text-blue-600 hover:underline focus:outline-none"
                 >
-                  {resetLoading ? 'Sending reset email...' : 'Forgot Password?'}
+                  {resetLoading ? "Sending reset email..." : "Forgot Password?"}
                 </button>
-                {resetError && <div className="text-red-500 text-xs mt-1">{resetError}</div>}
-                {resetSuccess && <div className="text-green-600 text-xs mt-1">{resetSuccess}</div>}
+                {resetError && (
+                  <div className="text-red-500 text-xs mt-1">{resetError}</div>
+                )}
+                {resetSuccess && (
+                  <div className="text-green-600 text-xs mt-1">
+                    {resetSuccess}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
-          {activeTab === 'usage' && (
+          {activeTab === "usage" && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -809,4 +1372,4 @@ const Profile = () => {
   );
 };
 
-export default Profile; 
+export default Profile;

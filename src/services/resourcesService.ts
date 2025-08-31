@@ -71,7 +71,7 @@ class ResourcesService {
     if (filters.searchString) {
       filtered = filtered.filter((resource) => {
         const targetString =
-          `${resource.title} ${resource.subjectName} ${resource.subjectCode} ${resource.branch} ${resource.year} ${resource.semester} ${resource.pattern} ${resource.type}`.toLowerCase();
+          `${resource.uploadedBy} ${resource.title} ${resource.subjectName} ${resource.subjectCode} ${resource.branch} ${resource.year} ${resource.semester} ${resource.pattern} ${resource.type}`.toLowerCase();
         return targetString.includes(filters.searchString.toLowerCase());
       });
     }

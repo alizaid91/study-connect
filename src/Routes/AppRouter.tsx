@@ -131,7 +131,14 @@ const AppRouter = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/pyqs" element={<PYQs />} />
+          <Route
+            path="/pyqs"
+            element={
+              <PrivateRoute>
+                <PYQs />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/bookmarks"
             element={

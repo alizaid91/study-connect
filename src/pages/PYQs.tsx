@@ -179,24 +179,30 @@ const PYQs: React.FC = () => {
   }, [dispatch, user?.uid]);
 
   useEffect(() => {
-    if (!user || !profile || !profile?.branch) return;
-
-    const fetchQuickFilters = async () => {
+    if (!user) return;
+    const fetchQuickFilters = async (accountType: string) => {
       const filters = await papersService.getQuickFilters(user.uid);
-      if (user && profile?.semester != 0) {
-        const readyMadeFilters = papersService.createReadymadeFilters(
+      let readyMadeFilters: QuickFilter[] = [];
+
+      if (accountType === "student") {
+        readyMadeFilters = papersService.createReadymadeFilters(
           profile?.branch as string,
           profile?.pattern as string,
           profile?.year,
           profile?.semester
         );
-
-        setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
       } else {
-        setQuickFilters(filters);
+        readyMadeFilters = papersService.createReadymadeFilters("FE", "2024");
       }
+
+      setQuickFilters(sortQuickFilters([...filters, ...readyMadeFilters]));
     };
-    fetchQuickFilters();
+
+    if (profile && profile.branch && profile.pattern) {
+      fetchQuickFilters("student");
+    } else if (profile?.accountType === "educator") {
+      fetchQuickFilters("educator");
+    }
   }, [profile, profile?.branch]);
 
   useEffect(() => {
@@ -340,6 +346,11 @@ const PYQs: React.FC = () => {
           name: paper.paperName,
           description: `${paper.branch} - ${paper.year} ${paper.pattern}`,
           resourceDOKey: paper.paperDOKey,
+          metadata: {
+            pages: paper.metadata.pages,
+            size: paper.metadata.size,
+            type: paper.metadata.type,
+          },
           createdAt: new Date().toISOString(),
         })
       );
@@ -465,23 +476,25 @@ const PYQs: React.FC = () => {
                 </motion.button>
               </div>
             )}
-            {user && profile?.semester == 0 && (
-              <div
-                className={`flex md:flex-col flex-row items-center md:items-end md:gap-1 justify-between w-full mb-8 bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-r-3xl shadow-md`}
-              >
-                <h2 className="text-md sm:text-lg font-semibold text-gray-700">
-                  Complete your profile to access ready-made quick filters.
-                </h2>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/profile")}
-                  className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-full font-medium transition-all duration-200 flex items-center justify-center"
+            {user &&
+              profile?.accountType === "student" &&
+              profile?.semester == 0 && (
+                <div
+                  className={`flex md:flex-col flex-row items-center md:items-end md:gap-1 justify-between w-full mb-8 bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-r-3xl shadow-md`}
                 >
-                  <MdArrowForward size={24} />
-                </motion.button>
-              </div>
-            )}
+                  <h2 className="text-md sm:text-lg font-semibold text-gray-700">
+                    Complete your profile to access ready-made quick filters.
+                  </h2>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate("/profile")}
+                    className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-full font-medium transition-all duration-200 flex items-center justify-center"
+                  >
+                    <MdArrowForward size={24} />
+                  </motion.button>
+                </div>
+              )}
             {user && quickFilters.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -898,12 +911,12 @@ const PYQs: React.FC = () => {
                           </p>
                           <p className="text-sm md:text-md text-gray-700 mb-6">
                             <span className="font-medium">
-                              {paper.paperType}{" "}
-                            </span>
-                            <span> Paper </span>
-                            <span className="font-medium">
                               {paper.paperName}{" "}
                             </span>
+                            <span className="font-medium">
+                              {paper.paperType}{" "}
+                            </span>
+                            <span className="font-medium"> Paper </span>
                           </p>
                         </div>
 
@@ -924,6 +937,7 @@ const PYQs: React.FC = () => {
                                     .join("")} ${paper.paperName} ${
                                     paper.year ? paper.year : ""
                                   } ${paper.pattern} Pattern`,
+                                  totalPages: paper.metadata.pages,
                                 })
                               );
                             }}

@@ -2,8 +2,6 @@ import { auth, db } from "../config/firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
   onAuthStateChanged,
   User,
   signOut,
@@ -31,10 +29,11 @@ import { store } from "../store/index";
 import { apiService } from "./apiService";
 
 export interface AuthFormData {
+  fullName?: string;
   email: string;
+  username: string;
   password: string;
   confirmPassword?: string;
-  fullName?: string;
 }
 
 class AuthService {
@@ -42,9 +41,20 @@ class AuthService {
     return await signInWithEmailAndPassword(auth, email, password);
   }
 
-  async signUpWithEmail(formData: AuthFormData) {
+  async signUpWithEmail(
+    formData: AuthFormData,
+    accountType: "student" | "educator",
+    inviteCode?: string
+  ) {
     if (formData.password !== formData.confirmPassword) {
       throw new Error("Passwords do not match");
+    }
+
+    // Validate username before creating account
+    const usernameValidation = await apiService.validateUsername(formData.username);
+    if (!usernameValidation.success) {
+      const errorMessage = usernameValidation.errors?.[0]?.message || "Invalid username";
+      throw new Error(errorMessage);
     }
 
     const userCredential = await createUserWithEmailAndPassword(
@@ -55,23 +65,31 @@ class AuthService {
     const user = userCredential.user;
 
     // Create user profile in Firestore
-    const userProfile: Omit<UserProfile, "uid"> = {
+    const studentProfile: Omit<UserProfile, "uid"> = {
+      accountType: accountType,
+      role: "free",
+
       email: formData.email,
       fullName: formData.fullName || "",
+      username: usernameValidation.data?.username || formData.username,
       avatarUrl: DEFAULT_AVATAR.male,
-      username: "",
       gender: "",
+
+      collegeName: "",
       branch: "",
       year: "",
-      collegeName: "",
-      role: "free",
+      semester: 0,
+      pattern: "",
+
       subscriptionProcessing: false,
+
       quotas: {
         aiCredits: 0,
         taskBoards: 2,
         chatSessions: 2,
         promptsPerDay: 5,
       },
+
       usage: {
         aiCreditsUsed: 0,
         boardCount: 0,
@@ -81,55 +99,57 @@ class AuthService {
           count: 0,
         },
       },
+
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    await setDoc(doc(db, "users", user.uid), userProfile);
-    return userCredential;
-  }
+    const educatorProfile: Omit<UserProfile, "uid"> = {
+      accountType: accountType,
+      inviteCode: inviteCode,
+      role: "free",
 
-  async signInWithGoogle() {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
+      email: formData.email,
+      fullName: formData.fullName || "",
+      avatarUrl: DEFAULT_AVATAR.male,
+      username: usernameValidation.data?.username || formData.username,
+      gender: "",
 
-    // Check if user profile exists
-    const userDoc = await doc(db, "users", user.uid);
-    const userData = await getDoc(userDoc);
+      collegeName: "",
+      branch: "",
+      designation: "",
+      subjectsHandled: [],
+      qualifications: [],
 
-    if (!userData.exists()) {
-      // Create user profile for Google sign-in
-      const userProfile: Omit<UserProfile, "uid"> = {
-        email: user.email || "",
-        fullName: user.displayName || "",
-        username: user.email?.split("@")[0] || "",
-        avatarUrl: user.photoURL || DEFAULT_AVATAR.male,
-        role: "free",
-        subscriptionProcessing: false,
-        quotas: {
-          aiCredits: 0,
-          taskBoards: 2,
-          chatSessions: 2,
-          promptsPerDay: 5,
+      subscriptionProcessing: false,
+
+      quotas: {
+        aiCredits: 0,
+        taskBoards: 2,
+        chatSessions: 2,
+        promptsPerDay: 5,
+      },
+
+      usage: {
+        aiCreditsUsed: 0,
+        boardCount: 0,
+        chatSessionCount: 0,
+        aiPromptUsage: {
+          date: new Date().toLocaleDateString("en-GB"),
+          count: 0,
         },
-        usage: {
-          aiCreditsUsed: 0,
-          boardCount: 0,
-          chatSessionCount: 0,
-          aiPromptUsage: {
-            date: new Date().toLocaleDateString("en-GB"),
-            count: 0,
-          },
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      },
 
-      await setDoc(doc(db, "users", user.uid), userProfile);
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (accountType === "educator") {
+      await setDoc(doc(db, "users", user.uid), educatorProfile);
+    } else {
+      await setDoc(doc(db, "users", user.uid), studentProfile);
     }
-
-    return result;
+    return userCredential;
   }
 
   onAuthStateChange(callback: (user: User | null) => void) {
@@ -153,7 +173,7 @@ class AuthService {
     return onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const profile = docSnap.data() as UserProfile;
-        store.dispatch(setProfile(profile));
+        store.dispatch(setProfile({ ...profile, uid: userId }));
       } else {
         console.warn(`Profile not found for userId: ${userId}`);
       }
@@ -290,7 +310,7 @@ class AuthService {
 
       // Prepare update payload
       const updates: any = {
-        usage,
+        accountType: userData.accountType || "student",
         updatedAt: new Date().toISOString(),
       };
 

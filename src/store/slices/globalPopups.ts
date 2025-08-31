@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-type showPdfType = { pdfId: string | null; title: string };
+type showPdfType = { pdfId: string | null; title: string, totalPages: number };
 
 interface GlobalPopupsState {
   isPremiumComingSoonOpen: boolean;

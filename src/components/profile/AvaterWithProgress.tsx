@@ -22,15 +22,34 @@ const AvatarWithProgress = ({ onClick }: { onClick: () => void }) => {
       "collegeName",
     ];
 
+    const educatorFields = [
+      "email",
+      "fullName",
+      "username",
+      "avatarUrl",
+      "gender",
+      "branch",
+      "subjectsHandled",
+      "qualifications",
+      "collegeName",
+    ];
+
     // If not FE, also include year
     if (profile.branch !== "FE") fields.push("year");
 
-    const filled = fields.filter((field) => {
+    let filled = profile.accountType === "educator" ? educatorFields : fields;
+    filled = filled.filter((field) => {
       const value = profile[field as keyof typeof profile];
       return value !== undefined && value !== null && value !== "";
     });
 
-    return Math.round((filled.length / fields.length) * 100);
+    return Math.round(
+      (filled.length /
+        (profile.accountType === "educator"
+          ? educatorFields.length
+          : fields.length)) *
+        100
+    );
   }, [profile]);
 
   const degree = (completionPercentage / 100) * 360;

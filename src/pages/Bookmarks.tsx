@@ -224,6 +224,7 @@ const Bookmarks = () => {
                           setShowPdf({
                             pdfId: bookmark.resourceDOKey,
                             title: bookmark.title,
+                            totalPages: bookmark.metadata.pages
                           })
                         );
                       }}

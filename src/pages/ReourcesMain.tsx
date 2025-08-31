@@ -1,8 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { Books, Notes, Decodes, Videos, Other } from "../assets/resources-svg";
+import {
+  Books,
+  Notes,
+  Decodes,
+  Videos,
+  Other,
+  uploadResource,
+} from "../assets/resources-svg";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { resourcesService } from "../services/resourcesService";
 import { RootState } from "../store";
 import { useSelector, useDispatch } from "react-redux";
@@ -26,6 +33,8 @@ import NoStudyResources from "../components/Study-Resources/NoStudyResource";
 import SearchBar from "../components/Study-Resources/SearchBar";
 import { FiBookmark } from "react-icons/fi";
 import { setShowPdf } from "../store/slices/globalPopups";
+import UploadResourcePopup from "../components/Study-Resources/UploadResourcePopup";
+import UploaderInfo from "../components/Study-Resources/UploaderInfo";
 
 const resourcesCards = [
   {
@@ -66,7 +75,7 @@ const ResourcesMain = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, profile } = useSelector((state: RootState) => state.auth);
   const { resourceFilters } = useSelector((state: RootState) => state.filters);
   const { resources, loading } = useSelector(
     (state: RootState) => state.resources
@@ -78,23 +87,35 @@ const ResourcesMain = () => {
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] =
     useState<string>("");
+  const [showUploadPopup, setShowUploadPopup] = useState(false);
 
   useEffect(() => {
-    if (!user?.uid) return;
-    const fetchResources = async () => {
-      dispatch(setLoading(true));
-      try {
-        const resources = await resourcesService.getResources();
-        dispatch(setResources(resources));
-      } catch (error) {
-        console.error("Error fetching resources:", error);
-      } finally {
-        dispatch(setLoading(false));
-      }
+    if (showUploadPopup) {
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
     };
-    fetchResources();
-    dispatch(fetchBookmarks(user?.uid));
-  }, []);
+  }, [showUploadPopup]);
+
+  // refetch logic extracted for reuse
+  const fetchResourcesList = useCallback(async () => {
+    if (!user?.uid) return;
+    dispatch(setLoading(true));
+    try {
+      const resources = await resourcesService.getResources();
+      dispatch(setResources(resources));
+      dispatch(fetchBookmarks(user.uid));
+    } catch (error) {
+      console.error("Error fetching resources:", error);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  }, [dispatch, user?.uid]);
+
+  useEffect(() => {
+    fetchResourcesList();
+  }, [fetchResourcesList]);
 
   useEffect(() => {
     if (!resources || resources.length === 0) return;
@@ -174,6 +195,11 @@ const ResourcesMain = () => {
           resourceType: resource.type,
           description: `${resource.branch} - ${resource.year} ${resource.pattern}`,
           resourceDOKey: resource.resourceDOKey,
+          metadata: {
+            pages: resource.metadata.pages,
+            size: resource.metadata.size,
+            type: resource.metadata.type,
+          },
           createdAt: new Date().toISOString(),
         })
       );
@@ -192,195 +218,242 @@ const ResourcesMain = () => {
     return <Loader1 />;
   }
 
-  return !resourceFilters.type ? (
-    <div className="min-h-screen bg-background p-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">
-        Explore Study Resources
-      </h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {resourcesCards.map((item, index) => {
-          return (
-            <motion.div
-              key={index}
-              onClick={() => {
-                dispatch(
-                  updateResourceFilterField({
-                    field: "type",
-                    value: getType(item),
-                  })
-                );
-              }}
-              className="cursor-pointer bg-card rounded-2xl shadow-md p-6 flex flex-col items-center justify-center text-center border hover:border-primary transition-all duration-300"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.97 }}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <div className="w-20 h-20 mb-4 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
-                <img
-                  src={item.icon}
-                  className="h-full w-full text-primary object-cover p-3"
-                />
-              </div>
-              <h2 className="text-xl font-semibold">{item.title}</h2>
-              <p className="text-muted-foreground text-sm mt-2">
-                {item.description}
-              </p>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
-  ) : (
-    <div className="relative w-full px-2">
-      <div className="border border-gray-300/90 flex items-center justify-between px-6 py-2 gap-3 w-full bg-gray-100 mt-4 mb-2 rounded-3xl">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center">
-            <div className="group relative">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  dispatch(
-                    updateResourceFilterField({ field: "type", value: "" })
-                  );
-                  dispatch(resetResourceFilters());
-                  navigate("/resources");
-                }}
-                className="flex items-center justify-center bg-gray-200/60 hover:bg-gray-200 p-2 rounded-md text-gray-800 hover:text-blue-600 transition-colors duration-200"
-                aria-label="Back to boards overview"
-              >
-                <IoArrowBackSharp size={20} />
-              </motion.button>
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold text-center lg:mb-0.5">
-            {getTitle(resourceFilters.type)}
-          </h1>
-        </div>
-        <div
-          onClick={() => setIsFilterExpanded(!isFilterExpanded)}
-          className="flex lg:hidden items-center gap-2 bg-gray-200/60 text-blue-700 font-semibold px-3 py-1.5 rounded-xl transition-colors duration-300"
-        >
-          <span className="text-lg">Filters</span>
-          <div className="flex items-center justify-center w-8 h-8 text-blue-500 bg-blue-200/70 rounded-full p-1">
-            <FcFilledFilter size={20} />
-          </div>
-        </div>
-        <SearchBar classes="hidden lg:block w-[300px]" />
-      </div>
-      <SearchBar classes="lg:hidden px-2 pb-2" />
-      <div className="flex lg:flex-row gap-3 min-h-[600px]">
-        <ResourceFilter
-          isFilterExpanded={isFilterExpanded}
-          setIsFilterExpanded={setIsFilterExpanded}
+  return (
+    <>
+      {showUploadPopup && (
+        <UploadResourcePopup
+          onClose={() => setShowUploadPopup(false)}
+          onUploaded={() => {
+            fetchResourcesList();
+          }}
         />
-        <div className="w-full max-h-screen border border-gray-300/90 overflow-y-auto rounded-3xl px-2">
-          {filteredResources.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pt-4 pb-6">
-              {filteredResources
-                .filter((resource) => resource.type === resourceFilters.type)
-                .map((resource, i) => (
-                  <motion.div
-                    key={resource.id}
-                    variants={cardVariants}
-                    initial="hidden"
-                    animate="visible"
-                    custom={i}
-                    className="bg-white/90 shadow-sm rounded-3xl overflow-hidden border border-gray-300 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 group"
-                  >
-                    <div className="p-5 flex flex-col h-full">
-                      <div className="flex items-center gap-3 mb-4 ">
-                        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
-                          <img
-                            src={getResourceTypeIcon(resource.type)}
-                            className="h-full w-full text-primary object-cover p-1"
-                          />
-                        </div>
-                        <h2 className="text-lg font-bold">{resource.title}</h2>
-                      </div>
-
-                      <div className="text-sm text-gray-900 space-y-1 flex-1">
-                        <p>
-                          <strong>Subject:</strong> {resource.subjectName} (
-                          {resource.subjectCode})
-                        </p>
-                        <p>
-                          <strong>Branch:</strong> {resource.branch}
-                        </p>
-                        <p>
-                          <strong>Year:</strong> {resource.year}
-                        </p>
-                        <p>
-                          <strong>Semester:</strong> {resource.semester}
-                        </p>
-                        <p>
-                          <strong>Pattern:</strong> {resource.pattern}
-                        </p>
-                        <p>
-                          <strong>Uploaded By:</strong> {resource.uploadedBy}
-                        </p>
-                      </div>
-
-                      <div className="mt-6 flex items-center justify-between">
-                        <button
-                          onClick={() =>
-                            dispatch(
-                              setShowPdf({
-                                pdfId: resource.resourceDOKey,
-                                title: resource.title,
-                              })
-                            )
-                          }
-                          className="px-6 py-1 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
-                        >
-                          View
-                        </button>
-                        {changingBookmarkState &&
-                        resource.id === itemToChangeBookmarkState ? (
-                          <div
-                            role="status"
-                            className="inline-flex items-center justify-center p-2"
-                          >
-                            <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                            <span className="sr-only">Changing...</span>
-                          </div>
-                        ) : (
-                          <motion.button
-                            whileHover={{ scale: 1.2 }}
-                            whileTap={{ scale: 0.8 }}
-                            onClick={
-                              !user
-                                ? () => navigate("/auth#login")
-                                : () => handleBookmark(resource)
-                            }
-                            className={`rounded-full p-2 ${
-                              isBookmarked(resource.id)
-                                ? "text-yellow-500 bg-yellow-100"
-                                : "text-gray-400 bg-gray-100"
-                            } transition-all duration-200 mb-1 md:mb-0`}
-                          >
-                            <FiBookmark
-                              className={`w-5 h-5 ${
-                                isBookmarked(resource.id) ? "fill-current" : ""
-                              }`}
-                            />
-                          </motion.button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center w-full h-full">
-              <NoStudyResources />
-            </div>
-          )}
+      )}
+      {!resourceFilters.type ? (
+        <div className="min-h-screen bg-background p-8">
+          <h1 className="text-3xl font-bold mb-8 text-center">
+            Explore Study Resources
+          </h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {resourcesCards.map((item, index) => {
+              return (
+                <motion.div
+                  key={index}
+                  onClick={() => {
+                    dispatch(
+                      updateResourceFilterField({
+                        field: "type",
+                        value: getType(item),
+                      })
+                    );
+                  }}
+                  className="cursor-pointer bg-card rounded-2xl shadow-md p-6 flex flex-col items-center justify-center text-center border hover:border-primary transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className="w-20 h-20 mb-4 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
+                    <img
+                      src={item.icon}
+                      className="h-full w-full text-primary object-cover p-3"
+                    />
+                  </div>
+                  <h2 className="text-xl font-semibold">{item.title}</h2>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    {item.description}
+                  </p>
+                </motion.div>
+              );
+            })}
+            {profile?.accountType === "educator" && (
+              <motion.div
+                onClick={() => setShowUploadPopup(true)}
+                className="cursor-pointer bg-card rounded-2xl shadow-md p-6 flex flex-col items-center justify-center text-center border hover:border-primary transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="w-24 h-24 mb-4 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
+                  <img
+                    src={uploadResource}
+                    className="h-full w-full text-primary object-cover scale-150"
+                  />
+                </div>
+                <h2 className="text-xl font-semibold">Upload Resource</h2>
+                <p className="text-muted-foreground text-sm mt-2">
+                  Upload your study materials here.
+                </p>
+              </motion.div>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      ) : (
+        <div className="relative w-full px-2">
+          <div className="border border-gray-300/90 flex items-center justify-between px-6 py-2 gap-3 w-full bg-gray-100 mt-4 mb-2 rounded-3xl">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <div className="group relative">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      dispatch(
+                        updateResourceFilterField({ field: "type", value: "" })
+                      );
+                      dispatch(resetResourceFilters());
+                      navigate("/resources");
+                    }}
+                    className="flex items-center justify-center bg-gray-200/60 hover:bg-gray-200 p-2 rounded-md text-gray-800 hover:text-blue-600 transition-colors duration-200"
+                    aria-label="Back to boards overview"
+                  >
+                    <IoArrowBackSharp size={20} />
+                  </motion.button>
+                </div>
+              </div>
+              <h1 className="text-2xl font-bold text-center lg:mb-0.5">
+                {getTitle(resourceFilters.type)}
+              </h1>
+            </div>
+            <div
+              onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+              className="flex lg:hidden items-center gap-2 bg-gray-200/60 text-blue-700 font-semibold px-3 py-1.5 rounded-xl transition-colors duration-300"
+            >
+              <span className="text-lg">Filters</span>
+              <div className="flex items-center justify-center w-8 h-8 text-blue-500 bg-blue-200/70 rounded-full p-1">
+                <FcFilledFilter size={20} />
+              </div>
+            </div>
+            <SearchBar classes="hidden lg:block w-[300px]" />
+          </div>
+          <SearchBar classes="lg:hidden px-2 pb-2" />
+          <div className="flex lg:flex-row gap-3 min-h-[600px]">
+            <ResourceFilter
+              isFilterExpanded={isFilterExpanded}
+              setIsFilterExpanded={setIsFilterExpanded}
+            />
+            <div className="w-full max-h-screen border border-gray-300/90 overflow-y-auto rounded-3xl px-2">
+              {filteredResources.length > 0 ? (
+                <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pt-4 pb-6">
+                  {filteredResources
+                    .filter(
+                      (resource) => resource.type === resourceFilters.type
+                    )
+                    .map((resource, i) => (
+                      <motion.div
+                        key={resource.id}
+                        variants={cardVariants}
+                        initial="hidden"
+                        animate="visible"
+                        custom={i}
+                        className="bg-white/90 shadow-sm rounded-3xl overflow-hidden border border-gray-300 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 group"
+                      >
+                        <div className="p-5 flex flex-col h-full">
+                          <div className="flex items-center gap-3 mb-4 ">
+                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
+                              <img
+                                src={getResourceTypeIcon(resource.type)}
+                                className="h-full w-full text-primary object-cover p-1"
+                              />
+                            </div>
+                            <h2 className="text-lg font-bold">
+                              {resource.title}
+                            </h2>
+                          </div>
+
+                          <div className="text-sm text-gray-900 space-y-1 flex-1">
+                            <p>
+                              <strong>Subject:</strong> {resource.subjectName} (
+                              {resource.subjectCode})
+                            </p>
+                            <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                              <p>
+                                <strong>Branch:</strong> {resource.branch}
+                              </p>
+                              <p>
+                                <strong>Year:</strong> {resource.year}
+                              </p>
+                              <p>
+                                <strong>Semester:</strong> {resource.semester}
+                              </p>
+                              <p>
+                                <strong>Pattern:</strong> {resource.pattern}
+                              </p>
+                            </div>
+                            <p>
+                              <strong>Pages:</strong> {resource.metadata.pages}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              <strong>Uploaded By:</strong>
+                              <UploaderInfo username={resource.uploadedBy} />
+                            </div>
+                          </div>
+
+                          <div className="mt-6 flex items-center justify-between">
+                            <button
+                              onClick={() =>
+                                dispatch(
+                                  setShowPdf({
+                                    pdfId: resource.resourceDOKey,
+                                    title: resource.title,
+                                    totalPages: resource.metadata.pages,
+                                  })
+                                )
+                              }
+                              className="px-6 py-1 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
+                            >
+                              View
+                            </button>
+                            {changingBookmarkState &&
+                            resource.id === itemToChangeBookmarkState ? (
+                              <div
+                                role="status"
+                                className="inline-flex items-center justify-center p-2"
+                              >
+                                <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                                <span className="sr-only">Changing...</span>
+                              </div>
+                            ) : (
+                              <motion.button
+                                whileHover={{ scale: 1.2 }}
+                                whileTap={{ scale: 0.8 }}
+                                onClick={
+                                  !user
+                                    ? () => navigate("/auth#login")
+                                    : () => handleBookmark(resource)
+                                }
+                                className={`rounded-full p-2 ${
+                                  isBookmarked(resource.id)
+                                    ? "text-yellow-500 bg-yellow-100"
+                                    : "text-gray-400 bg-gray-100"
+                                } transition-all duration-200 mb-1 md:mb-0`}
+                              >
+                                <FiBookmark
+                                  className={`w-5 h-5 ${
+                                    isBookmarked(resource.id)
+                                      ? "fill-current"
+                                      : ""
+                                  }`}
+                                />
+                              </motion.button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center w-full h-full">
+                  <NoStudyResources />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

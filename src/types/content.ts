@@ -1,10 +1,10 @@
 export interface Paper {
   id: string;
 
-  paperType: 'Insem' | 'Endsem';
-  branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
-  pattern: '2019' | '2024';
-  year?: 'SE' | 'TE' | 'BE';
+  paperType: "Insem" | "Endsem";
+  branch: "FE" | "CS" | "IT" | "Civil" | "Mechanical";
+  pattern: "2019" | "2024";
+  year?: "SE" | "TE" | "BE";
   semester: number;
   subjectName: string;
   subjectId: string;
@@ -13,17 +13,24 @@ export interface Paper {
 
   paperDOKey: string;
 
-  uploadedAt: string;
+  metadata: {
+    pages: number;
+    size: number;
+    type: string;
+  };
+
   uploadedBy: string;
+
+  uploadedAt: string;
 }
 
 export interface Resource {
   id: string;
 
-  type: 'book' | 'notes' | 'video' | 'decodes' | 'other';
-  branch: 'FE' | 'CS' | 'IT' | 'Civil' | 'Mechanical';
-  pattern: '2019' | '2024';
-  year: 'SE' | 'TE' | 'BE' | '';
+  type: "book" | "notes" | "video" | "decodes" | "other";
+  branch: "FE" | "CS" | "IT" | "Civil" | "Mechanical";
+  pattern: "2019" | "2024";
+  year: "SE" | "TE" | "BE" | "";
   semester: number;
   subjectName: string;
   subjectCode: string;
@@ -33,8 +40,16 @@ export interface Resource {
 
   resourceDOKey: string;
 
-  uploadedAt: string;
+  metadata: {
+    pages: number;
+    size: number;
+    type: string;
+
+  };
+
   uploadedBy: string;
+
+  uploadedAt: string;
 }
 
 export interface Subject {
@@ -49,20 +64,26 @@ export interface Bookmark {
 
   contentId: string; //specific paper or study-resource id
 
-  type: 'Paper' | 'Resource';
-  paperType: 'Insem' | 'Endsem' | null;
-  resourceType: 'book' | 'notes' | 'video' | 'decodes' | 'other' | null;
+  type: "Paper" | "Resource";
+  paperType: "Insem" | "Endsem" | null;
+  resourceType: "book" | "notes" | "video" | "decodes" | "other" | null;
 
   title: string;
   name: string;
   description: string;
 
   resourceDOKey: string;
-  
+
+  metadata: {
+    pages: number;
+    size: number;
+    type: string;
+  };
+
   createdAt: string;
 }
 
-export type Priority = 'low' | 'medium' | 'high';
+export type Priority = "low" | "medium" | "high";
 
 export interface Task {
   id: string;
@@ -116,4 +137,4 @@ export interface ListForm {
   title: string;
   boardId: string;
   position?: number;
-} 
+}

@@ -24,12 +24,12 @@ function App() {
   const { user, profile } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user) return;
     const unsubscribeProfile = authService.listenUserProfile(user.uid);
     return () => {
       unsubscribeProfile();
     };
-  }, [user?.uid]);
+  }, [user]);
 
   useEffect(() => {
     if (!user || !profile) return;
