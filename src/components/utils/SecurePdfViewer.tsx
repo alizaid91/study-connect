@@ -88,11 +88,11 @@ const SecurePdfViewer = () => {
           width: isFullscreen ? "100%" : "95%",
           borderRadius: isFullscreen ? 0 : "1.5rem",
         }}
-        className={`flex flex-col bg-white relative overflow-hidden`}
+        className={`pt-4 flex flex-col bg-white relative overflow-hidden`}
         variants={modalVariants}
       >
         {/* Top right actions */}
-        <div className="absolute top-2 right-2 flex items-center gap-2 z-20">
+        <div className="absolute top-4 right-5 flex items-center gap-2 z-20">
           {/* Fullscreen toggle */}
           <button
             onClick={() => setIsFullscreen((prev) => !prev)}
