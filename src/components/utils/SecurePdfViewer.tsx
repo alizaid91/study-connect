@@ -1,6 +1,5 @@
 import { Viewer, Worker } from "@react-pdf-viewer/core";
 import { toolbarPlugin } from "@react-pdf-viewer/toolbar";
-import { zoomPlugin } from "@react-pdf-viewer/zoom";
 import type {
   ToolbarSlot,
   TransformToolbarSlot,
@@ -10,140 +9,24 @@ import { CgCloseO } from "react-icons/cg";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/toolbar/lib/styles/index.css";
-import "@react-pdf-viewer/zoom/lib/styles/index.css";
 
 import { motion } from "framer-motion";
 import { clearShowPdf } from "../../store/slices/globalPopups";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { auth } from "../../config/firebase";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 
 const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
-
-interface TouchState {
-  initialDistance: number;
-  initialZoom: number;
-  isPinching: boolean;
-}
 
 const SecurePdfViewer = () => {
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
   const [headers, setHeaders] = useState<Record<string, string>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentZoom, setCurrentZoom] = useState<number>(
-    window.innerWidth < 768 ? 0.6 : 1.0
-  );
-  const [touchState, setTouchState] = useState<TouchState>({
-    initialDistance: 0,
-    initialZoom: 0,
-    isPinching: false,
-  });
-
   const dispatch = useDispatch();
-  const pdfContainerRef = useRef<HTMLDivElement>(null);
-
-  // Initialize zoom plugin
-  const zoomPluginInstance = zoomPlugin({
-    enableShortcuts: false,
-  });
-
-  // Get zoom methods from plugin
-  const { zoomTo } = zoomPluginInstance;
 
   const toolbarPluginInstance = toolbarPlugin();
   const { renderDefaultToolbar, Toolbar } = toolbarPluginInstance;
-
-  // Zoom limits
-  const MIN_ZOOM = 0.3;
-  const MAX_ZOOM = 4.0;
-
-  // Calculate distance between two touch points
-  const getTouchDistance = useCallback((touches: TouchList): number => {
-    if (touches.length < 2) return 0;
-
-    const touch1 = touches[0];
-    const touch2 = touches[1];
-
-    const dx = touch1.clientX - touch2.clientX;
-    const dy = touch1.clientY - touch2.clientY;
-
-    return Math.sqrt(dx * dx + dy * dy);
-  }, []);
-
-  // Handle touch start
-  const handleTouchStart = useCallback(
-    (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        const distance = getTouchDistance(e.touches);
-        setTouchState({
-          initialDistance: distance,
-          initialZoom: currentZoom,
-          isPinching: true,
-        });
-      }
-    },
-    [getTouchDistance, currentZoom]
-  );
-
-  // Handle touch move (pinch gesture)
-  const handleTouchMove = useCallback(
-    (e: TouchEvent) => {
-      if (e.touches.length === 2 && touchState.isPinching) {
-        e.preventDefault();
-
-        const currentDistance = getTouchDistance(e.touches);
-        const scale = currentDistance / touchState.initialDistance;
-        const newZoom = touchState.initialZoom * scale;
-
-        // Apply zoom limits
-        const clampedZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
-        
-        // Use zoom plugin to set the zoom level
-        zoomTo(clampedZoom);
-        setCurrentZoom(clampedZoom);
-      }
-    },
-    [getTouchDistance, touchState, MIN_ZOOM, MAX_ZOOM, zoomTo]
-  );
-
-  // Handle touch end
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
-    if (e.touches.length < 2) {
-      setTouchState({
-        initialDistance: 0,
-        initialZoom: 0,
-        isPinching: false,
-      });
-    }
-  }, []);
-
-  // Setup touch event listeners
-  useEffect(() => {
-    const container = pdfContainerRef.current;
-    if (!container) return;
-
-    // Add passive: false to prevent default behavior during pinch
-    const options = { passive: false };
-
-    container.addEventListener("touchstart", handleTouchStart, options);
-    container.addEventListener("touchmove", handleTouchMove, options);
-    container.addEventListener("touchend", handleTouchEnd, options);
-
-    return () => {
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchmove", handleTouchMove);
-      container.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
-
-  // Reset zoom level when switching fullscreen mode
-  useEffect(() => {
-    const newZoom = window.innerWidth < 768 ? 0.6 : 1.0;
-    zoomTo(newZoom);
-    setCurrentZoom(newZoom);
-  }, [isFullscreen, zoomTo]);
 
   const transform: TransformToolbarSlot = (slot: ToolbarSlot) => ({
     ...slot,
@@ -154,10 +37,6 @@ const SecurePdfViewer = () => {
     Open: () => <></>,
     OpenMenuItem: () => <></>,
     FullScreen: () => <></>, // remove default fullscreen button
-    // Keep zoom buttons but hide them in fullscreen
-    ZoomIn: !isFullscreen ? slot.ZoomIn : () => <></>,
-    ZoomOut: !isFullscreen ? slot.ZoomOut : () => <></>,
-    Zoom: !isFullscreen ? slot.Zoom : () => <></>,
   });
 
   const backdropVariants = {
@@ -209,16 +88,11 @@ const SecurePdfViewer = () => {
           width: isFullscreen ? "100%" : "95%",
           borderRadius: isFullscreen ? 0 : "1.5rem",
         }}
-        className={`pt-4 flex flex-col bg-white relative overflow-hidden`}
+        className={`flex flex-col bg-white relative overflow-hidden`}
         variants={modalVariants}
       >
         {/* Top right actions */}
-        <div className="absolute top-4 right-5 flex items-center gap-2 z-20">
-          {/* Zoom level indicator */}
-          <div className="px-2 py-1 rounded-full bg-gray-100 text-xs font-mono text-gray-600">
-            {Math.round(currentZoom * 100)}%
-          </div>
-
+        <div className="absolute top-2 right-2 flex items-center gap-2 z-20">
           {/* Fullscreen toggle */}
           <button
             onClick={() => setIsFullscreen((prev) => !prev)}
@@ -254,19 +128,15 @@ const SecurePdfViewer = () => {
                   <Toolbar>{renderDefaultToolbar(transform)}</Toolbar>
                 </div>
               )}
-              <div
-                ref={pdfContainerRef}
-                className="flex-1 overflow-hidden"
-                style={{ touchAction: "pan-x pan-y" }}
-              >
+              <div className="flex-1 overflow-hidden">
                 <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                   <Viewer
                     fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
                       showPdf.pdfId
                     )}`}
                     httpHeaders={headers}
-                    plugins={[toolbarPluginInstance, zoomPluginInstance]}
-                    defaultScale={window.innerWidth < 768 ? 0.6 : 1.0}
+                    plugins={[toolbarPluginInstance]}
+                    defaultScale={window.innerWidth < 768 ? 0.6 : 1.5}
                   />
                 </Worker>
               </div>
