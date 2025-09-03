@@ -29,9 +29,10 @@ const SecurePdfViewer = () => {
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
   const [headers, setHeaders] = useState<Record<string, string>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(
+  const [baseZoomLevel, setBaseZoomLevel] = useState<number>(
     window.innerWidth < 768 ? 0.6 : 1.5
   );
+  const [visualZoomLevel, setVisualZoomLevel] = useState<number>(1.0);
   const [touchState, setTouchState] = useState<TouchState>({
     initialDistance: 0,
     initialZoom: 0,
@@ -40,6 +41,7 @@ const SecurePdfViewer = () => {
 
   const dispatch = useDispatch();
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
   const toolbarPluginInstance = toolbarPlugin();
   const { renderDefaultToolbar, Toolbar } = toolbarPluginInstance;
@@ -47,6 +49,18 @@ const SecurePdfViewer = () => {
   // Zoom limits
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 3.0;
+
+  // Debounced function to update the actual PDF scale
+  const debouncedUpdatePdfScale = useCallback((newScale: number) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(() => {
+      setBaseZoomLevel(newScale);
+      setVisualZoomLevel(1.0); // Reset visual zoom since base is updated
+    }, 300); // 300ms delay after user stops pinching
+  }, []);
 
   // Calculate distance between two touch points
   const getTouchDistance = useCallback((touches: TouchList): number => {
@@ -69,12 +83,17 @@ const SecurePdfViewer = () => {
         const distance = getTouchDistance(e.touches);
         setTouchState({
           initialDistance: distance,
-          initialZoom: zoomLevel,
+          initialZoom: visualZoomLevel,
           isPinching: true,
         });
+
+        // Clear any pending debounced updates
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
       }
     },
-    [getTouchDistance, zoomLevel]
+    [getTouchDistance, visualZoomLevel]
   );
 
   // Handle touch move (pinch gesture)
@@ -85,26 +104,40 @@ const SecurePdfViewer = () => {
 
         const currentDistance = getTouchDistance(e.touches);
         const scale = currentDistance / touchState.initialDistance;
-        const newZoom = touchState.initialZoom * scale;
+        const newVisualZoom = touchState.initialZoom * scale;
 
-        // Apply zoom limits
-        const clampedZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
-        setZoomLevel(clampedZoom);
+        // Calculate the effective total zoom
+        const totalZoom = baseZoomLevel * newVisualZoom;
+
+        // Apply zoom limits to visual zoom based on total zoom
+        let clampedVisualZoom = newVisualZoom;
+        if (totalZoom < MIN_ZOOM) {
+          clampedVisualZoom = MIN_ZOOM / baseZoomLevel;
+        } else if (totalZoom > MAX_ZOOM) {
+          clampedVisualZoom = MAX_ZOOM / baseZoomLevel;
+        }
+
+        setVisualZoomLevel(clampedVisualZoom);
       }
     },
-    [getTouchDistance, touchState, MIN_ZOOM, MAX_ZOOM]
+    [getTouchDistance, touchState, baseZoomLevel, MIN_ZOOM, MAX_ZOOM]
   );
 
   // Handle touch end
   const handleTouchEnd = useCallback((e: TouchEvent) => {
-    if (e.touches.length < 2) {
+    if (e.touches.length < 2 && touchState.isPinching) {
       setTouchState({
         initialDistance: 0,
         initialZoom: 0,
         isPinching: false,
       });
+
+      // Update the actual PDF scale after pinching ends
+      const finalZoom = baseZoomLevel * visualZoomLevel;
+      const clampedFinalZoom = Math.min(Math.max(finalZoom, MIN_ZOOM), MAX_ZOOM);
+      debouncedUpdatePdfScale(clampedFinalZoom);
     }
-  }, []);
+  }, [touchState, baseZoomLevel, visualZoomLevel, debouncedUpdatePdfScale, MIN_ZOOM, MAX_ZOOM]);
 
   // Setup touch event listeners
   useEffect(() => {
@@ -127,8 +160,19 @@ const SecurePdfViewer = () => {
 
   // Reset zoom level when switching fullscreen mode
   useEffect(() => {
-    setZoomLevel(window.innerWidth < 768 ? 0.6 : 1.5);
+    const newBaseZoom = window.innerWidth < 768 ? 0.6 : 1.5;
+    setBaseZoomLevel(newBaseZoom);
+    setVisualZoomLevel(1.0);
   }, [isFullscreen]);
+
+  // Cleanup debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const transform: TransformToolbarSlot = (slot: ToolbarSlot) => ({
     ...slot,
@@ -171,6 +215,9 @@ const SecurePdfViewer = () => {
 
   if (!showPdf || !headers) return null;
 
+  // Calculate current effective zoom for display
+  const currentZoom = baseZoomLevel * visualZoomLevel;
+
   return (
     <motion.div
       className="fixed inset-0 w-full h-full flex items-center justify-center bg-black/50 z-50 backdrop-blur-sm"
@@ -195,6 +242,11 @@ const SecurePdfViewer = () => {
       >
         {/* Top right actions */}
         <div className="absolute top-4 right-5 flex items-center gap-2 z-20">
+          {/* Zoom level indicator */}
+          <div className="px-2 py-1 rounded-full bg-gray-100 text-xs font-mono text-gray-600">
+            {Math.round(currentZoom * 100)}%
+          </div>
+
           {/* Fullscreen toggle */}
           <button
             onClick={() => setIsFullscreen((prev) => !prev)}
@@ -235,17 +287,29 @@ const SecurePdfViewer = () => {
                 className="flex-1 overflow-hidden"
                 style={{ touchAction: "pan-x pan-y" }}
               >
-                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                  <Viewer
-                    fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
-                      showPdf.pdfId
-                    )}`}
-                    httpHeaders={headers}
-                    plugins={[toolbarPluginInstance]}
-                    defaultScale={zoomLevel}
-                    key={zoomLevel}
-                  />
-                </Worker>
+                <div
+                  style={{
+                    transform: `scale(${visualZoomLevel})`,
+                    transformOrigin: "center center",
+                    transition: touchState.isPinching
+                      ? "none"
+                      : "transform 0.2s ease-out",
+                    height: "100%",
+                    width: "100%",
+                  }}
+                >
+                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                    <Viewer
+                      fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
+                        showPdf.pdfId
+                      )}`}
+                      httpHeaders={headers}
+                      plugins={[toolbarPluginInstance]}
+                      defaultScale={baseZoomLevel}
+                      key={baseZoomLevel}
+                    />
+                  </Worker>
+                </div>
               </div>
             </div>
           </>
