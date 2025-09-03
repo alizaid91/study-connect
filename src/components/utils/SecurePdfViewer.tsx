@@ -305,8 +305,6 @@ const SecurePdfViewer = () => {
                       )}`}
                       httpHeaders={headers}
                       plugins={[toolbarPluginInstance]}
-                      defaultScale={baseZoomLevel}
-                      key={baseZoomLevel}
                     />
                   </Worker>
                 </div>
