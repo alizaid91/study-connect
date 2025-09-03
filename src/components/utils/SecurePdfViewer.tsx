@@ -1,5 +1,6 @@
 import { Viewer, Worker } from "@react-pdf-viewer/core";
 import { toolbarPlugin } from "@react-pdf-viewer/toolbar";
+import { zoomPlugin } from "@react-pdf-viewer/zoom";
 import type {
   ToolbarSlot,
   TransformToolbarSlot,
@@ -9,6 +10,7 @@ import { CgCloseO } from "react-icons/cg";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/toolbar/lib/styles/index.css";
+import "@react-pdf-viewer/zoom/lib/styles/index.css";
 
 import { motion } from "framer-motion";
 import { clearShowPdf } from "../../store/slices/globalPopups";
@@ -29,10 +31,9 @@ const SecurePdfViewer = () => {
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
   const [headers, setHeaders] = useState<Record<string, string>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [baseZoomLevel, setBaseZoomLevel] = useState<number>(
-    window.innerWidth < 768 ? 0.6 : 1.5
+  const [currentZoom, setCurrentZoom] = useState<number>(
+    window.innerWidth < 768 ? 0.6 : 1.0
   );
-  const [visualZoomLevel, setVisualZoomLevel] = useState<number>(1.0);
   const [touchState, setTouchState] = useState<TouchState>({
     initialDistance: 0,
     initialZoom: 0,
@@ -41,26 +42,21 @@ const SecurePdfViewer = () => {
 
   const dispatch = useDispatch();
   const pdfContainerRef = useRef<HTMLDivElement>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Initialize zoom plugin
+  const zoomPluginInstance = zoomPlugin({
+    enableShortcuts: false,
+  });
+
+  // Get zoom methods from plugin
+  const { zoomTo } = zoomPluginInstance;
 
   const toolbarPluginInstance = toolbarPlugin();
   const { renderDefaultToolbar, Toolbar } = toolbarPluginInstance;
 
   // Zoom limits
-  const MIN_ZOOM = 0.5;
-  const MAX_ZOOM = 3.0;
-
-  // Debounced function to update the actual PDF scale
-  const debouncedUpdatePdfScale = useCallback((newScale: number) => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      setBaseZoomLevel(newScale);
-      setVisualZoomLevel(1.0); // Reset visual zoom since base is updated
-    }, 300); // 300ms delay after user stops pinching
-  }, []);
+  const MIN_ZOOM = 0.3;
+  const MAX_ZOOM = 4.0;
 
   // Calculate distance between two touch points
   const getTouchDistance = useCallback((touches: TouchList): number => {
@@ -83,17 +79,12 @@ const SecurePdfViewer = () => {
         const distance = getTouchDistance(e.touches);
         setTouchState({
           initialDistance: distance,
-          initialZoom: visualZoomLevel,
+          initialZoom: currentZoom,
           isPinching: true,
         });
-
-        // Clear any pending debounced updates
-        if (debounceTimeoutRef.current) {
-          clearTimeout(debounceTimeoutRef.current);
-        }
       }
     },
-    [getTouchDistance, visualZoomLevel]
+    [getTouchDistance, currentZoom]
   );
 
   // Handle touch move (pinch gesture)
@@ -104,40 +95,29 @@ const SecurePdfViewer = () => {
 
         const currentDistance = getTouchDistance(e.touches);
         const scale = currentDistance / touchState.initialDistance;
-        const newVisualZoom = touchState.initialZoom * scale;
+        const newZoom = touchState.initialZoom * scale;
 
-        // Calculate the effective total zoom
-        const totalZoom = baseZoomLevel * newVisualZoom;
-
-        // Apply zoom limits to visual zoom based on total zoom
-        let clampedVisualZoom = newVisualZoom;
-        if (totalZoom < MIN_ZOOM) {
-          clampedVisualZoom = MIN_ZOOM / baseZoomLevel;
-        } else if (totalZoom > MAX_ZOOM) {
-          clampedVisualZoom = MAX_ZOOM / baseZoomLevel;
-        }
-
-        setVisualZoomLevel(clampedVisualZoom);
+        // Apply zoom limits
+        const clampedZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
+        
+        // Use zoom plugin to set the zoom level
+        zoomTo(clampedZoom);
+        setCurrentZoom(clampedZoom);
       }
     },
-    [getTouchDistance, touchState, baseZoomLevel, MIN_ZOOM, MAX_ZOOM]
+    [getTouchDistance, touchState, MIN_ZOOM, MAX_ZOOM, zoomTo]
   );
 
   // Handle touch end
   const handleTouchEnd = useCallback((e: TouchEvent) => {
-    if (e.touches.length < 2 && touchState.isPinching) {
+    if (e.touches.length < 2) {
       setTouchState({
         initialDistance: 0,
         initialZoom: 0,
         isPinching: false,
       });
-
-      // Update the actual PDF scale after pinching ends
-      const finalZoom = baseZoomLevel * visualZoomLevel;
-      const clampedFinalZoom = Math.min(Math.max(finalZoom, MIN_ZOOM), MAX_ZOOM);
-      debouncedUpdatePdfScale(clampedFinalZoom);
     }
-  }, [touchState, baseZoomLevel, visualZoomLevel, debouncedUpdatePdfScale, MIN_ZOOM, MAX_ZOOM]);
+  }, []);
 
   // Setup touch event listeners
   useEffect(() => {
@@ -160,19 +140,10 @@ const SecurePdfViewer = () => {
 
   // Reset zoom level when switching fullscreen mode
   useEffect(() => {
-    const newBaseZoom = window.innerWidth < 768 ? 0.6 : 1.5;
-    setBaseZoomLevel(newBaseZoom);
-    setVisualZoomLevel(1.0);
-  }, [isFullscreen]);
-
-  // Cleanup debounce timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
+    const newZoom = window.innerWidth < 768 ? 0.6 : 1.0;
+    zoomTo(newZoom);
+    setCurrentZoom(newZoom);
+  }, [isFullscreen, zoomTo]);
 
   const transform: TransformToolbarSlot = (slot: ToolbarSlot) => ({
     ...slot,
@@ -183,6 +154,10 @@ const SecurePdfViewer = () => {
     Open: () => <></>,
     OpenMenuItem: () => <></>,
     FullScreen: () => <></>, // remove default fullscreen button
+    // Keep zoom buttons but hide them in fullscreen
+    ZoomIn: !isFullscreen ? slot.ZoomIn : () => <></>,
+    ZoomOut: !isFullscreen ? slot.ZoomOut : () => <></>,
+    Zoom: !isFullscreen ? slot.Zoom : () => <></>,
   });
 
   const backdropVariants = {
@@ -214,9 +189,6 @@ const SecurePdfViewer = () => {
   }, []);
 
   if (!showPdf || !headers) return null;
-
-  // Calculate current effective zoom for display
-  const currentZoom = baseZoomLevel * visualZoomLevel;
 
   return (
     <motion.div
@@ -287,27 +259,16 @@ const SecurePdfViewer = () => {
                 className="flex-1 overflow-hidden"
                 style={{ touchAction: "pan-x pan-y" }}
               >
-                <div
-                  style={{
-                    transform: `scale(${visualZoomLevel})`,
-                    transformOrigin: "center center",
-                    transition: touchState.isPinching
-                      ? "none"
-                      : "transform 0.2s ease-out",
-                    height: "100%",
-                    width: "100%",
-                  }}
-                >
-                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                    <Viewer
-                      fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
-                        showPdf.pdfId
-                      )}`}
-                      httpHeaders={headers}
-                      plugins={[toolbarPluginInstance]}
-                    />
-                  </Worker>
-                </div>
+                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                  <Viewer
+                    fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
+                      showPdf.pdfId
+                    )}`}
+                    httpHeaders={headers}
+                    plugins={[toolbarPluginInstance, zoomPluginInstance]}
+                    defaultScale={window.innerWidth < 768 ? 0.6 : 1.0}
+                  />
+                </Worker>
               </div>
             </div>
           </>
