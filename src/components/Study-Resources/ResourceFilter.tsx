@@ -164,7 +164,7 @@ const ResourceFilter = ({
       <AnimatePresence>
         {isFilterExpanded && (
           <motion.div
-            className="fixed inset-0 bg-gray-900/50 z-40"
+            className="fixed inset-0 bg-gray-900/50 z-40 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
@@ -175,7 +175,7 @@ const ResourceFilter = ({
             }}
           >
             <motion.div
-              className="lg:hidden fixed left-0 right-0 bottom-0 bg-white border-t border-blue-200 z-50 shadow-xl rounded-t-3xl p-4 will-change-transform"
+              className="lg:hidden fixed left-0 right-0 bottom-0 bg-white z-50 shadow-xl rounded-t-3xl p-4 will-change-transform px-6"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -186,12 +186,12 @@ const ResourceFilter = ({
               }}
             >
               <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-semibold text-blue-900">
+                <h2 className="text-lg font-bold text-blue-900">
                   Filter Resources
                 </h2>
                 <button
                   onClick={() => setIsFilterExpanded(false)}
-                  className="text-blue-600 text-sm"
+                  className="text-blue-600 text-sm font-medium"
                 >
                   Close
                 </button>

@@ -12,6 +12,21 @@ async function getAuthHeader(): Promise<{ Authorization: string }> {
 }
 
 export const apiService = {
+  // Check user usage and quotas
+  async checkUsage(): Promise<{ usage: any; quotas: any }> {
+    const headers = await getAuthHeader();
+    const response = await fetch(`${AI_URL}/check-usage`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch usage data");
+    }
+
+    return await response.json();
+  },
+
   //health check
   async healthCheck(): Promise<{ status: string }> {
     const headers = await getAuthHeader();

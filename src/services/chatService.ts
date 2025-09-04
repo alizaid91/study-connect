@@ -10,7 +10,6 @@ import {
   deleteDoc,
   updateDoc,
   writeBatch,
-  runTransaction,
 } from "firebase/firestore";
 import { ChatSession, ChatMessage } from "../types/chat";
 import {
@@ -19,7 +18,6 @@ import {
   updateMessageContent,
 } from "../store/slices/chatSlice";
 import { store } from "../store";
-import { UserProfile } from "../types/user";
 import { apiService } from "./apiService";
 
 // Utility to generate safe unique IDs
@@ -28,7 +26,6 @@ const generateId = (prefix: string = "msg") =>
 
 export const chatService = {
   async sendMessage(
-    userId: string,
     sessionId: string,
     content: string
   ): Promise<void> {

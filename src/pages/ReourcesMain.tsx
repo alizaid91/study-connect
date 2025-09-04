@@ -8,7 +8,7 @@ import {
   uploadResource,
 } from "../assets/resources-svg";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
 import { resourcesService } from "../services/resourcesService";
 import { RootState } from "../store";
@@ -35,6 +35,7 @@ import { FiBookmark } from "react-icons/fi";
 import { setShowPdf } from "../store/slices/globalPopups";
 import UploadResourcePopup from "../components/Study-Resources/UploadResourcePopup";
 import UploaderInfo from "../components/Study-Resources/UploaderInfo";
+import { getSubjects } from "../types/Subjects";
 
 const resourcesCards = [
   {
@@ -142,7 +143,7 @@ const ResourcesMain = () => {
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
-      transition: { delay: i * 0.1 },
+      transition: { delay: i * 0.05, duration: 0.3, ease: "easeOut" },
     }),
   };
 
@@ -334,13 +335,210 @@ const ResourcesMain = () => {
               isFilterExpanded={isFilterExpanded}
               setIsFilterExpanded={setIsFilterExpanded}
             />
-            <div className="w-full max-h-screen border border-gray-300/90 overflow-y-auto rounded-3xl px-2">
+            <div
+              className={`relative w-full max-h-screen border border-gray-300/90 ${
+                filteredResources.length !== 0
+                  ? "overflow-y-scroll scroll-smooth will-change-transform"
+                  : "overflow-y-hidden"
+              } rounded-3xl`}
+            >
+              {/* Sticky Filter Bar */}
+              <div className="rounded-t-3xl backdrop-blur-md sticky top-0 left-0 w-full py-3 bg-black/10 flex flex-nowrap overflow-x-auto gap-3 px-4 shadow-sm z-10">
+                {/* Active Branch Chip */}
+                <AnimatePresence>
+                  {resourceFilters.branch !== "" && (
+                    <motion.div
+                      key={resourceFilters.branch}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      onClick={() => {
+                        dispatch(
+                          updateResourceFilterField({
+                            field: "year",
+                            value: "",
+                          })
+                        );
+                        dispatch(
+                          updateResourceFilterField({
+                            field: "branch",
+                            value: "",
+                          })
+                        );
+                        dispatch(
+                          updateResourceFilterField({
+                            field: "semester",
+                            value: "",
+                          })
+                        );
+                        dispatch(
+                          updateResourceFilterField({
+                            field: "subjectName",
+                            value: "",
+                          })
+                        );
+                      }}
+                      className="cursor-pointer bg-blue-500 text-white shadow-md rounded-3xl px-6 py-2 font-medium"
+                    >
+                      {resourceFilters.branch}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Branch/Year Chips */}
+                {resourceFilters.branch !== "FE" && (
+                  <div className="flex gap-3 pl-4 flex-nowrap flex-shrink-0">
+                    {!resourceFilters.branch
+                      ? ["FE", "CS", "IT"].map((branch) => (
+                          <motion.div
+                            key={branch}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 1 }}
+                            onClick={() => {
+                              dispatch(
+                                updateResourceFilterField({
+                                  field: "branch",
+                                  value: branch,
+                                })
+                              );
+                            }}
+                            className="cursor-pointer bg-white shadow-md rounded-3xl px-6 py-2 font-medium"
+                          >
+                            {branch}
+                          </motion.div>
+                        ))
+                      : resourceFilters.branch !== "FE"
+                      ? ["SE", "TE", "BE"].map((year) => (
+                          <motion.div
+                            key={year}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 1 }}
+                            onClick={() => {
+                              dispatch(
+                                updateResourceFilterField({
+                                  field: "year",
+                                  value:
+                                    resourceFilters.year === year ? "" : year,
+                                })
+                              );
+                              dispatch(
+                                updateResourceFilterField({
+                                  field: "semester",
+                                  value: "",
+                                })
+                              );
+                              dispatch(
+                                updateResourceFilterField({
+                                  field: "subjectName",
+                                  value: "",
+                                })
+                              );
+                            }}
+                            className={`cursor-pointer ${
+                              resourceFilters.year === year
+                                ? "bg-blue-500 text-white"
+                                : "bg-white"
+                            } shadow-md rounded-3xl px-6 py-2 font-medium`}
+                          >
+                            {year}
+                          </motion.div>
+                        ))
+                      : null}
+                  </div>
+                )}
+
+                {/* Semester Chips */}
+                {resourceFilters.branch !== "FE" && resourceFilters.year && (
+                  <div className="flex gap-3 pl-4 flex-nowrap flex-shrink-0">
+                    {(resourceFilters.year === "SE"
+                      ? ["3", "4"]
+                      : resourceFilters.year === "TE"
+                      ? ["5", "6"]
+                      : resourceFilters.year === "BE"
+                      ? ["7", "8"]
+                      : []
+                    ).map((sem) => (
+                      <motion.div
+                        key={sem}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 1 }}
+                        onClick={() => {
+                          dispatch(
+                            updateResourceFilterField({
+                              field: "semester",
+                              value:
+                                resourceFilters.semester === sem ? "" : sem,
+                            })
+                          );
+                          dispatch(
+                            updateResourceFilterField({
+                              field: "subjectName",
+                              value: "",
+                            })
+                          );
+                        }}
+                        className={`cursor-pointer ${
+                          resourceFilters.semester === sem
+                            ? "bg-blue-500 text-white"
+                            : "bg-white"
+                        } shadow-md rounded-3xl px-6 py-2 font-medium`}
+                      >
+                        Sem {sem}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Subject Chips */}
+                {resourceFilters.branch &&
+                  (resourceFilters.branch === "FE" ||
+                    (resourceFilters.year && resourceFilters.semester)) && (
+                    <div className="flex gap-3 pl-4 flex-nowrap flex-shrink-0">
+                      {getSubjects(
+                        resourceFilters.branch,
+                        resourceFilters.branch === "FE"
+                          ? 0
+                          : Number(resourceFilters.semester),
+                        resourceFilters.branch === "FE"
+                          ? "2024Pattern"
+                          : "2019Pattern",
+                        resourceFilters.branch === "FE"
+                          ? undefined
+                          : resourceFilters.year
+                      ).map((subject) => (
+                        <motion.div
+                          key={subject.code}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 1 }}
+                          onClick={() =>
+                            dispatch(
+                              updateResourceFilterField({
+                                field: "subjectName",
+                                value:
+                                  resourceFilters.subjectName === subject.name
+                                    ? ""
+                                    : subject.name,
+                              })
+                            )
+                          }
+                          className={`cursor-pointer ${
+                            resourceFilters.subjectName === subject.name
+                              ? "bg-blue-500 text-white"
+                              : "bg-white"
+                          } shadow-md rounded-3xl px-6 py-2 font-medium`}
+                        >
+                          {subject.code}
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+              </div>
+
+              {/* Resource Cards */}
               {filteredResources.length > 0 ? (
-                <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pt-4 pb-6">
-                  {filteredResources
-                    .filter(
-                      (resource) => resource.type === resourceFilters.type
-                    )
+                <div className="px-4 w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pt-4 pb-6">
+                  {filteredResources.filter((r) => r && r.type === resourceFilters.type)
                     .map((resource, i) => (
                       <motion.div
                         key={resource.id}
@@ -351,6 +549,7 @@ const ResourcesMain = () => {
                         className="bg-white/90 shadow-sm rounded-3xl overflow-hidden border border-gray-300 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 group"
                       >
                         <div className="p-5 flex flex-col h-full">
+                          {/* Header */}
                           <div className="flex items-center gap-3 mb-4 ">
                             <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
                               <img
@@ -363,12 +562,13 @@ const ResourcesMain = () => {
                             </h2>
                           </div>
 
+                          {/* Meta */}
                           <div className="text-sm text-gray-900 space-y-1 flex-1">
                             <p>
                               <strong>Subject:</strong> {resource.subjectName} (
                               {resource.subjectCode})
                             </p>
-                            <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                            <div className="grid gap-1 grid-cols-2">
                               <p>
                                 <strong>Branch:</strong> {resource.branch}
                               </p>
@@ -381,16 +581,26 @@ const ResourcesMain = () => {
                               <p>
                                 <strong>Pattern:</strong> {resource.pattern}
                               </p>
+                              <p>
+                                <strong>Size:</strong>{" "}
+                                {(
+                                  resource.metadata.size /
+                                  (1024 * 1024)
+                                ).toFixed(2)}{" "}
+                                MB
+                              </p>
+                              <p>
+                                <strong>Pages:</strong>{" "}
+                                {resource.metadata.pages}
+                              </p>
                             </div>
-                            <p>
-                              <strong>Pages:</strong> {resource.metadata.pages}
-                            </p>
                             <div className="flex items-center gap-1">
                               <strong>Uploaded By:</strong>
                               <UploaderInfo username={resource.uploadedBy} />
                             </div>
                           </div>
 
+                          {/* Actions */}
                           <div className="mt-6 flex items-center justify-between">
                             <button
                               onClick={() =>
@@ -406,6 +616,7 @@ const ResourcesMain = () => {
                             >
                               View
                             </button>
+
                             {changingBookmarkState &&
                             resource.id === itemToChangeBookmarkState ? (
                               <div
@@ -445,7 +656,7 @@ const ResourcesMain = () => {
                     ))}
                 </div>
               ) : (
-                <div className="flex items-center justify-center w-full h-full">
+                <div className="px-4 flex items-center justify-center w-full h-full">
                   <NoStudyResources />
                 </div>
               )}

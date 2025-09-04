@@ -51,9 +51,12 @@ class AuthService {
     }
 
     // Validate username before creating account
-    const usernameValidation = await apiService.validateUsername(formData.username);
+    const usernameValidation = await apiService.validateUsername(
+      formData.username
+    );
     if (!usernameValidation.success) {
-      const errorMessage = usernameValidation.errors?.[0]?.message || "Invalid username";
+      const errorMessage =
+        usernameValidation.errors?.[0]?.message || "Invalid username";
       throw new Error(errorMessage);
     }
 
@@ -95,7 +98,7 @@ class AuthService {
         boardCount: 0,
         chatSessionCount: 0,
         aiPromptUsage: {
-          date: new Date().toLocaleDateString("en-GB"),
+          date: new Date().toISOString().split("T")[0],
           count: 0,
         },
       },
@@ -135,7 +138,7 @@ class AuthService {
         boardCount: 0,
         chatSessionCount: 0,
         aiPromptUsage: {
-          date: new Date().toLocaleDateString("en-GB"),
+          date: new Date().toISOString().split("T")[0],
           count: 0,
         },
       },

@@ -17,17 +17,16 @@ export const sendMessage = createAsyncThunk(
   "chat/sendMessage",
   async (
     {
-      userId,
       sessionId,
       content,
-    }: { userId: string; sessionId: string; content: string },
+    }: { sessionId: string; content: string },
     { rejectWithValue, dispatch }
   ) => {
     try {
       dispatch(chatSlice.actions.setLoadingAi(true));
       dispatch(chatSlice.actions.setSessionError({ sessionId, error: "" }));
       dispatch(chatSlice.actions.setError(null));
-      return await chatService.sendMessage(userId, sessionId, content);
+      return await chatService.sendMessage(sessionId, content);
     } catch (error: any) {
       console.log("regiecting with error: ", error);
       dispatch(chatSlice.actions.setLoadingAi(false));

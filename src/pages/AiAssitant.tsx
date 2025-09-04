@@ -118,7 +118,6 @@ const AiAssistant = () => {
     if (!input.trim() || !activeSessionId) return;
     dispatch(
       sendMessage({
-        userId: user?.uid,
         sessionId: activeSessionId,
         content: input,
       })

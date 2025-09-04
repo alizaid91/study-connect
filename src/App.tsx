@@ -4,7 +4,8 @@ import AppRouter from "./Routes/AppRouter.tsx";
 import { useSelector } from "react-redux";
 import { RootState } from "./store";
 import { authService } from "./services/authService.ts";
-import { UserProfile } from "./types/user.ts";
+import { apiService } from "./services/apiService.ts";
+import { auth } from "./config/firebase.ts";
 
 // Separate component for scroll to top functionality
 const ScrollToTop = () => {
@@ -21,34 +22,20 @@ const ScrollToTop = () => {
 };
 
 function App() {
-  const { user, profile } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !auth.currentUser) return;
     const unsubscribeProfile = authService.listenUserProfile(user.uid);
+
+    apiService.checkUsage().then(() => {
+      console.log("Usage checked and updated");
+    });
+
     return () => {
       unsubscribeProfile();
     };
   }, [user]);
-
-  useEffect(() => {
-    if (!user || !profile) return;
-
-    const today = new Date().toLocaleDateString("en-GB");
-
-    if (profile.usage.aiPromptUsage?.date !== today) {
-      authService.updateUserProfile(user.uid, {
-        ...profile,
-        usage: {
-          ...profile.usage,
-          aiPromptUsage: {
-            date: today,
-            count: 0,
-          },
-        },
-      } as UserProfile);
-    }
-  }, [user?.uid, profile?.usage.aiPromptUsage?.date]);
 
   return (
     <Router>

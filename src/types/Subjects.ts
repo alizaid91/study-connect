@@ -129,7 +129,6 @@ export const CS_SUBJECTS = {
   },
 };
 
-type Branch = "FE" | "CS" | "IT" | "Civil" | "Mechanical";
 type Year = "SE" | "TE" | "BE";
 type Pattern = "2019Pattern" | "2024Pattern";
 
@@ -140,17 +139,14 @@ interface Subject {
 }
 
 export function getSubjects(
-  branch: Branch,
+  branch: string,
   sem: number,
   pattern: Pattern,
-  year?: Year | ""
+  year?: string | ""
 ): Subject[] {
   if (branch === "FE") {
     // Year is irrelevant for FE
-    const subjects = FE_SUBJECTS[pattern] || [];
-    if (sem === 1) return subjects.slice(0, 5);
-    if (sem === 2) return subjects.slice(5);
-    return [];
+    return FE_SUBJECTS[pattern] || [];
   }
 
   if (!year) {
@@ -162,6 +158,6 @@ export function getSubjects(
   else if (branch === "CS") subjectSource = CS_SUBJECTS;
   else return [];
 
-  const allSubjects: Subject[] = subjectSource[pattern]?.[year] || [];
+  const allSubjects: Subject[] = subjectSource[pattern]?.[year as Year] || [];
   return allSubjects.filter((subj) => subj.semester == sem);
 }

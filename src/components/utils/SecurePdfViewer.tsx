@@ -16,6 +16,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { auth } from "../../config/firebase";
 import { useEffect, useState } from "react";
+import { MdFullscreen } from "react-icons/md";
+import { MdFullscreenExit } from "react-icons/md";
 
 const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
@@ -96,10 +98,10 @@ const SecurePdfViewer = () => {
           {/* Fullscreen toggle */}
           <button
             onClick={() => setIsFullscreen((prev) => !prev)}
-            className="px-2 py-1 rounded-full bg-gray-200 hover:bg-gray-300 transition"
+            className="px-1.5 py-1.5 rounded-full bg-gray-200 hover:bg-gray-300 transition"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           >
-            {isFullscreen ? "🗗" : "⛶"}
+            {isFullscreen ? <MdFullscreenExit size={22} /> : <MdFullscreen size={22} />}
           </button>
 
           {/* Close button */}

@@ -32,10 +32,11 @@ const patterns: Array<"2019" | "2024"> = ["2019", "2024"];
 const years: Array<"SE" | "TE" | "BE"> = ["SE", "TE", "BE"];
 
 const baseInput =
-  "w-full rounded-xl border-0 bg-gray-50 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all duration-200";
+  "w-full rounded-xl border-0 bg-gray-50 pr-4 py-3 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all duration-200";
 const labelCls = "text-sm font-medium text-gray-700 mb-2";
 const errorCls =
   "text-xs text-red-500 mt-2 flex items-center gap-1.5 bg-red-50 px-3 py-2 rounded-lg";
+const maxHeight = window.innerHeight - 26;
 
 const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
   const { profile } = useSelector((s: RootState) => s.auth);
@@ -263,7 +264,8 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
         transition={{ duration: 0.2 }}
       >
         <motion.div
-          className="relative w-full max-w-4xl h-[92vh] bg-white rounded-2xl shadow-xl border-0 flex flex-col overflow-hidden will-change-transform"
+          style={{ height: `${maxHeight}px` }}
+          className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl border-0 flex flex-col overflow-hidden will-change-transform"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -292,9 +294,8 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
             </button>
           </div>
 
-          {/* BODY - Optimized Scroll Container */}
           <div
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-8 py-6"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6"
             style={{
               scrollBehavior: "smooth",
               WebkitOverflowScrolling: "touch",
@@ -304,7 +305,7 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
           >
             <form
               onSubmit={onSubmit}
-              className="grid gap-8 lg:grid-cols-12 pb-4"
+              className="grid gap-8 lg:grid-cols-12"
             >
               {/* LEFT SECTION - File Upload & Basic Info */}
               <div className="lg:col-span-5 space-y-6">
@@ -355,7 +356,7 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
                       </>
                     ) : (
                       <div className="text-center">
-                        <p className="font-medium text-gray-800 mb-1 truncate max-w-[200px]">
+                        <p className="font-medium text-gray-800 mb-1 truncate max-w-[140px]">
                           {file.name}
                         </p>
                         <p className="text-sm text-gray-500">
@@ -443,10 +444,6 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                    Academic Details
-                  </h3>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>Branch</label>
