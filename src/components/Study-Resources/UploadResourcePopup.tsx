@@ -7,6 +7,7 @@ import { RootState } from "../../store";
 import { getSubjects } from "../../types/Subjects";
 import { Resource } from "../../types/content";
 import { apiService } from "../../services/apiService";
+import { getPdfPageCount } from "../../services/pdfService";
 
 interface Props {
   onClose: () => void;
@@ -42,6 +43,7 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
   const { profile } = useSelector((s: RootState) => s.auth);
   const [file, setFile] = useState<File | null>(null);
 
+  //Form States
   const [type, setType] = useState<ResourceType>("notes");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -60,11 +62,22 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
   const [subjectCode, setSubjectCode] = useState("");
   const [subjectName, setSubjectName] = useState("");
 
+  //Subject Options
   const [subjects, setSubjects] = useState<{ name: string; code: string }[]>(
     []
   );
   const [loadingSubjects, setLoadingSubjects] = useState(false);
 
+  // Semester options
+  const semesterOptions = (() => {
+    if (branch === "FE") return [1, 2];
+    if (year === "SE") return [3, 4];
+    if (year === "TE") return [5, 6];
+    if (year === "BE") return [7, 8];
+    return [];
+  })();
+
+  // Submission States
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -117,15 +130,6 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
   useEffect(() => {
     loadSubjects();
   }, [loadSubjects]);
-
-  // Semester options
-  const semesterOptions = (() => {
-    if (branch === "FE") return [1, 2];
-    if (year === "SE") return [3, 4];
-    if (year === "TE") return [5, 6];
-    if (year === "BE") return [7, 8];
-    return [];
-  })();
 
   // Validation
   const validate = () => {
@@ -210,6 +214,8 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
         body: file,
       });
 
+      const pageCount = await getPdfPageCount(file);
+
       // 3. Save resource metadata in Firestore via backend
       const metadata = {
         title: title.trim(),
@@ -225,6 +231,7 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
         resourceKey,
         size: file.size,
         mimeType: file.type,
+        pageCount,
       };
 
       await apiService.saveResource(metadata);
@@ -303,10 +310,7 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
               scrollbarColor: "#CBD5E0 transparent",
             }}
           >
-            <form
-              onSubmit={onSubmit}
-              className="grid gap-8 lg:grid-cols-12"
-            >
+            <form onSubmit={onSubmit} className="grid gap-8 lg:grid-cols-12">
               {/* LEFT SECTION - File Upload & Basic Info */}
               <div className="lg:col-span-5 space-y-6">
                 {/* File Upload Card */}

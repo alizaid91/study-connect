@@ -44,7 +44,6 @@ export interface Resource {
     pages: number;
     size: number;
     type: string;
-
   };
 
   uploadedBy: string;
