@@ -36,6 +36,7 @@ import { setShowPdf } from "../store/slices/globalPopups";
 import UploadResourcePopup from "../components/Study-Resources/UploadResourcePopup";
 import UploaderInfo from "../components/Study-Resources/UploaderInfo";
 import { getSubjects } from "../types/Subjects";
+import ViewCollectionPopup from "../components/Study-Resources/ViewCollectionPopup";
 
 const resourcesCards = [
   {
@@ -89,6 +90,13 @@ const ResourcesMain = () => {
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] =
     useState<string>("");
   const [showUploadPopup, setShowUploadPopup] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState<{
+    open: boolean;
+    resource: Resource | null;
+  }>({
+    open: false,
+    resource: null,
+  });
 
   useEffect(() => {
     if (showUploadPopup) {
@@ -175,36 +183,43 @@ const ResourcesMain = () => {
 
   const handleBookmark = async (resource: Resource) => {
     if (!user) return;
+    console.log(bookmarks);
 
     const existingBookmark = bookmarks.find(
       (bookmark: Bookmark) =>
         bookmark.contentId === resource.id && bookmark.type === "Resource"
     );
+
     setItemToChangeBookmarkState(resource.id);
     setChangingBookmarkState(true);
+
     if (existingBookmark) {
+      // Remove bookmark if it already exists
       await dispatch(removeBookmark(existingBookmark.id));
     } else {
+      // Add new bookmark
       await dispatch(
         addBookmark({
           userId: user.uid,
           contentId: resource.id,
           type: "Resource",
-          title: resource.title,
-          name: resource.title,
           paperType: null,
           resourceType: resource.type,
+          subType: resource.subtype,
+
+          title: resource.title,
+          name: resource.title,
           description: `${resource.branch} - ${resource.year} ${resource.pattern}`,
-          resourceDOKey: resource.resourceDOKey,
-          metadata: {
-            pages: resource.metadata.pages,
-            size: resource.metadata.size,
-            type: resource.metadata.type,
-          },
+
+          // For collections
+          ...(resource.files && { files: resource.files }),
+          ...(resource.videos && { videos: resource.videos }),
+
           createdAt: new Date().toISOString(),
         })
       );
     }
+
     setChangingBookmarkState(false);
   };
 
@@ -227,6 +242,14 @@ const ResourcesMain = () => {
           onUploaded={() => {
             fetchResourcesList();
           }}
+        />
+      )}
+      {showCollectionModal.open && showCollectionModal.resource && (
+        <ViewCollectionPopup
+          onClose={() =>
+            setShowCollectionModal({ open: false, resource: null })
+          }
+          resource={showCollectionModal.resource}
         />
       )}
       {!resourceFilters.type ? (
@@ -538,122 +561,187 @@ const ResourcesMain = () => {
               {/* Resource Cards */}
               {filteredResources.length > 0 ? (
                 <div className="px-4 w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pt-4 pb-6">
-                  {filteredResources.filter((r) => r && r.type === resourceFilters.type)
-                    .map((resource, i) => (
-                      <motion.div
-                        key={resource.id}
-                        variants={cardVariants}
-                        initial="hidden"
-                        animate="visible"
-                        custom={i}
-                        className="bg-white/90 shadow-sm rounded-3xl overflow-hidden border border-gray-300 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 group"
-                      >
-                        <div className="p-5 flex flex-col h-full">
-                          {/* Header */}
-                          <div className="flex items-center gap-3 mb-4 ">
-                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
-                              <img
-                                src={getResourceTypeIcon(resource.type)}
-                                className="h-full w-full text-primary object-cover p-1"
-                              />
-                            </div>
-                            <h2 className="text-lg font-bold">
-                              {resource.title}
-                            </h2>
-                          </div>
+                  {filteredResources
+                    .filter((r) => r && r.type === resourceFilters.type)
+                    .map((resource, i) => {
+                      const isCollection = resource.subtype === "collection";
+                      const firstFile = resource.files?.[0];
+                      const sizeMB = firstFile
+                        ? (firstFile.metadata.size / (1024 * 1024)).toFixed(2)
+                        : 0;
+                      const pages = firstFile?.metadata.pages || 0;
 
-                          {/* Meta */}
-                          <div className="text-sm text-gray-900 space-y-1 flex-1">
-                            <p>
-                              <strong>Subject:</strong> {resource.subjectName} (
-                              {resource.subjectCode})
-                            </p>
-                            <div className="grid gap-1 grid-cols-2">
-                              <p>
-                                <strong>Branch:</strong> {resource.branch}
-                              </p>
-                              <p>
-                                <strong>Year:</strong> {resource.year}
-                              </p>
-                              <p>
-                                <strong>Semester:</strong> {resource.semester}
-                              </p>
-                              <p>
-                                <strong>Pattern:</strong> {resource.pattern}
-                              </p>
-                              <p>
-                                <strong>Size:</strong>{" "}
-                                {(
-                                  resource.metadata.size /
-                                  (1024 * 1024)
-                                ).toFixed(2)}{" "}
-                                MB
-                              </p>
-                              <p>
-                                <strong>Pages:</strong>{" "}
-                                {resource.metadata.pages}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <strong>Uploaded By:</strong>
-                              <UploaderInfo username={resource.uploadedBy} />
-                            </div>
-                          </div>
+                      // Action button text
+                      let actionText = "View";
+                      if (
+                        resource.type === "video" &&
+                        resource.subtype === "single"
+                      )
+                        actionText = "Play";
+                      else if (
+                        resource.type === "video" &&
+                        resource.subtype === "collection"
+                      )
+                        actionText = "View All";
+                      else if (
+                        ["book", "notes", "decodes", "other"].includes(
+                          resource.type
+                        ) &&
+                        resource.subtype === "collection"
+                      )
+                        actionText = "View All";
 
-                          {/* Actions */}
-                          <div className="mt-6 flex items-center justify-between">
-                            <button
-                              onClick={() =>
-                                dispatch(
-                                  setShowPdf({
-                                    pdfId: resource.resourceDOKey,
-                                    title: resource.title,
-                                    totalPages: resource.metadata.pages,
-                                  })
-                                )
-                              }
-                              className="px-6 py-1 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
-                            >
-                              View
-                            </button>
+                      return (
+                        <motion.div
+                          key={resource.id}
+                          initial="hidden"
+                          animate="visible"
+                          custom={i}
+                          variants={cardVariants}
+                          className="bg-white/90 shadow-lg rounded-3xl border border-gray-300 group relative mt-4"
+                        >
+                          {/* Deck-style strips at top */}
+                          {isCollection && (
+                            <div className="absolute -top-4 left-0 right-0 flex flex-col items-center -z-10">
+                              <div className="w-[85%] h-2 bg-gray-200 rounded-t-3xl mb-[1px]"></div>
+                              <div className="w-[90%] h-2 bg-gray-300 rounded-t-3xl mb-[1px]"></div>
+                            </div>
+                          )}
 
-                            {changingBookmarkState &&
-                            resource.id === itemToChangeBookmarkState ? (
-                              <div
-                                role="status"
-                                className="inline-flex items-center justify-center p-2"
-                              >
-                                <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                                <span className="sr-only">Changing...</span>
-                              </div>
-                            ) : (
-                              <motion.button
-                                whileHover={{ scale: 1.2 }}
-                                whileTap={{ scale: 0.8 }}
-                                onClick={
-                                  !user
-                                    ? () => navigate("/auth#login")
-                                    : () => handleBookmark(resource)
-                                }
-                                className={`rounded-full p-2 ${
-                                  isBookmarked(resource.id)
-                                    ? "text-yellow-500 bg-yellow-100"
-                                    : "text-gray-400 bg-gray-100"
-                                } transition-all duration-200 mb-1 md:mb-0`}
-                              >
-                                <FiBookmark
-                                  className={`w-5 h-5 ${
-                                    isBookmarked(resource.id)
-                                      ? "fill-current"
-                                      : ""
-                                  }`}
+                          <div className="p-5 flex flex-col h-full">
+                            {/* Header */}
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300/40 rounded-full bg-gray-200/60">
+                                <img
+                                  src={getResourceTypeIcon(resource.type)}
+                                  className="h-full w-full text-primary object-cover p-1"
                                 />
-                              </motion.button>
-                            )}
+                              </div>
+                              <h2 className="text-lg font-bold">
+                                {resource.title}
+                              </h2>
+                            </div>
+
+                            {/* Meta */}
+                            <div className="text-sm text-gray-900 space-y-1 flex-1">
+                              <p>
+                                <strong>Subject:</strong> {resource.subjectName}{" "}
+                                ({resource.subjectCode})
+                              </p>
+                              <div className="grid gap-1 grid-cols-2">
+                                <p>
+                                  <strong>Branch:</strong> {resource.branch}
+                                </p>
+                                <p>
+                                  <strong>Year:</strong> {resource.year}
+                                </p>
+                                <p>
+                                  <strong>Semester:</strong> {resource.semester}
+                                </p>
+                                <p>
+                                  <strong>Pattern:</strong> {resource.pattern}
+                                </p>
+                                {resource.type !== "video" && !isCollection && (
+                                  <>
+                                    <p>
+                                      <strong>Size:</strong> {sizeMB} MB
+                                    </p>
+                                    <p>
+                                      <strong>Pages:</strong> {pages}
+                                    </p>
+                                  </>
+                                )}
+                                {isCollection &&
+                                  (resource.type === "video" ? (
+                                    <p>
+                                      <strong>Videos:</strong>{" "}
+                                      {resource.videos?.length || 0}
+                                    </p>
+                                  ) : (
+                                    <p>
+                                      <strong>Files:</strong>{" "}
+                                      {resource.files?.length || 0}
+                                    </p>
+                                  ))}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <strong>Uploaded By:</strong>
+                                <UploaderInfo username={resource.uploadedBy} />
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="mt-6 flex items-center justify-between">
+                              <button
+                                onClick={() => {
+                                  if (resource.subtype === "single") {
+                                    if (resource.type === "video") {
+                                      // Play single video
+                                      window.open(
+                                        resource.videos?.[0]?.url,
+                                        "_blank"
+                                      );
+                                    } else {
+                                      // View single file
+                                      dispatch(
+                                        setShowPdf({
+                                          pdfId:
+                                            firstFile?.resourceDOKey as string,
+                                          title: resource.title,
+                                          totalPages: pages,
+                                        })
+                                      );
+                                    }
+                                  } else {
+                                    setShowCollectionModal({
+                                      open: true,
+                                      resource,
+                                    });
+                                  }
+                                }}
+                                className="px-6 py-1 bg-blue-600 rounded-xl text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
+                              >
+                                {actionText}
+                              </button>
+
+                              {changingBookmarkState &&
+                              resource.id === itemToChangeBookmarkState ? (
+                                <div
+                                  role="status"
+                                  className="inline-flex items-center justify-center p-2"
+                                >
+                                  <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                                  <span className="sr-only">Changing...</span>
+                                </div>
+                              ) : (
+                                <motion.button
+                                  whileHover={{ scale: 1.2 }}
+                                  whileTap={{ scale: 0.8 }}
+                                  onClick={
+                                    !user
+                                      ? () => navigate("/auth#login")
+                                      : () => handleBookmark(resource)
+                                  }
+                                  className={`rounded-full p-2 ${
+                                    isBookmarked(resource.id)
+                                      ? "text-yellow-500 bg-yellow-100"
+                                      : "text-gray-400 bg-gray-100"
+                                  } transition-all duration-200 mb-1 md:mb-0`}
+                                >
+                                  <FiBookmark
+                                    className={`w-5 h-5 ${
+                                      isBookmarked(resource.id)
+                                        ? "fill-current"
+                                        : ""
+                                    }`}
+                                  />
+                                </motion.button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      );
+                    })}
                 </div>
               ) : (
                 <div className="px-4 flex items-center justify-center w-full h-full">

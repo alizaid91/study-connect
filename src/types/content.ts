@@ -28,6 +28,8 @@ export interface Resource {
   id: string;
 
   type: "book" | "notes" | "video" | "decodes" | "other";
+  subtype: "single" | "collection";
+
   branch: "FE" | "CS" | "IT" | "Civil" | "Mechanical";
   pattern: "2019" | "2024";
   year: "SE" | "TE" | "BE" | "";
@@ -38,16 +40,24 @@ export interface Resource {
   title: string;
   description: string;
 
-  resourceDOKey: string;
+  // For file collections
+  files?: {
+    name: string; // e.g., "Unit 1 Notes"
+    resourceDOKey: string; // path in DO Space
+    metadata: {
+      pages: number;
+      size: number;
+      type: string;
+    };
+  }[];
 
-  metadata: {
-    pages: number;
-    size: number;
-    type: string;
-  };
+  // For video playlists
+  videos?: {
+    title: string;
+    url: string; // YouTube or other
+  }[];
 
   uploadedBy: string;
-
   uploadedAt: string;
 }
 
@@ -66,18 +76,28 @@ export interface Bookmark {
   type: "Paper" | "Resource";
   paperType: "Insem" | "Endsem" | null;
   resourceType: "book" | "notes" | "video" | "decodes" | "other" | null;
+  subType?: "single" | "collection";
 
   title: string;
   name: string;
   description: string;
 
-  resourceDOKey: string;
+  // For file collections
+  files?: {
+    name: string; // e.g., "Unit 1 Notes"
+    resourceDOKey: string; // path in DO Space
+    metadata: {
+      pages: number;
+      size: number;
+      type: string;
+    };
+  }[];
 
-  metadata: {
-    pages: number;
-    size: number;
-    type: string;
-  };
+  // For video playlists
+  videos?: {
+    title: string;
+    url: string; // YouTube or other
+  }[];
 
   createdAt: string;
 }

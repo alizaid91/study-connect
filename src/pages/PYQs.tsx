@@ -345,12 +345,17 @@ const PYQs: React.FC = () => {
           title: paper.subjectName,
           name: paper.paperName,
           description: `${paper.branch} - ${paper.year} ${paper.pattern}`,
-          resourceDOKey: paper.paperDOKey,
-          metadata: {
-            pages: paper.metadata.pages,
-            size: paper.metadata.size,
-            type: paper.metadata.type,
-          },
+          files: [
+            {
+              name: paper.paperName,
+              resourceDOKey: paper.paperDOKey,
+              metadata: {
+                pages: paper.metadata.pages,
+                size: paper.metadata.size,
+                type: paper.metadata.type,
+              },
+            },
+          ],
           createdAt: new Date().toISOString(),
         })
       );
