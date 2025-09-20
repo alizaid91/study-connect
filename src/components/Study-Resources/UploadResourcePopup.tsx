@@ -786,44 +786,49 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
                       {videoCollection.length > 0 && (
                         <div>
                           {videoCollection.map((video, idx) => (
-                            <div
-                              key={idx}
-                              className="flex flex-col sm:flex-row sm:items-center gap-3"
-                            >
-                              <h2 className="font-semibold">Video</h2>
-                              <input
-                                type="text"
-                                className={`${baseInput} flex-1`}
-                                placeholder="Video Title"
-                                value={video.title}
-                                onChange={(e) =>
-                                  setVideoCollection((prev) => {
-                                    const newCollection = [...prev];
-                                    newCollection[idx].title = e.target.value;
-                                    return newCollection;
-                                  })
-                                }
-                              />
-                              <input
-                                type="url"
-                                className={`${baseInput} flex-1`}
-                                placeholder="YouTube Link"
-                                value={video.url}
-                                onChange={(e) =>
-                                  setVideoCollection((prev) => {
-                                    const newCollection = [...prev];
-                                    newCollection[idx].url = e.target.value;
-                                    return newCollection;
-                                  })
-                                }
-                              />
-                            </div>
+                            <>
+                              <div
+                                key={idx}
+                                className="flex flex-col sm:flex-row sm:items-center gap-3"
+                              >
+                                <h2 className="font-semibold">Video</h2>
+                                <input
+                                  type="text"
+                                  className={`${baseInput} flex-1`}
+                                  placeholder="Video Title"
+                                  value={video.title}
+                                  onChange={(e) =>
+                                    setVideoCollection((prev) => {
+                                      const newCollection = [...prev];
+                                      newCollection[idx].title = e.target.value;
+                                      return newCollection;
+                                    })
+                                  }
+                                />
+                                <input
+                                  type="url"
+                                  className={`${baseInput} flex-1`}
+                                  placeholder="YouTube Link"
+                                  value={video.url}
+                                  onChange={(e) =>
+                                    setVideoCollection((prev) => {
+                                      const newCollection = [...prev];
+                                      newCollection[idx].url = e.target.value;
+                                      return newCollection;
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                {errors[`video-url-${idx}`] && (
+                                  <div className={errorCls}>
+                                    <FiAlertCircle size={16} />{" "}
+                                    {errors[`video-url-${idx}`]}
+                                  </div>
+                                )}
+                              </div>
+                            </>
                           ))}
-                        </div>
-                      )}
-                      {errors.youtubeLink && (
-                        <div className={errorCls}>
-                          <FiAlertCircle size={16} /> {errors.youtubeLink}
                         </div>
                       )}
                     </div>
@@ -837,11 +842,25 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
                       </h1>
                       <div className="space-y-4">
                         {videoCollection.map((video, idx) => (
-                          <div
-                            key={idx}
-                            className="flex flex-col sm:flex-row sm:items-center gap-3"
-                          >
-                            <h2 className="font-semibold">{idx + 1}</h2>
+                          <div key={idx} className="flex flex-col gap-3">
+                            <div className="flex items-center justify-between gap-3 w-full px-2">
+                              <h2 className="font-semibold">{idx + 1}</h2>
+                              <RiDeleteBin6Line
+                                size={22}
+                                className={`${
+                                  videoCollection.length > 1
+                                    ? "text-red-500 hover:text-red-600 cursor-pointer"
+                                    : "text-gray-500"
+                                } transition-all mb-1`}
+                                onClick={() => {
+                                  if (videoCollection.length > 1) {
+                                    setVideoCollection((prev) =>
+                                      prev.filter((_, i) => i !== idx)
+                                    );
+                                  }
+                                }}
+                              />
+                            </div>
                             <input
                               type="text"
                               className={`${baseInput} flex-1`}
@@ -868,21 +887,12 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
                                 })
                               }
                             />
-                            <RiDeleteBin6Line
-                              size={22}
-                              className={`${
-                                videoCollection.length > 1
-                                  ? "text-red-500 hover:text-red-600 cursor-pointer"
-                                  : "text-gray-500"
-                              } transition-all`}
-                              onClick={() => {
-                                if (videoCollection.length > 1) {
-                                  setVideoCollection((prev) =>
-                                    prev.filter((_, i) => i !== idx)
-                                  );
-                                }
-                              }}
-                            />
+                            {errors[`video-url-${idx}`] && (
+                              <div className={errorCls}>
+                                <FiAlertCircle size={16} />{" "}
+                                {errors[`video-url-${idx}`]}
+                              </div>
+                            )}
                           </div>
                         ))}
                         <button
@@ -982,9 +992,7 @@ const UploadResourcePopup = ({ onClose, onUploaded }: Props) => {
                           {pdfCollection.map((doc, idx) => (
                             <div key={idx}>
                               <div className="mb-2 flex items-center justify-between px-2">
-                                <h2 className="text-sm">
-                                  Document {idx + 1}
-                                </h2>
+                                <h2 className="text-sm">Document {idx + 1}</h2>
                                 <RiDeleteBin6Line
                                   size={22}
                                   className={`${

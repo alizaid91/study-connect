@@ -10,6 +10,8 @@ interface ViewCollectionPopupProps {
   bookmark?: Bookmark;
 }
 
+const maxHeight = window.innerHeight - 26;
+
 const ViewCollectionPopup = ({
   onClose,
   resource,
@@ -32,6 +34,7 @@ const ViewCollectionPopup = ({
       >
         <motion.div
           className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
+          style={{ maxHeight: `${maxHeight}px` }}
           initial={{ z: 40, opacity: 0, scale: 0.95 }}
           animate={{ z: 0, opacity: 1, scale: 1 }}
           exit={{ z: 40, opacity: 0, scale: 0.95 }}

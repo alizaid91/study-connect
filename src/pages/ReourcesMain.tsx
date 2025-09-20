@@ -99,13 +99,13 @@ const ResourcesMain = () => {
   });
 
   useEffect(() => {
-    if (showUploadPopup) {
+    if (showUploadPopup || showCollectionModal.open) {
       document.body.style.overflow = "hidden";
     }
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [showUploadPopup]);
+  }, [showUploadPopup, showCollectionModal.open]);
 
   // refetch logic extracted for reuse
   const fetchResourcesList = useCallback(async () => {
