@@ -72,32 +72,21 @@ export const apiService = {
     return { reader, decoder };
   },
 
-  /**
-   * Create a Razorpay subscription for a user (auth required)
-   */
-  async getSubscriptionDetails(userId: string): Promise<{
-    subscriptionId: string;
-    razorpayKey: string;
-  }> {
+  async createOrder(planId: string, coupon?: string) {
     const headers = await getAuthHeader();
-
-    const response = await fetch(
-      `https://ad543adf137c.ngrok-free.app/api/razorpay/create-subscription`,
-      {
-        method: "POST",
-        headers: {
-          ...headers,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId }),
-      }
-    );
-
+    const response = await fetch(`${AI_URL}/api/razorpay/create-order`, {
+      method: "POST",
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ planId, coupon }),
+    });
     if (!response.ok) {
-      throw new Error("Failed to create subscription");
+      const err = await response.json().catch(() => ({ error: "Failed" }));
+      throw new Error(err.error || "Failed to create order");
     }
-
-    return await response.json();
+    return response.json(); // { orderId, amount, currency, razorpayKeyId, planId }
   },
 
   /**

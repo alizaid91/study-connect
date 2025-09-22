@@ -47,7 +47,16 @@ const features: Feature[] = [
     },
   },
   {
-    name: "Premium Resources (Eg. Topper Notes)",
+    name: "Download PYQs and Resources PDFs",
+    availableForFree: {
+      isAvailable: false,
+    },
+    availableForPro: {
+      isAvailable: true,
+    },
+  },
+  {
+    name: "Premium Study Resources",
     availableForFree: {
       isAvailable: false,
     },

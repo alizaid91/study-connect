@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { apiService } from "../services/apiService";
 import { Link } from "react-router-dom";
@@ -50,11 +50,19 @@ export const Checkout: React.FC = () => {
     value: 0,
   });
   const [showCouponInput, setShowCouponInput] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [error, setError] = useState("");
 
   const subtotal = selectedPlan.price;
   const finalPrice = subtotal - discount.value;
+
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setDiscount({ percent: 0, value: 0 });
+    setError("");
+    setCoupon("");
+  }, [selectedPlan]);
 
   const applyCoupon = async () => {
     if (!coupon.trim()) {
@@ -68,7 +76,7 @@ export const Checkout: React.FC = () => {
     }
 
     setError("");
-    setLoading(true);
+    setCouponChecking(true);
 
     try {
       const data = await apiService.verifyCoupon(coupon);
@@ -91,7 +99,7 @@ export const Checkout: React.FC = () => {
       setError(err.message || "Invalid coupon code!");
     }
 
-    setLoading(false);
+    setCouponChecking(false);
   };
 
   const removeCoupon = () => {
@@ -103,6 +111,52 @@ export const Checkout: React.FC = () => {
     setCoupon("");
     setError("");
   };
+
+  async function handleContinueToPayment() {
+    setPaymentProcessing(true);
+    setError("");
+    try {
+      const resp = await apiService.createOrder(
+        selectedPlan.id,
+        appliedCoupon || undefined
+      );
+      // resp.orderId (razorpay order id), resp.amount (paise), resp.razorpayKeyId
+      const options = {
+        key: resp.razorpayKeyId,
+        amount: resp.amount,
+        currency: "INR",
+        name: "Study Connect",
+        description: `${selectedPlan.name} plan`,
+        order_id: resp.orderId,
+        handler: async function (paymentResult: any) {
+          // Payment succeeded in client — optionally call backend confirm endpoint
+          // but primary processing is via webhook. You can still update UI optimistically.
+          console.log("Payment success (client):", paymentResult);
+          // optional: call backend to mark immediate success or fetch updated profile
+          // await apiService.postPaymentConfirmation(paymentResult)
+        },
+        prefill: {
+          // you can prefill from user profile
+          // name: user.displayName,
+          // email: user.email
+        },
+        theme: {
+          color: "#2563eb", // blue
+        },
+      };
+      // @ts-ignore (Razorpay global)
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        console.error("Payment failed", response);
+        alert("Payment failed. Please try again.");
+      });
+      rzp.open();
+    } catch (err: any) {
+      setError(err.message || "Failed to create order");
+    } finally {
+      setPaymentProcessing(false);
+    }
+  }
 
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white min-h-screen py-10">
@@ -178,7 +232,10 @@ export const Checkout: React.FC = () => {
             {discount.value > 0 && appliedCoupon && (
               <div className="flex justify-between text-sm text-green-600 mb-2 items-center">
                 <span>
-                  Discount <span className="font-semibold">({appliedCoupon} {discount.percent}%)</span>
+                  Discount{" "}
+                  <span className="font-semibold">
+                    ({appliedCoupon} {discount.percent}%)
+                  </span>
                   <button
                     className="ml-2 text-red-500 hover:underline text-xs"
                     onClick={removeCoupon}
@@ -214,9 +271,9 @@ export const Checkout: React.FC = () => {
                     <button
                       className="bg-blue-600 text-white px-4 py-2 rounded-3xl hover:bg-blue-700 disabled:opacity-50"
                       onClick={applyCoupon}
-                      disabled={loading}
+                      disabled={couponChecking}
                     >
-                      {loading ? "Applying..." : "Apply"}
+                      {couponChecking ? "Applying..." : "Apply"}
                     </button>
                   </div>
                   {error && (
@@ -233,8 +290,12 @@ export const Checkout: React.FC = () => {
           </div>
 
           <div>
-            <button className="mt-6 w-full bg-blue-600 text-white py-3 rounded-3xl font-medium hover:bg-blue-700">
-              Continue to Payment
+            <button
+              onClick={() => !paymentProcessing && !couponChecking && handleContinueToPayment()}
+              disabled={paymentProcessing || couponChecking}
+              className="mt-6 w-full bg-blue-600 text-white py-3 rounded-3xl font-medium hover:bg-blue-700"
+            >
+              {paymentProcessing ? "Processing..." : "Continue to Payment"}
             </button>
             <p className="mt-2 text-xs text-gray-500 text-center">
               By continuing, you agree to our{" "}

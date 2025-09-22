@@ -1,13 +1,15 @@
-import { Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
+import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, profile } = useSelector((state: RootState) => state.auth);
+  if (!profile || profile.role === "premium")
+    return <Navigate to="/" replace />;
 
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -16,4 +18,4 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   return <>{children}</>;
 };
 
-export default PrivateRoute; 
+export default PrivateRoute;
