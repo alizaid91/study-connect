@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
 
@@ -7,9 +7,11 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
+  const { pathname } = useLocation();
   const { user, profile } = useSelector((state: RootState) => state.auth);
-  if (!profile || profile.role === "premium")
+  if (pathname === "/checkout" && profile && profile.role === "premium") {
     return <Navigate to="/" replace />;
+  }
 
   if (!user) {
     return <Navigate to="/auth" replace />;
