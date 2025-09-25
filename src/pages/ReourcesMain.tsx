@@ -37,7 +37,7 @@ import UploadResourcePopup from "../components/Study-Resources/UploadResourcePop
 import UploaderInfo from "../components/Study-Resources/UploaderInfo";
 import { getSubjects } from "../types/Subjects";
 import ViewCollectionPopup from "../components/Study-Resources/ViewCollectionPopup";
-import useDownloadedKeys from "../hooks/useDownloadedKeys";
+import useDownloadedKeys, { refreshDownloadedKeys } from "../hooks/useDownloadedKeys";
 import { apiService } from "../services/apiService";
 import { ImSpinner2 } from "react-icons/im";
 import { openPdfDownloadIsForPro } from "../store/slices/globalPopups";
@@ -101,7 +101,9 @@ const ResourcesMain = () => {
     open: false,
     resource: null,
   });
-  const downloadedKeys = useDownloadedKeys();
+  const [downloadedKeys, setDownloadedKeys] = useState<Set<string>>(
+    useDownloadedKeys()
+  );
   const [downloading, setDownloading] = useState(false);
   const [itemToDownload, setItemToDownload] = useState<string>("");
 
@@ -167,6 +169,8 @@ const ResourcesMain = () => {
     try {
       // download & store
       await apiService.downloadPdf(resource, position);
+      const downloadedKeysResp = await refreshDownloadedKeys();
+      setDownloadedKeys(downloadedKeysResp);
     } catch (err) {
       console.error(err);
       alert("Download failed");

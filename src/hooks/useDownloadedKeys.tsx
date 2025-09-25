@@ -34,3 +34,13 @@ export default function useDownloadedKeys() {
 
   return downloadedKeys;
 }
+
+const refreshDownloadedKeys = async () => {
+  const db = await getDB();
+  const tx = db.transaction("metadata", "readonly");
+  const store = tx.objectStore("metadata");
+  const allKeys = await store.getAllKeys();
+  return new Set(allKeys as string[]);
+};
+
+export { refreshDownloadedKeys };

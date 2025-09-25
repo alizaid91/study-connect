@@ -44,6 +44,7 @@ import useDownloadedKeys from "../hooks/useDownloadedKeys";
 import { apiService } from "../services/apiService";
 import { ImSpinner2 } from "react-icons/im";
 import { openPdfDownloadIsForPro } from "../store/slices/globalPopups";
+import { refreshDownloadedKeys } from "../hooks/useDownloadedKeys";
 
 const sortQuickFilters = (qf: QuickFilter[]) => {
   return qf.sort((a, b) => {
@@ -67,7 +68,9 @@ const sortQuickFilters = (qf: QuickFilter[]) => {
 const PYQs: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const downloadedKeys = useDownloadedKeys();
+  const [downloadedKeys, setDownloadedKeys] = useState<Set<string>>(
+    useDownloadedKeys()
+  );
 
   const { user, profile } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
@@ -252,6 +255,8 @@ const PYQs: React.FC = () => {
     try {
       // download & store
       await apiService.downloadPdf(paper);
+      const downloadedKeysResp = await refreshDownloadedKeys();
+      setDownloadedKeys(downloadedKeysResp);
     } catch (err) {
       console.error(err);
       alert(`Download failed: ${err}`);
