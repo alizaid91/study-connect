@@ -5,7 +5,7 @@ async function storeDownload(
   encryptedPdf: ArrayBuffer,
   metadata: any
 ) {
-  const db = await openDB("studyconnect-offline-v1", 2, {
+  const db = await openDB("studyconnect-offline-v1", 1, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("files")) {
         db.createObjectStore("files");
@@ -21,7 +21,7 @@ async function storeDownload(
 }
 
 async function openDownloadedPdf(fileKey: string) {
-  const db = await openDB("studyconnect-offline-v1", 2);
+  const db = await openDB("studyconnect-offline-v1", 1);
   const metadata = await db.get("metadata", fileKey);
   const pdf = await db.get("files", fileKey);
 
