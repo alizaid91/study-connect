@@ -7,7 +7,15 @@ import {
   removeBookmark,
   fetchBookmarks,
 } from "../store/slices/bookmarkSlice";
-import { FiTrash2, FiFilter, FiChevronsDown, FiBookmark } from "react-icons/fi";
+import {
+  FiTrash2,
+  FiFilter,
+  FiChevronsDown,
+  FiBookmark,
+  FiMoreVertical,
+  FiDownload,
+  FiCheckCircle,
+} from "react-icons/fi";
 import {
   motion,
   AnimatePresence,
@@ -30,6 +38,12 @@ import { MdArrowForward } from "react-icons/md";
 import Loader1 from "../components/Loaders/Loader1";
 import { semesterMap } from "../types/constants";
 import { setShowPdf } from "../store/slices/globalPopups";
+import { Menu } from "@headlessui/react";
+import { MdAddTask } from "react-icons/md";
+import useDownloadedKeys from "../hooks/useDownloadedKeys";
+import { apiService } from "../services/apiService";
+import { ImSpinner2 } from "react-icons/im";
+import { openPdfDownloadIsForPro } from "../store/slices/globalPopups";
 
 const sortQuickFilters = (qf: QuickFilter[]) => {
   return qf.sort((a, b) => {
@@ -53,6 +67,7 @@ const sortQuickFilters = (qf: QuickFilter[]) => {
 const PYQs: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const downloadedKeys = useDownloadedKeys();
 
   const { user, profile } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
@@ -67,6 +82,8 @@ const PYQs: React.FC = () => {
   const [changingBookmarkState, setChangingBookmarkState] = useState(false);
   const [itemToChangeBookmarkState, setItemToChangeBookmarkState] =
     useState<string>("");
+  const [downloading, setDownloading] = useState(false);
+  const [itemToDownload, setItemToDownload] = useState<string>("");
 
   // Papers and filters state
   const [filteredPapers, setFilteredPapers] = useState<Paper[]>([]);
@@ -222,6 +239,27 @@ const PYQs: React.FC = () => {
       }
     }
   }, [lists]);
+
+  const downloadPaper = async (paper: Paper) => {
+    if (!user) return navigate("/auth#login");
+    if (profile?.role !== "premium") {
+      dispatch(openPdfDownloadIsForPro());
+      return;
+    }
+
+    setItemToDownload(paper.id);
+    setDownloading(true);
+    try {
+      // download & store
+      await apiService.downloadPdf(paper);
+    } catch (err) {
+      console.error(err);
+      alert("Download failed");
+    } finally {
+      setItemToDownload("");
+      setDownloading(false);
+    }
+  };
 
   // Filter change handlers
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -921,16 +959,52 @@ const PYQs: React.FC = () => {
                             <span className="font-medium">
                               {paper.paperType}{" "}
                             </span>
-                            <span className="font-medium"> Paper </span>
+                            <span className="font-medium">Paper</span>
                           </p>
                         </div>
 
                         {/* Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-3 text-center">
+                        <div className="flex flex-row gap-3 text-center items-center">
+                          {/* Download Icon */}
+                          {downloadedKeys.has(paper.paperDOKey) ? (
+                            <button
+                              disabled
+                              className="flex items-center justify-center p-2 rounded-xl text-green-600 bg-green-50 cursor-default transition-all"
+                              title="Downloaded"
+                            >
+                              <FiCheckCircle className="w-5 h-5" />
+                            </button>
+                          ) : downloading && itemToDownload === paper.id ? (
+                            // Downloading Animation
+                            <button
+                              disabled
+                              className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50 cursor-wait"
+                              title="Downloading..."
+                            >
+                              <ImSpinner2 className="w-5 h-5 animate-spin" />
+                            </button>
+                          ) : (
+                            // Default Download Button
+                            <button
+                              onClick={() => {
+                                !downloading && downloadPaper(paper);
+                              }}
+                              disabled={downloading}
+                              className="flex items-center justify-center p-2 rounded-xl text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 transition-colors"
+                              title="Download"
+                            >
+                              <FiDownload className="w-5 h-5" />
+                            </button>
+                          )}
+
+                          {/* View Button */}
                           <button
                             onClick={() => {
                               dispatch(
                                 setShowPdf({
+                                  downloaded: downloadedKeys.has(
+                                    paper.paperDOKey
+                                  ),
                                   pdfId: paper.paperDOKey,
                                   title: `${paper.subjectName
                                     .split(" ")
@@ -950,52 +1024,75 @@ const PYQs: React.FC = () => {
                           >
                             View
                           </button>
-                          <m.button
-                            onClick={
-                              !user
-                                ? () => navigate("/auth#login")
-                                : () => setDefaultTaskInfo(paper)
-                            }
-                            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl inline-block duration-200 transition-all"
-                          >
-                            Add to Tasks
-                          </m.button>
                         </div>
                       </div>
 
-                      {/* Bookmark */}
-                      <div className="absolute top-3 right-3 p-1 flex justify-center items-center">
-                        {changingBookmarkState &&
-                        paper.id === itemToChangeBookmarkState ? (
-                          <div
-                            role="status"
-                            className="inline-flex items-center justify-center p-2"
-                          >
-                            <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                            <span className="sr-only">Changing...</span>
-                          </div>
-                        ) : (
-                          <m.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.8 }}
-                            onClick={
-                              !user
-                                ? () => navigate("/auth#login")
-                                : () => handleBookmark(paper)
-                            }
-                            className={`rounded-full p-2 ${
-                              isBookmarked(paper.id)
-                                ? "text-yellow-500 bg-yellow-50"
-                                : "text-gray-400 bg-gray-50"
-                            } transition-all duration-200`}
-                          >
-                            <FiBookmark
-                              className={`w-5 h-5 ${
-                                isBookmarked(paper.id) ? "fill-current" : ""
-                              }`}
-                            />
-                          </m.button>
-                        )}
+                      {/* Three dots menu */}
+                      <div className="absolute top-3 right-3">
+                        <Menu
+                          as="div"
+                          className="relative inline-block text-left"
+                        >
+                          <Menu.Button className="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                            <FiMoreVertical className="w-5 h-5" />
+                          </Menu.Button>
+
+                          <Menu.Items className="overflow-hidden absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+                            {/* Add to Task */}
+                            <Menu.Item>
+                              {({ active }) => (
+                                <m.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={
+                                    !user
+                                      ? () => navigate("/auth#login")
+                                      : () => setDefaultTaskInfo(paper)
+                                  }
+                                  className={`${
+                                    active ? "bg-gray-100" : ""
+                                  } flex w-full items-center px-4 py-2 text-sm text-gray-700`}
+                                >
+                                  <MdAddTask className={`mr-2 w-4 h-4`} />
+                                  Add to Tasks
+                                </m.button>
+                              )}
+                            </Menu.Item>
+
+                            {/* Bookmark */}
+                            <Menu.Item>
+                              {({ active }) => (
+                                <m.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={
+                                    !user
+                                      ? () => navigate("/auth#login")
+                                      : () => handleBookmark(paper)
+                                  }
+                                  className={`${
+                                    active ? "bg-gray-100" : ""
+                                  } flex w-full items-center px-4 py-2 text-sm ${
+                                    isBookmarked(paper.id)
+                                      ? "text-yellow-500"
+                                      : "text-gray-700"
+                                  }`}
+                                >
+                                  <FiBookmark
+                                    className={`mr-2 w-4 h-4 ${
+                                      isBookmarked(paper.id)
+                                        ? "fill-current"
+                                        : ""
+                                    }`}
+                                  />
+                                  {isBookmarked(paper.id)
+                                    ? "Remove Bookmark"
+                                    : "Bookmark"}
+                                </m.button>
+                              )}
+                            </Menu.Item>
+                          </Menu.Items>
+                        </Menu>
                       </div>
                     </m.div>
                   ))}

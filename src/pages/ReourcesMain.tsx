@@ -31,12 +31,16 @@ import { setLoading, setResources } from "../store/slices/resourceSlice";
 import Loader1 from "../components/Loaders/Loader1";
 import NoStudyResources from "../components/Study-Resources/NoStudyResource";
 import SearchBar from "../components/Study-Resources/SearchBar";
-import { FiBookmark } from "react-icons/fi";
+import { FiBookmark, FiCheckCircle, FiDownload } from "react-icons/fi";
 import { setShowPdf } from "../store/slices/globalPopups";
 import UploadResourcePopup from "../components/Study-Resources/UploadResourcePopup";
 import UploaderInfo from "../components/Study-Resources/UploaderInfo";
 import { getSubjects } from "../types/Subjects";
 import ViewCollectionPopup from "../components/Study-Resources/ViewCollectionPopup";
+import useDownloadedKeys from "../hooks/useDownloadedKeys";
+import { apiService } from "../services/apiService";
+import { ImSpinner2 } from "react-icons/im";
+import { openPdfDownloadIsForPro } from "../store/slices/globalPopups";
 
 const resourcesCards = [
   {
@@ -97,6 +101,9 @@ const ResourcesMain = () => {
     open: false,
     resource: null,
   });
+  const downloadedKeys = useDownloadedKeys();
+  const [downloading, setDownloading] = useState(false);
+  const [itemToDownload, setItemToDownload] = useState<string>("");
 
   useEffect(() => {
     if (showUploadPopup || showCollectionModal.open) {
@@ -145,6 +152,29 @@ const ResourcesMain = () => {
       behavior: "smooth",
     });
   }, [resourceFilters.type]);
+
+  const downloadResource = async (resource: Resource, position: number) => {
+    if (!user) return navigate("/auth#login");
+    if (profile?.role !== "premium") {
+      dispatch(openPdfDownloadIsForPro());
+      return;
+    }
+
+    setDownloading(true);
+    setItemToDownload(
+      resource.files ? resource.files[position].resourceDOKey : ""
+    );
+    try {
+      // download & store
+      await apiService.downloadPdf(resource, position);
+    } catch (err) {
+      console.error(err);
+      alert("Download failed");
+    } finally {
+      setDownloading(false);
+      setItemToDownload("");
+    }
+  };
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -250,6 +280,12 @@ const ResourcesMain = () => {
             setShowCollectionModal({ open: false, resource: null })
           }
           resource={showCollectionModal.resource}
+          downloadedKeys={downloadedKeys}
+          downloadResource={(resource, position) =>
+            downloadResource(resource, position as number)
+          }
+          downloading={downloading}
+          itemToDownload={itemToDownload}
         />
       )}
       {!resourceFilters.type ? (
@@ -685,6 +721,9 @@ const ResourcesMain = () => {
                                       // View single file
                                       dispatch(
                                         setShowPdf({
+                                          downloaded: downloadedKeys.has(
+                                            firstFile?.resourceDOKey as string
+                                          ),
                                           pdfId:
                                             firstFile?.resourceDOKey as string,
                                           title: resource.title,
@@ -704,39 +743,88 @@ const ResourcesMain = () => {
                                 {actionText}
                               </button>
 
-                              {changingBookmarkState &&
-                              resource.id === itemToChangeBookmarkState ? (
-                                <div
-                                  role="status"
-                                  className="inline-flex items-center justify-center p-2"
-                                >
-                                  <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
-                                  <span className="sr-only">Changing...</span>
-                                </div>
-                              ) : (
-                                <motion.button
-                                  whileHover={{ scale: 1.2 }}
-                                  whileTap={{ scale: 0.8 }}
-                                  onClick={
-                                    !user
-                                      ? () => navigate("/auth#login")
-                                      : () => handleBookmark(resource)
-                                  }
-                                  className={`rounded-full p-2 ${
-                                    isBookmarked(resource.id)
-                                      ? "text-yellow-500 bg-yellow-100"
-                                      : "text-gray-400 bg-gray-100"
-                                  } transition-all duration-200 mb-1 md:mb-0`}
-                                >
-                                  <FiBookmark
-                                    className={`w-5 h-5 ${
+                              <div className="flex flex-row gap-3 text-center items-center">
+                                {changingBookmarkState &&
+                                resource.id === itemToChangeBookmarkState ? (
+                                  <div
+                                    role="status"
+                                    className="inline-flex items-center justify-center p-2"
+                                  >
+                                    <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                                    <span className="sr-only">Changing...</span>
+                                  </div>
+                                ) : (
+                                  <motion.button
+                                    whileHover={{ scale: 1.2 }}
+                                    whileTap={{ scale: 0.8 }}
+                                    onClick={
+                                      !user
+                                        ? () => navigate("/auth#login")
+                                        : () => handleBookmark(resource)
+                                    }
+                                    className={`rounded-full p-2 ${
                                       isBookmarked(resource.id)
-                                        ? "fill-current"
-                                        : ""
-                                    }`}
-                                  />
-                                </motion.button>
-                              )}
+                                        ? "text-yellow-500 bg-yellow-100"
+                                        : "text-gray-400 bg-gray-100"
+                                    } transition-all duration-200 mb-1 md:mb-0`}
+                                  >
+                                    <FiBookmark
+                                      className={`w-5 h-5 ${
+                                        isBookmarked(resource.id)
+                                          ? "fill-current"
+                                          : ""
+                                      }`}
+                                    />
+                                  </motion.button>
+                                )}
+                                {!isCollection &&
+                                  resource.type !== "video" &&
+                                  (downloadedKeys.has(
+                                    firstFile?.resourceDOKey as string
+                                  ) ? (
+                                    <button
+                                      disabled
+                                      className="flex items-center justify-center p-2 rounded-xl text-green-600 bg-green-50 cursor-default"
+                                      title="Downloaded"
+                                    >
+                                      <FiCheckCircle className="w-5 h-5" />
+                                    </button>
+                                  ) : downloadedKeys.has(
+                                      firstFile?.resourceDOKey as string
+                                    ) ? (
+                                    <button
+                                      disabled
+                                      className="flex items-center justify-center p-2 rounded-xl text-green-600 bg-green-50 cursor-default transition-all"
+                                      title="Downloaded"
+                                    >
+                                      <FiCheckCircle className="w-5 h-5" />
+                                    </button>
+                                  ) : downloading &&
+                                    itemToDownload ===
+                                      firstFile?.resourceDOKey ? (
+                                    // Downloading Animation
+                                    <button
+                                      disabled
+                                      className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50 cursor-wait"
+                                      title="Downloading..."
+                                    >
+                                      <ImSpinner2 className="w-5 h-5 animate-spin" />
+                                    </button>
+                                  ) : (
+                                    // Default Download Button
+                                    <button
+                                      onClick={() => {
+                                        !downloading &&
+                                          downloadResource(resource, 0);
+                                      }}
+                                      disabled={downloading}
+                                      className="flex items-center justify-center p-2 rounded-xl text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 transition-colors"
+                                      title="Download"
+                                    >
+                                      <FiDownload className="w-5 h-5" />
+                                    </button>
+                                  ))}
+                              </div>
                             </div>
                           </div>
                         </motion.div>

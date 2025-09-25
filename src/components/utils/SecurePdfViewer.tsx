@@ -18,11 +18,13 @@ import { auth } from "../../config/firebase";
 import { useEffect, useState } from "react";
 import { MdFullscreen } from "react-icons/md";
 import { MdFullscreenExit } from "react-icons/md";
+import { downloadService } from "../../services/downloadService";
 
 const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
 const SecurePdfViewer = () => {
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
+  const [url, setUrl] = useState<string>("");
   const [headers, setHeaders] = useState<Record<string, string>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const dispatch = useDispatch();
@@ -57,6 +59,7 @@ const SecurePdfViewer = () => {
   };
 
   useEffect(() => {
+    if (!showPdf?.pdfId) return;
     const fetchHeaders = async () => {
       const user = auth.currentUser;
       if (!user) return;
@@ -66,10 +69,18 @@ const SecurePdfViewer = () => {
         Range: "bytes=0-",
       });
     };
-    fetchHeaders();
+
+    if (showPdf?.downloaded) {
+      downloadService.openDownloadedPdf(showPdf.pdfId).then((blob) => {
+        setUrl(blob.url);
+      });
+    } else {
+      fetchHeaders();
+      setUrl(`${AI_URL}/view-pdf?key=${encodeURIComponent(showPdf.pdfId)}`);
+    }
   }, []);
 
-  if (!showPdf || !headers) return null;
+  if (!showPdf || !url) return null;
 
   return (
     <motion.div
@@ -101,7 +112,11 @@ const SecurePdfViewer = () => {
             className="px-1.5 py-1.5 rounded-full bg-gray-200 hover:bg-gray-300 transition"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           >
-            {isFullscreen ? <MdFullscreenExit size={22} /> : <MdFullscreen size={22} />}
+            {isFullscreen ? (
+              <MdFullscreenExit size={22} />
+            ) : (
+              <MdFullscreen size={22} />
+            )}
           </button>
 
           {/* Close button */}
@@ -133,9 +148,7 @@ const SecurePdfViewer = () => {
               <div className="flex-1 overflow-hidden">
                 <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                   <Viewer
-                    fileUrl={`${AI_URL}/view-pdf?key=${encodeURIComponent(
-                      showPdf.pdfId
-                    )}`}
+                    fileUrl={url}
                     httpHeaders={headers}
                     plugins={[toolbarPluginInstance]}
                     defaultScale={window.innerWidth < 768 ? 0.6 : 1.5}

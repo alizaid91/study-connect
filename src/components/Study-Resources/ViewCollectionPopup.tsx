@@ -3,11 +3,17 @@ import { Bookmark, Resource } from "../../types/content";
 import { useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FileText, Play } from "lucide-react";
+import { FiCheckCircle, FiDownload } from "react-icons/fi";
+import { ImSpinner2 } from "react-icons/im";
 
 interface ViewCollectionPopupProps {
   onClose: () => void;
   resource?: Resource;
   bookmark?: Bookmark;
+  downloadedKeys: Set<string>;
+  downloadResource: (resource: any, position?: number) => Promise<void>;
+  downloading: boolean;
+  itemToDownload: string;
 }
 
 const maxHeight = window.innerHeight - 26;
@@ -16,6 +22,10 @@ const ViewCollectionPopup = ({
   onClose,
   resource,
   bookmark,
+  downloadedKeys,
+  downloadResource,
+  downloading,
+  itemToDownload,
 }: ViewCollectionPopupProps) => {
   const dispatch = useDispatch();
 
@@ -55,7 +65,8 @@ const ViewCollectionPopup = ({
 
           {/* Content */}
           <div className="p-5 space-y-4">
-            {(resource && resource.type === "video") || bookmark?.resourceType === "video" ? (
+            {(resource && resource.type === "video") ||
+            bookmark?.resourceType === "video" ? (
               <div className="space-y-4">
                 {(resource?.videos || bookmark?.videos)?.map((video, idx) => (
                   <motion.div
@@ -96,20 +107,56 @@ const ViewCollectionPopup = ({
                         {file.name}
                       </span>
                     </div>
-                    <button
-                      onClick={() =>
-                        dispatch(
-                          setShowPdf({
-                            pdfId: file.resourceDOKey,
-                            title: file.name,
-                            totalPages: file.metadata.pages,
-                          })
-                        )
-                      }
-                      className="px-4 py-1.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
-                    >
-                      View
-                    </button>
+                    <div className="flex flex-row gap-3 text-center items-center">
+                      <button
+                        onClick={() =>
+                          dispatch(
+                            setShowPdf({
+                              downloaded: downloadedKeys.has(
+                                file.resourceDOKey
+                              ),
+                              pdfId: file.resourceDOKey,
+                              title: file.name,
+                              totalPages: file.metadata.pages,
+                            })
+                          )
+                        }
+                        className="px-4 py-1.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                      >
+                        View
+                      </button>
+                      {downloadedKeys.has(file?.resourceDOKey as string) ? (
+                        <button
+                          disabled
+                          className="flex items-center justify-center p-2 rounded-xl text-green-600 bg-green-50 cursor-default transition-all"
+                          title="Downloaded"
+                        >
+                          <FiCheckCircle className="w-5 h-5" />
+                        </button>
+                      ) : downloading &&
+                        itemToDownload === file?.resourceDOKey ? (
+                        // Downloading Animation
+                        <button
+                          disabled
+                          className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50 cursor-wait"
+                          title="Downloading..."
+                        >
+                          <ImSpinner2 className="w-5 h-5 animate-spin" />
+                        </button>
+                      ) : (
+                        // Default Download Button
+                        <button
+                          onClick={() => {
+                            !downloading && downloadResource(resource, idx);
+                          }}
+                          disabled={downloading}
+                          className="flex items-center justify-center p-2 rounded-xl text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 transition-colors"
+                          title="Download"
+                        >
+                          <FiDownload className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
                   </motion.div>
                 ))}
               </div>

@@ -1,5 +1,7 @@
 const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 import { auth } from "../config/firebase";
+import { Paper, Resource } from "../types/content";
+import { downloadService } from "./downloadService";
 
 /**
  * Utility to get Firebase Auth Bearer Token
@@ -70,6 +72,23 @@ export const apiService = {
     if (!reader) throw new Error("No stream reader available.");
 
     return { reader, decoder };
+  },
+
+  async downloadPdf(meta: any, position?: number) {
+    const fileKey =
+      position !== undefined
+        ? meta.files?.[position]?.resourceDOKey
+        : meta.paperDOKey;
+    const headers = await getAuthHeader();
+
+    // download encrypted PDF
+    const res = await fetch(`${AI_URL}/download-pdf?key=${fileKey}`, {
+      headers,
+    });
+    const buffer = await res.arrayBuffer();
+
+    // store in IndexedDB
+    await downloadService.storeDownload(fileKey, buffer, meta);
   },
 
   async createOrder(planId: string, coupon?: string) {

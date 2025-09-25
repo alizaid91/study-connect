@@ -23,14 +23,15 @@ import { openProfileComplete } from "../store/slices/globalPopups.ts";
 import ResourcesMain from "../pages/ReourcesMain.tsx";
 import PoliciesPage from "../pages/Policies.tsx";
 import SecurePdfViewer from "../components/utils/SecurePdfViewer.tsx";
+import DownloadUpgradePopup from "../components/utils/DownloadUpgradePopup.tsx";
+
 import { Checkout } from "../pages/Checkout.tsx";
 
 const AppRouter = () => {
   const { pathname } = useLocation();
   const { profile } = useSelector((state: RootState) => state.auth);
-  const { isProfileCompleteOpen, showPdf } = useSelector(
-    (state: RootState) => state.globalPopups
-  );
+  const { isProfileCompleteOpen, showPdf, pdfDownloadIsForProOpen } =
+    useSelector((state: RootState) => state.globalPopups);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isOpen = useSelector(
@@ -102,11 +103,14 @@ const AppRouter = () => {
           <Route path="/auth" element={<Auth />} />
           <Route path="/policies" element={<PoliciesPage />} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/checkout" element={
-            <PrivateRoute>
-              <Checkout />
-            </PrivateRoute>
-          } />
+          <Route
+            path="/checkout"
+            element={
+              <PrivateRoute>
+                <Checkout />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
@@ -171,6 +175,7 @@ const AppRouter = () => {
       <PremiumComingSoonModal isOpen={isOpen} />
       {showPdf && <SecurePdfViewer />}
       {isProfileCompleteOpen && <ProfileCompletionPopup />}
+      {pdfDownloadIsForProOpen && <DownloadUpgradePopup />}
     </div>
   );
 };
