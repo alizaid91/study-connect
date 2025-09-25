@@ -254,7 +254,7 @@ const PYQs: React.FC = () => {
       await apiService.downloadPdf(paper);
     } catch (err) {
       console.error(err);
-      alert("Download failed");
+      alert(`Download failed: ${err}`);
     } finally {
       setItemToDownload("");
       setDownloading(false);
