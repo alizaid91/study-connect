@@ -3,7 +3,7 @@ import { openDB } from "idb";
 
 export default function useDownloadedKeys() {
   const [downloadedKeys, setDownloadedKeys] = useState<Set<string>>(new Set());
-  let testDb = null;  
+  let db = openDB("studyconnect-offline-v1", 1).then((db) => db);  
 
   useEffect(() => {
     (async () => {
@@ -20,11 +20,10 @@ export default function useDownloadedKeys() {
 
       const tx = db.transaction("metadata", "readonly");
       const store = tx.objectStore("metadata");
-      testDb = db;
       const allKeys = await store.getAllKeys();
       setDownloadedKeys(new Set(allKeys as string[]));
     })();
-  }, [testDb]);
+  }, [db]);
 
   return downloadedKeys;
 }
