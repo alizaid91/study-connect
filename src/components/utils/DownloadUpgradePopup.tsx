@@ -20,7 +20,7 @@ export default function DownloadUpgradePopup() {
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
-        className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full relative"
+        className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full relative mx-4"
       >
         {/* Close Button */}
         <button
@@ -32,7 +32,7 @@ export default function DownloadUpgradePopup() {
 
         {/* Icon with animation */}
         <motion.div
-          initial={{ rotate: -15 }}
+          initial={{ rotate: -25 }}
           animate={{ rotate: 0 }}
           transition={{ type: "spring", stiffness: 200 }}
           className="flex items-center justify-center mb-4"

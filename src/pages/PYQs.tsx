@@ -40,11 +40,10 @@ import { semesterMap } from "../types/constants";
 import { setShowPdf } from "../store/slices/globalPopups";
 import { Menu } from "@headlessui/react";
 import { MdAddTask } from "react-icons/md";
-import useDownloadedKeys from "../hooks/useDownloadedKeys";
+import { getDownloadedKeys } from "../hooks/useDownloadedKeys";
 import { apiService } from "../services/apiService";
 import { ImSpinner2 } from "react-icons/im";
 import { openPdfDownloadIsForPro } from "../store/slices/globalPopups";
-import { refreshDownloadedKeys } from "../hooks/useDownloadedKeys";
 
 const sortQuickFilters = (qf: QuickFilter[]) => {
   return qf.sort((a, b) => {
@@ -68,9 +67,7 @@ const sortQuickFilters = (qf: QuickFilter[]) => {
 const PYQs: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const [downloadedKeys, setDownloadedKeys] = useState<Set<string>>(
-    useDownloadedKeys()
-  );
+  const [downloadedKeys, setDownloadedKeys] = useState<Set<string>>(new Set());
 
   const { user, profile } = useSelector((state: RootState) => state.auth);
   const { bookmarks } = useSelector((state: RootState) => state.bookmarks);
@@ -118,6 +115,14 @@ const PYQs: React.FC = () => {
   );
 
   const pyqsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const setDownloadedKeysFunc = async () => {
+      const downloadedKeysResp = await getDownloadedKeys();
+      setDownloadedKeys(downloadedKeysResp);
+    };
+    setDownloadedKeysFunc();
+  }, []);
 
   // Effect
   useEffect(() => {
@@ -255,7 +260,7 @@ const PYQs: React.FC = () => {
     try {
       // download & store
       await apiService.downloadPdf(paper);
-      const downloadedKeysResp = await refreshDownloadedKeys();
+      const downloadedKeysResp = await getDownloadedKeys();
       setDownloadedKeys(downloadedKeysResp);
     } catch (err) {
       console.error(err);
