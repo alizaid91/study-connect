@@ -4,7 +4,17 @@ import { RootState } from "../store";
 import { DEFAULT_AVATAR, UserProfile } from "../types/user";
 import { motion, AnimatePresence } from "framer-motion";
 import Cropper from "react-easy-crop";
-import { FiUser, FiEdit, FiSave, FiX, FiCheck, FiLock, FiAlertCircle, FiCheckCircle, FiLoader } from "react-icons/fi";
+import {
+  FiUser,
+  FiEdit,
+  FiSave,
+  FiX,
+  FiCheck,
+  FiLock,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiLoader,
+} from "react-icons/fi";
 import { MdDataUsage } from "react-icons/md";
 import { authService } from "../services/authService";
 import UsageTracker from "../components/profile/UsageTracker";
@@ -126,7 +136,9 @@ const Profile = () => {
     errors: [],
     originalUsername: profile?.username || "",
   });
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   useEffect(() => {
     setTempProfile(profile);
@@ -134,11 +146,11 @@ const Profile = () => {
     setSubjectsHandledInput(profile?.subjectsHandled?.join(", ") || "");
     setQualificationsInput(profile?.qualifications?.join(", ") || "");
     // Set original username for comparison
-    setUsernameStatus(prev => ({ 
-      ...prev, 
+    setUsernameStatus((prev) => ({
+      ...prev,
       originalUsername: profile?.username || "",
       available: null,
-      errors: []
+      errors: [],
     }));
   }, [profile]);
 
@@ -153,52 +165,52 @@ const Profile = () => {
   // Username validation function
   const validateUsername = async (username: string) => {
     if (!username.trim()) {
-      setUsernameStatus(prev => ({ 
-        ...prev, 
-        loading: false, 
-        available: null, 
-        errors: [] 
+      setUsernameStatus((prev) => ({
+        ...prev,
+        loading: false,
+        available: null,
+        errors: [],
       }));
       return;
     }
 
     // If username hasn't changed, mark as available
     if (username === usernameStatus.originalUsername) {
-      setUsernameStatus(prev => ({ 
-        ...prev, 
-        loading: false, 
-        available: true, 
-        errors: [] 
+      setUsernameStatus((prev) => ({
+        ...prev,
+        loading: false,
+        available: true,
+        errors: [],
       }));
       return;
     }
 
-    setUsernameStatus(prev => ({ ...prev, loading: true }));
+    setUsernameStatus((prev) => ({ ...prev, loading: true }));
 
     try {
       const result = await apiService.validateUsername(username);
-      
+
       if (result.success) {
-        setUsernameStatus(prev => ({ 
+        setUsernameStatus((prev) => ({
           ...prev,
-          loading: false, 
-          available: true, 
-          errors: [] 
+          loading: false,
+          available: true,
+          errors: [],
         }));
       } else {
-        setUsernameStatus(prev => ({ 
+        setUsernameStatus((prev) => ({
           ...prev,
-          loading: false, 
-          available: false, 
-          errors: result.errors?.map(e => e.message) || ['Invalid username'] 
+          loading: false,
+          available: false,
+          errors: result.errors?.map((e) => e.message) || ["Invalid username"],
         }));
       }
     } catch (err) {
-      setUsernameStatus(prev => ({ 
+      setUsernameStatus((prev) => ({
         ...prev,
-        loading: false, 
-        available: false, 
-        errors: ['Failed to validate username'] 
+        loading: false,
+        available: false,
+        errors: ["Failed to validate username"],
       }));
     }
   };
@@ -208,19 +220,19 @@ const Profile = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    
+
     // Handle username validation with debouncing
     if (name === "username") {
       setTempProfile({ ...tempProfile, [name]: value } as UserProfile);
-      
-      if(!value.trim() || value === usernameStatus.originalUsername) {
-        setUsernameStatus(prev => ({ 
-          ...prev, 
-          loading: false, 
-          available: null, 
-          errors: [] 
+
+      if (!value.trim() || value === usernameStatus.originalUsername) {
+        setUsernameStatus((prev) => ({
+          ...prev,
+          loading: false,
+          available: null,
+          errors: [],
         }));
-        if(debounceTimer) clearTimeout(debounceTimer);
+        if (debounceTimer) clearTimeout(debounceTimer);
         return;
       }
       if (debounceTimer) {
@@ -249,13 +261,19 @@ const Profile = () => {
         setTempProfile({
           ...tempProfile,
           [name]: value,
-          avatarUrl: tempProfile?.accountType === "educator" ? DEFAULT_AVATAR.maleEducator : DEFAULT_AVATAR.male,
+          avatarUrl:
+            tempProfile?.accountType === "educator"
+              ? DEFAULT_AVATAR.maleEducator
+              : DEFAULT_AVATAR.male,
         } as UserProfile);
       } else if (value === "female") {
         setTempProfile({
           ...tempProfile,
           [name]: value,
-          avatarUrl: profile?.accountType === "educator" ? DEFAULT_AVATAR.femaleEducator : DEFAULT_AVATAR.female,
+          avatarUrl:
+            profile?.accountType === "educator"
+              ? DEFAULT_AVATAR.femaleEducator
+              : DEFAULT_AVATAR.female,
         } as UserProfile);
       } else {
         setTempProfile({
@@ -399,24 +417,32 @@ const Profile = () => {
   };
 
   const getUsernameInputClass = () => {
-    const baseClass = "mt-1 block w-full rounded-md border shadow-sm focus:ring-blue-500 transition-all";
-    if (usernameStatus.loading) return `${baseClass} border-blue-300 focus:border-blue-500`;
-    if (usernameStatus.available === true) return `${baseClass} border-green-300 focus:border-green-500`;
-    if (usernameStatus.available === false) return `${baseClass} border-red-300 focus:border-red-500`;
+    const baseClass =
+      "mt-1 block w-full rounded-md border shadow-sm focus:ring-blue-500 transition-all";
+    if (usernameStatus.loading)
+      return `${baseClass} border-blue-300 focus:border-blue-500`;
+    if (usernameStatus.available === true)
+      return `${baseClass} border-green-300 focus:border-green-500`;
+    if (usernameStatus.available === false)
+      return `${baseClass} border-red-300 focus:border-red-500`;
     return `${baseClass} border-gray-300 focus:border-blue-500`;
   };
 
   const getUsernameIcon = () => {
-    if (usernameStatus.loading) return <FiLoader className="animate-spin text-blue-500" size={16} />;
-    if (usernameStatus.available === true) return <FiCheckCircle className="text-green-500" size={16} />;
-    if (usernameStatus.available === false) return <FiAlertCircle className="text-red-500" size={16} />;
+    if (usernameStatus.loading)
+      return <FiLoader className="animate-spin text-blue-500" size={16} />;
+    if (usernameStatus.available === true)
+      return <FiCheckCircle className="text-green-500" size={16} />;
+    if (usernameStatus.available === false)
+      return <FiAlertCircle className="text-red-500" size={16} />;
     return null;
   };
 
   const isFormValid = () => {
     // Check if username is valid (either unchanged or validated as available)
-    const usernameValid = usernameStatus.available === true || 
-                         tempProfile?.username === usernameStatus.originalUsername;
+    const usernameValid =
+      usernameStatus.available === true ||
+      tempProfile?.username === usernameStatus.originalUsername;
     return usernameValid && usernameStatus.errors.length === 0;
   };
 
@@ -427,7 +453,7 @@ const Profile = () => {
     setSuccess("");
 
     if (!user) return;
-    
+
     // Additional validation before submit
     if (!isFormValid()) {
       setError("Please fix the username validation errors before updating.");
@@ -439,11 +465,11 @@ const Profile = () => {
       await authService.updateUserProfile(user.uid, tempProfile as UserProfile);
       setSuccess("Profile updated successfully");
       // Reset username status after successful update
-      setUsernameStatus(prev => ({ 
-        ...prev, 
+      setUsernameStatus((prev) => ({
+        ...prev,
         originalUsername: tempProfile?.username || "",
         available: null,
-        errors: []
+        errors: [],
       }));
     } catch (error: any) {
       setError("Failed to update profile");
@@ -505,12 +531,12 @@ const Profile = () => {
 
   // Profile page
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-2 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-md mx-auto bg-white rounded-b-3xl shadow-lg px-4 py-8 relative overflow-hidden"
+        className="transition-all max-w-md mx-auto bg-white rounded-b-3xl shadow-lg px-4 py-8 relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-600"></div>
         <motion.h2
@@ -520,36 +546,36 @@ const Profile = () => {
         >
           Profile Settings
         </motion.h2>
-        <div className="flex mb-8 border-b border-gray-200">
+        <div className="px-2 flex w-full justify-between mb-8 border-b border-gray-200">
           <button
-            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${
+            className={`flex flex-col items-center py-2 px-4 text-center font-semibold transition-colors ${
               activeTab === "general"
                 ? "border-b-2 border-blue-500 text-blue-600"
                 : "text-gray-500 hover:text-blue-500"
             }`}
             onClick={() => setActiveTab("general")}
           >
-            <FiUser className="inline mr-1" /> General
+            <FiUser className="inline mr-1" /> <span>General</span>
           </button>
           <button
-            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${
+            className={`flex flex-col items-center py-2 px-4 text-center font-semibold transition-colors ${
               activeTab === "security"
                 ? "border-b-2 border-blue-500 text-blue-600"
                 : "text-gray-500 hover:text-blue-500"
             }`}
             onClick={() => setActiveTab("security")}
           >
-            <FiLock className="inline mr-1" /> Security
+            <FiLock className="inline mr-1" /> <span>Security</span>
           </button>
           <button
-            className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${
+            className={`flex flex-col items-center py-2 px-4 text-center font-semibold transition-colors ${
               activeTab === "usage"
                 ? "border-b-2 border-blue-500 text-blue-600"
                 : "text-gray-500 hover:text-blue-500"
             }`}
             onClick={() => setActiveTab("usage")}
           >
-            <MdDataUsage className="inline mr-1" /> Usage
+            <MdDataUsage className="inline mr-1" /> <span>Usage</span>
           </button>
         </div>
 
@@ -817,22 +843,28 @@ const Profile = () => {
                                 {getUsernameIcon()}
                               </div>
                             </div>
-                            
+
                             {/* Username validation messages */}
                             {usernameStatus.errors.length > 0 && (
                               <div className="mt-2 space-y-1">
                                 {usernameStatus.errors.map((error, idx) => (
-                                  <p key={idx} className="text-xs text-red-500 flex items-center gap-1">
+                                  <p
+                                    key={idx}
+                                    className="text-xs text-red-500 flex items-center gap-1"
+                                  >
                                     <FiAlertCircle size={12} /> {error}
                                   </p>
                                 ))}
                               </div>
                             )}
-                            {usernameStatus.available === true && tempProfile?.username !== usernameStatus.originalUsername && (
-                              <p className="mt-2 text-xs text-green-600 flex items-center gap-1">
-                                <FiCheckCircle size={12} /> Username is available
-                              </p>
-                            )}
+                            {usernameStatus.available === true &&
+                              tempProfile?.username !==
+                                usernameStatus.originalUsername && (
+                                <p className="mt-2 text-xs text-green-600 flex items-center gap-1">
+                                  <FiCheckCircle size={12} /> Username is
+                                  available
+                                </p>
+                              )}
                           </motion.div>
 
                           {/* Gender */}
@@ -969,7 +1001,9 @@ const Profile = () => {
                                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                       value={tempProfile?.pattern || ""}
                                       onChange={handleInputChange}
-                                      required={tempProfile?.branch !== undefined}
+                                      required={
+                                        tempProfile?.branch !== undefined
+                                      }
                                     >
                                       <option value="">Select Pattern</option>
                                       <option value="2019">2019</option>
@@ -999,7 +1033,9 @@ const Profile = () => {
                                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                       value={tempProfile?.year || ""}
                                       onChange={handleInputChange}
-                                      required={tempProfile?.branch !== undefined}
+                                      required={
+                                        tempProfile?.branch !== undefined
+                                      }
                                     >
                                       <option value="">Select Year</option>
                                       <option value="SE">Second Year</option>
@@ -1029,7 +1065,9 @@ const Profile = () => {
                                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                       value={tempProfile?.semester || ""}
                                       onChange={handleInputChange}
-                                      required={tempProfile?.branch !== undefined}
+                                      required={
+                                        tempProfile?.branch !== undefined
+                                      }
                                     >
                                       <option value="">Select Semester</option>
                                       {tempProfile?.branch === "FE" ? (
@@ -1111,7 +1149,10 @@ const Profile = () => {
                                       .filter(Boolean);
                                     setTempProfile((prev) =>
                                       prev
-                                        ? ({ ...prev, subjectsHandled: list } as UserProfile)
+                                        ? ({
+                                            ...prev,
+                                            subjectsHandled: list,
+                                          } as UserProfile)
                                         : prev
                                     );
                                   }}
@@ -1146,7 +1187,10 @@ const Profile = () => {
                                       .filter(Boolean);
                                     setTempProfile((prev) =>
                                       prev
-                                        ? ({ ...prev, qualifications: list } as UserProfile)
+                                        ? ({
+                                            ...prev,
+                                            qualifications: list,
+                                          } as UserProfile)
                                         : prev
                                     );
                                   }}
