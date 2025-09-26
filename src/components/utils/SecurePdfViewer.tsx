@@ -19,10 +19,12 @@ import { useEffect, useState } from "react";
 import { MdFullscreen } from "react-icons/md";
 import { MdFullscreenExit } from "react-icons/md";
 import { downloadService } from "../../services/downloadService";
+import { getDownloadedKeys } from "../../hooks/useDownloadedKeys";
 
 const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
 const SecurePdfViewer = () => {
+  const {profile} = useSelector((state: RootState) => state.auth);
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
   const [url, setUrl] = useState<string>("");
   const [headers, setHeaders] = useState<Record<string, string>>({});
@@ -60,6 +62,7 @@ const SecurePdfViewer = () => {
 
   useEffect(() => {
     if (!showPdf?.pdfId) return;
+
     const fetchHeaders = async () => {
       const user = auth.currentUser;
       if (!user) return;
@@ -70,15 +73,25 @@ const SecurePdfViewer = () => {
       });
     };
 
-    if (showPdf?.downloaded) {
-      downloadService.openDownloadedPdf(showPdf.pdfId).then((blob) => {
-        setUrl(blob.url);
-      });
-    } else {
-      fetchHeaders();
-      setUrl(`${AI_URL}/view-pdf?key=${encodeURIComponent(showPdf.pdfId)}`);
-    }
-  }, []);
+    const getUrl = async () => {
+      const downloadedKeys = await getDownloadedKeys();
+      if (profile?.role === "premium" && downloadedKeys.has(showPdf.pdfId as string)) {
+        const resp = await downloadService.openDownloadedPdf(
+          showPdf.pdfId as string
+        );
+        setUrl(resp.url);
+      } else {
+        await fetchHeaders();
+        setUrl(
+          `${AI_URL}/view-pdf?key=${encodeURIComponent(
+            showPdf.pdfId as string
+          )}`
+        );
+      }
+    };
+
+    getUrl();
+  }, [showPdf]);
 
   if (!showPdf || !url) return null;
 

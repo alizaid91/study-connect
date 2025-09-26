@@ -4,7 +4,6 @@ type showPdfType = {
   pdfId: string | null;
   title: string;
   totalPages: number;
-  downloaded?: boolean;
 };
 
 interface GlobalPopupsState {

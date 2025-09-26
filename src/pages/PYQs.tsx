@@ -975,8 +975,42 @@ const PYQs: React.FC = () => {
 
                         {/* Buttons */}
                         <div className="flex flex-row gap-3 text-center items-center">
+                          {
+                            changingBookmarkState && itemToChangeBookmarkState === paper.id ? (
+                              <div
+                                    role="status"
+                                    className="inline-flex items-center justify-center"
+                                  >
+                                    <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full"></div>
+                                    <span className="sr-only">Changing...</span>
+                                  </div>
+                            ) : (
+                              <m.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={
+                                    !user
+                                      ? () => navigate("/auth#login")
+                                      : () => handleBookmark(paper)
+                                  }
+                                  className={`${
+                                    isBookmarked(paper.id)
+                                      ? "text-yellow-500"
+                                      : "text-gray-700"
+                                  }`}
+                                >
+                                  <FiBookmark
+                                    className={`w-5 h-5 ${
+                                      isBookmarked(paper.id)
+                                        ? "fill-current"
+                                        : ""
+                                    }`}
+                                  />
+                                </m.button>
+                            )
+                          }
                           {/* Download Icon */}
-                          {downloadedKeys.has(paper.paperDOKey) ? (
+                          {profile?.role === "premium" && downloadedKeys.has(paper.paperDOKey) ? (
                             <button
                               disabled
                               className="flex items-center justify-center p-2 rounded-xl text-green-600 bg-green-50 cursor-default transition-all"
@@ -988,7 +1022,7 @@ const PYQs: React.FC = () => {
                             // Downloading Animation
                             <button
                               disabled
-                              className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50 cursor-wait"
+                              className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50"
                               title="Downloading..."
                             >
                               <ImSpinner2 className="w-5 h-5 animate-spin" />
@@ -1012,9 +1046,6 @@ const PYQs: React.FC = () => {
                             onClick={() => {
                               dispatch(
                                 setShowPdf({
-                                  downloaded: downloadedKeys.has(
-                                    paper.paperDOKey
-                                  ),
                                   pdfId: paper.paperDOKey,
                                   title: `${paper.subjectName
                                     .split(" ")
@@ -1065,39 +1096,6 @@ const PYQs: React.FC = () => {
                                 >
                                   <MdAddTask className={`mr-2 w-4 h-4`} />
                                   Add to Tasks
-                                </m.button>
-                              )}
-                            </Menu.Item>
-
-                            {/* Bookmark */}
-                            <Menu.Item>
-                              {({ active }) => (
-                                <m.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={
-                                    !user
-                                      ? () => navigate("/auth#login")
-                                      : () => handleBookmark(paper)
-                                  }
-                                  className={`${
-                                    active ? "bg-gray-100" : ""
-                                  } flex w-full items-center px-4 py-2 text-sm ${
-                                    isBookmarked(paper.id)
-                                      ? "text-yellow-500"
-                                      : "text-gray-700"
-                                  }`}
-                                >
-                                  <FiBookmark
-                                    className={`mr-2 w-4 h-4 ${
-                                      isBookmarked(paper.id)
-                                        ? "fill-current"
-                                        : ""
-                                    }`}
-                                  />
-                                  {isBookmarked(paper.id)
-                                    ? "Remove Bookmark"
-                                    : "Bookmark"}
                                 </m.button>
                               )}
                             </Menu.Item>

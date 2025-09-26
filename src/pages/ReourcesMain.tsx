@@ -290,7 +290,6 @@ const ResourcesMain = () => {
             setShowCollectionModal({ open: false, resource: null })
           }
           resource={showCollectionModal.resource}
-          downloadedKeys={downloadedKeys}
           downloadResource={(resource, position) =>
             downloadResource(resource, position as number)
           }
@@ -731,9 +730,6 @@ const ResourcesMain = () => {
                                       // View single file
                                       dispatch(
                                         setShowPdf({
-                                          downloaded: downloadedKeys.has(
-                                            firstFile?.resourceDOKey as string
-                                          ),
                                           pdfId:
                                             firstFile?.resourceDOKey as string,
                                           title: resource.title,
@@ -789,7 +785,7 @@ const ResourcesMain = () => {
                                 )}
                                 {!isCollection &&
                                   resource.type !== "video" &&
-                                  (downloadedKeys.has(
+                                  (profile?.role === "premium" && downloadedKeys.has(
                                     firstFile?.resourceDOKey as string
                                   ) ? (
                                     <button
@@ -815,7 +811,7 @@ const ResourcesMain = () => {
                                     // Downloading Animation
                                     <button
                                       disabled
-                                      className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50 cursor-wait"
+                                      className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50"
                                       title="Downloading..."
                                     >
                                       <ImSpinner2 className="w-5 h-5 animate-spin" />

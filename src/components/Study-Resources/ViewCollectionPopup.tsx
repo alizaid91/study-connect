@@ -1,19 +1,21 @@
 import { setShowPdf } from "../../store/slices/globalPopups";
 import { Bookmark, Resource } from "../../types/content";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FileText, Play } from "lucide-react";
 import { FiCheckCircle, FiDownload } from "react-icons/fi";
 import { ImSpinner2 } from "react-icons/im";
+import { useEffect, useState } from "react";
+import { getDownloadedKeys } from "../../hooks/useDownloadedKeys";
+import { RootState } from "../../store";
 
 interface ViewCollectionPopupProps {
   onClose: () => void;
   resource?: Resource;
   bookmark?: Bookmark;
-  downloadedKeys: Set<string>;
-  downloadResource: (resource: any, position?: number) => Promise<void>;
-  downloading: boolean;
-  itemToDownload: string;
+  downloadResource?: (resource: any, position?: number) => Promise<void>;
+  downloading?: boolean;
+  itemToDownload?: string;
 }
 
 const maxHeight = window.innerHeight - 26;
@@ -22,12 +24,34 @@ const ViewCollectionPopup = ({
   onClose,
   resource,
   bookmark,
-  downloadedKeys,
   downloadResource,
   downloading,
   itemToDownload,
 }: ViewCollectionPopupProps) => {
   const dispatch = useDispatch();
+  const [downloadedKeys, setDownloadedKeys] = useState<Set<string>>(new Set());
+  const {profile} = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const fetchDownloadedKeys = async () => {
+      const keys = await getDownloadedKeys();
+      setDownloadedKeys(keys);
+    };
+    fetchDownloadedKeys();
+  }, []);
+
+  const handleDownloadResource = async (
+    resource: Resource,
+    position: number
+  ) => {
+    if (downloadResource) {
+      await downloadResource(resource, position);
+      const keys = await getDownloadedKeys();
+      setDownloadedKeys(keys);
+    }
+  };
+
+  if (!downloadedKeys) return null;
 
   return (
     <AnimatePresence>
@@ -112,9 +136,6 @@ const ViewCollectionPopup = ({
                         onClick={() =>
                           dispatch(
                             setShowPdf({
-                              downloaded: downloadedKeys.has(
-                                file.resourceDOKey
-                              ),
                               pdfId: file.resourceDOKey,
                               title: file.name,
                               totalPages: file.metadata.pages,
@@ -125,37 +146,38 @@ const ViewCollectionPopup = ({
                       >
                         View
                       </button>
-                      {downloadedKeys.has(file?.resourceDOKey as string) ? (
-                        <button
-                          disabled
-                          className="flex items-center justify-center p-2 rounded-xl text-green-600 bg-green-50 cursor-default transition-all"
-                          title="Downloaded"
-                        >
-                          <FiCheckCircle className="w-5 h-5" />
-                        </button>
-                      ) : downloading &&
-                        itemToDownload === file?.resourceDOKey ? (
-                        // Downloading Animation
-                        <button
-                          disabled
-                          className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50 cursor-wait"
-                          title="Downloading..."
-                        >
-                          <ImSpinner2 className="w-5 h-5 animate-spin" />
-                        </button>
-                      ) : (
-                        // Default Download Button
-                        <button
-                          onClick={() => {
-                            !downloading && downloadResource(resource, idx);
-                          }}
-                          disabled={downloading}
-                          className="flex items-center justify-center p-2 rounded-xl text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 transition-colors"
-                          title="Download"
-                        >
-                          <FiDownload className="w-5 h-5" />
-                        </button>
-                      )}
+                      {resource &&
+                        (profile?.role === "premium" && downloadedKeys.has(file?.resourceDOKey as string) ? (
+                          <button
+                            disabled
+                            className="flex items-center justify-center p-2 rounded-xl text-green-600 bg-green-50 cursor-default transition-all"
+                            title="Downloaded"
+                          >
+                            <FiCheckCircle className="w-5 h-5" />
+                          </button>
+                        ) : downloading &&
+                          itemToDownload === file?.resourceDOKey ? (
+                          // Downloading Animation
+                          <button
+                            disabled
+                            className="flex items-center justify-center p-2 rounded-xl text-blue-600 bg-blue-50"
+                            title="Downloading..."
+                          >
+                            <ImSpinner2 className="w-5 h-5 animate-spin" />
+                          </button>
+                        ) : (
+                          // Default Download Button
+                          <button
+                            onClick={() => {
+                              !downloading && handleDownloadResource(resource, idx);
+                            }}
+                            disabled={downloading}
+                            className="flex items-center justify-center p-2 rounded-xl text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 transition-colors"
+                            title="Download"
+                          >
+                            <FiDownload className="w-5 h-5" />
+                          </button>
+                        ))}
                     </div>
                   </motion.div>
                 ))}
