@@ -28,7 +28,7 @@ const UsageTracker = () => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-md p-6 w-full mx-auto mt-8">
+    <div className="px-2">
       {profile?.proStatus ? (
         <ProStatusCard
           isPro={profile.proStatus.isPro}
