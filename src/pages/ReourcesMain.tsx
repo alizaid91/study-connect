@@ -44,7 +44,7 @@ import { openPdfDownloadIsForPro } from "../store/slices/globalPopups";
 
 const resourcesCards = [
   {
-    title: "Books",
+    title: "Free Books",
     description: "Find textbooks, reference books, and suggested readings.",
     icon: Books,
     backgroundImage: "/images/resources/books.jpg",
@@ -56,12 +56,6 @@ const resourcesCards = [
     icon: Notes,
     backgroundImage: "/images/resources/notes.jpg",
     link: "/resources/notes",
-  },
-  {
-    title: "Decodes",
-    description: "Get decode resources with simplified concepts.",
-    icon: Decodes,
-    link: "/resources/decodes",
   },
   {
     title: "Videos",
