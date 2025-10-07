@@ -1,13 +1,9 @@
 import { Viewer, Worker } from "@react-pdf-viewer/core";
 import { toolbarPlugin } from "@react-pdf-viewer/toolbar";
-import type {
-  ToolbarSlot,
-  TransformToolbarSlot,
-} from "@react-pdf-viewer/toolbar";
+import type { ToolbarSlot, TransformToolbarSlot } from "@react-pdf-viewer/toolbar";
 import { CgCloseO } from "react-icons/cg";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
-import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/toolbar/lib/styles/index.css";
 
 import { motion } from "framer-motion";
@@ -16,24 +12,22 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { auth } from "../../config/firebase";
 import { useEffect, useState } from "react";
-import { MdFullscreen } from "react-icons/md";
-import { MdFullscreenExit } from "react-icons/md";
 import { downloadService } from "../../services/downloadService";
 import { getDownloadedKeys } from "../../hooks/useDownloadedKeys";
 
 const AI_URL = import.meta.env.VITE_AI_SERVICE_URL;
 
 const SecurePdfViewer = () => {
-  const {profile} = useSelector((state: RootState) => state.auth);
+  const { profile } = useSelector((state: RootState) => state.auth);
   const { showPdf } = useSelector((state: RootState) => state.globalPopups);
   const [url, setUrl] = useState<string>("");
   const [headers, setHeaders] = useState<Record<string, string>>({});
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const dispatch = useDispatch();
 
   const toolbarPluginInstance = toolbarPlugin();
   const { renderDefaultToolbar, Toolbar } = toolbarPluginInstance;
 
+  // Remove unwanted default toolbar buttons
   const transform: TransformToolbarSlot = (slot: ToolbarSlot) => ({
     ...slot,
     Download: () => <></>,
@@ -42,7 +36,6 @@ const SecurePdfViewer = () => {
     PrintMenuItem: () => <></>,
     Open: () => <></>,
     OpenMenuItem: () => <></>,
-    FullScreen: () => <></>, // remove default fullscreen button
   });
 
   const backdropVariants = {
@@ -51,12 +44,11 @@ const SecurePdfViewer = () => {
   };
 
   const modalVariants = {
-    hidden: { y: 50, opacity: 0, scale: 0.95 },
+    hidden: { opacity: 0.9, scale: 0.98 },
     visible: {
-      y: 0,
       opacity: 1,
       scale: 1,
-      transition: { type: "spring", stiffness: 200, damping: 20 },
+      transition: { type: "spring", stiffness: 200, damping: 25 },
     },
   };
 
@@ -76,17 +68,11 @@ const SecurePdfViewer = () => {
     const getUrl = async () => {
       const downloadedKeys = await getDownloadedKeys();
       if (profile?.role === "premium" && downloadedKeys.has(showPdf.pdfId as string)) {
-        const resp = await downloadService.openDownloadedPdf(
-          showPdf.pdfId as string
-        );
+        const resp = await downloadService.openDownloadedPdf(showPdf.pdfId as string);
         setUrl(resp.url);
       } else {
         await fetchHeaders();
-        setUrl(
-          `${AI_URL}/view-pdf?key=${encodeURIComponent(
-            showPdf.pdfId as string
-          )}`
-        );
+        setUrl(`${AI_URL}/view-pdf?key=${encodeURIComponent(showPdf.pdfId as string)}`);
       }
     };
 
@@ -97,80 +83,56 @@ const SecurePdfViewer = () => {
 
   return (
     <motion.div
-      className="fixed inset-0 w-full h-full flex items-center justify-center bg-black/50 z-50 backdrop-blur-sm"
+      className="fixed inset-0 w-full h-full flex items-center justify-center bg-black/70 z-50 backdrop-blur-md"
       variants={backdropVariants}
       initial="hidden"
       animate="visible"
       exit="hidden"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          dispatch(clearShowPdf());
-        }
-      }}
     >
       <motion.div
-        style={{
-          height: isFullscreen ? "100%" : `${window.innerHeight - 26}px`,
-          width: isFullscreen ? "100%" : "95%",
-          borderRadius: isFullscreen ? 0 : "1.5rem",
-        }}
-        className={`pt-4 flex flex-col bg-white relative overflow-hidden`}
+        className="relative w-full h-full bg-white flex flex-col overflow-hidden"
         variants={modalVariants}
       >
-        {/* Top right actions */}
-        <div className="absolute top-4 right-5 flex items-center gap-2 z-20">
-          {/* Fullscreen toggle */}
-          <button
-            onClick={() => setIsFullscreen((prev) => !prev)}
-            className="px-1.5 py-1.5 rounded-full bg-gray-200 hover:bg-gray-300 transition"
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          >
-            {isFullscreen ? (
-              <MdFullscreenExit size={22} />
-            ) : (
-              <MdFullscreen size={22} />
-            )}
-          </button>
+        {/* 🔹 Top Toolbar */}
+        <div className="absolute top-0 left-0 w-full flex items-center justify-between px-4 py-3 bg-white/90 backdrop-blur-sm border-b border-gray-200 z-20 shadow-sm">
+          <div className="flex items-center space-x-3 overflow-hidden">
+            <button
+              onClick={() => dispatch(clearShowPdf())}
+              className="p-1.5 rounded-full hover:bg-gray-100 transition"
+              title="Close"
+            >
+              <CgCloseO size={24} />
+            </button>
 
-          {/* Close button */}
-          <CgCloseO
-            size={26}
-            className="cursor-pointer"
-            onClick={() => dispatch(clearShowPdf())}
-          />
+            <h2
+              className="text-base sm:text-lg font-medium text-gray-800 truncate max-w-[200px] sm:max-w-[300px]"
+              title={showPdf.title || "PDF Document"}
+            >
+              {showPdf.title || "PDF Document"}
+            </h2>
+          </div>
         </div>
 
-        {showPdf.pdfId && headers && (
-          <>
-            {!isFullscreen && (
-              <div className="pl-4 max-w-[230px] sm:max-w-[400px] md:max-w-[600px] flex justify-between items-center mb-4">
-                <h2
-                  className="text-lg font-semibold px-3 py-1 bg-gray-200/40 rounded-xl max-w-full truncate"
-                  title={showPdf.title || "PDF Document"}
-                >
-                  {showPdf.title || "PDF Document"}
-                </h2>
-              </div>
-            )}
-            <div className="rpv-core__viewer flex flex-col flex-1 overflow-hidden">
-              {!isFullscreen && (
-                <div className="items-center flex border-b border-gray-300 bg-[#eeeeee]">
-                  <Toolbar>{renderDefaultToolbar(transform)}</Toolbar>
-                </div>
-              )}
-              <div className="flex-1 overflow-hidden">
-                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                  <Viewer
-                    fileUrl={url}
-                    httpHeaders={headers}
-                    plugins={[toolbarPluginInstance]}
-                    defaultScale={window.innerWidth < 768 ? 0.6 : 1.5}
-                  />
-                </Worker>
-              </div>
-            </div>
-          </>
-        )}
+        {/* 🔹 PDF Content */}
+        <div className="flex flex-col flex-1 mt-[62px] overflow-hidden">
+          <div className="items-center flex border-b border-gray-200 bg-[#f8f8f8] px-2 sm:px-4">
+            <Toolbar>{renderDefaultToolbar(transform)}</Toolbar>
+          </div>
+
+          <div className="flex-1 overflow-auto">
+            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+              <Viewer
+                fileUrl={url}
+                httpHeaders={headers}
+                plugins={[toolbarPluginInstance]}
+                defaultScale={window.innerWidth < 768 ? 0.7 : 1.2}
+              />
+            </Worker>
+          </div>
+        </div>
+
+        {/* 🔹 Bottom Shadow Overlay for Mobile */}
+        <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
       </motion.div>
     </motion.div>
   );
